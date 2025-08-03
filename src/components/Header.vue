@@ -10,10 +10,10 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav mx-auto gap-5">
                         <li class="nav-item">
-                            <RouterLink class="nav-link" to="#">Home</RouterLink>
+                            <RouterLink class="nav-link" to="/">Home</RouterLink>
                         </li>
                         <li class="nav-item">
-                            <RouterLink class="nav-link" to="#">Map</RouterLink>
+                            <RouterLink class="nav-link" to="/Map">Map</RouterLink>
                         </li>
                         <li class="nav-item">
                             <RouterLink class="btn btn-outline-danger owner" to="#">Be a Owner!</RouterLink>

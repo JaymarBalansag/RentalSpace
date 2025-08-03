@@ -8,15 +8,15 @@
                 <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav mx-auto">
+                    <ul class="navbar-nav mx-auto gap-5">
                         <li class="nav-item">
-                            <RouterLink class="nav-link" aria-current="page" to="#">Home</RouterLink>
+                            <RouterLink class="nav-link" to="#">Home</RouterLink>
                         </li>
                         <li class="nav-item">
-                            <RouterLink class="nav-link" to="#">Features</RouterLink>
+                            <RouterLink class="nav-link" to="#">Map</RouterLink>
                         </li>
                         <li class="nav-item">
-                            <RouterLink class="nav-link" to="#">Pricing</RouterLink>
+                            <RouterLink class="btn btn-outline-danger owner" to="#">Be a Owner!</RouterLink>
                         </li>
                     </ul>
 
@@ -31,19 +31,19 @@
         <div class="container mt-3 justify-content-center filter-bar shadow">
             <div class="d-flex justify-content-center gap-2 flex-wrap  ">
                 <div class="form-floating filter-group ">
-                    <input type="text" id="property" class="form-control border-0 filter-input" placeholder="Search destination">
+                    <input type="text" id="property" class="form-control border-0 filter-input" placeholder="Property">
                     <label for="property">Property</label>
                 </div>
                 <div class="form-floating filter-group">
-                    <input type="text" id="property" class="form-control border-0 filter-input" placeholder="Search destination">
+                    <input type="text" id="property" class="form-control border-0 filter-input" placeholder="Location">
                     <label for="property">Location</label>
                 </div>
                 <div class="form-floating filter-group">
-                    <input type="text" id="property" class="form-control border-0 filter-input" placeholder="Search destination">
+                    <input type="text" id="property" class="form-control border-0 filter-input" placeholder="Price">
                     <label for="property">Price</label>
                 </div>
                 <div class="form-floating filter-group">
-                    <input type="text" id="property" class="form-control border-0 filter-input" placeholder="Search destination">
+                    <input type="text" id="property" class="form-control border-0 filter-input" placeholder="Amenities">
                     <label for="property">Amenities</label>
                 </div>
             </div>

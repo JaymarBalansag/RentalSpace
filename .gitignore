@@ -13,10 +13,10 @@ dist
 dist-ssr
 coverage
 *.local
-
+.env
 /cypress/videos/
 /cypress/screenshots/
-
+build/
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

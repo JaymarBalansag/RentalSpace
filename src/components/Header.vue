@@ -13,7 +13,7 @@
                             <RouterLink class="nav-link" to="/">Home</RouterLink>
                         </li>
                         <li class="nav-item">
-                            <RouterLink class="nav-link" to="/Map">Map</RouterLink>
+                            <RouterLink class="nav-link" to="/map">Map</RouterLink>
                         </li>
                         <li class="nav-item">
                             <RouterLink class="btn btn-outline-danger owner" to="#">Be a Owner!</RouterLink>
@@ -26,28 +26,6 @@
                 </div>
             </div>
         </nav>
-
-
-        <div class="container mt-3 justify-content-center filter-bar shadow">
-            <div class="d-flex justify-content-center gap-2 flex-wrap  ">
-                <div class="form-floating filter-group ">
-                    <input type="text" id="property" class="form-control border-0 filter-input" placeholder="Property">
-                    <label for="property">Property</label>
-                </div>
-                <div class="form-floating filter-group">
-                    <input type="text" id="property" class="form-control border-0 filter-input" placeholder="Location">
-                    <label for="property">Location</label>
-                </div>
-                <div class="form-floating filter-group">
-                    <input type="text" id="property" class="form-control border-0 filter-input" placeholder="Price">
-                    <label for="property">Price</label>
-                </div>
-                <div class="form-floating filter-group">
-                    <input type="text" id="property" class="form-control border-0 filter-input" placeholder="Amenities">
-                    <label for="property">Amenities</label>
-                </div>
-            </div>
-        </div>
     </div>
 
 </template>
@@ -57,7 +35,7 @@ import { RouterLink } from 'vue-router';
 
 
     export default {
-        name : "Header"
+        name : "Header",
     }
 
 </script>

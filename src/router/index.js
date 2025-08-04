@@ -1,19 +1,24 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import App from '@/App.vue'
 import Map from '@/views/map.vue'
+import properties from '@/views/properties.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: App,
+      redirect: "/properties"
     },
     {
-      path: '/Map',
+      path: '/map',
       name: 'map',
       component: Map
+    },
+    {
+      path: '/properties',
+      name: 'properties',
+      component: properties
     }
   ],
 })

@@ -1,6 +1,6 @@
 <template>
   <div class="container mt-5 mb-5 map-container">
-    <div id="map" style="height: "></div>
+    <div id="map" style="height: 100%"></div>
   </div>
 </template>
 
@@ -47,3 +47,4 @@ export default {
 };
 </script>
 
+<style src="../assets/component-style/mapStyle.css"></style>

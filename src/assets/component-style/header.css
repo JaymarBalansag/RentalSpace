@@ -12,25 +12,6 @@
 
 /* Style for Search and filters */
 
-.dropdowns:hover {
-    background-color: aliceblue;
-}
-.filter-bar {
-    width: fit-content;
-    border: 2px solid rgb(138, 137, 137);
-    border-radius: 20px;
-    /* box-shadow: 1px 1px 10px 1px black; */
-}
-.filter-input {
-    border-right: 1px black solid !important;
-    border-radius: 0 0 0 0 !important;
-}
-.filter-bar .form-floating:last-child .filter-input {
-    border-right: 0px black solid !important;
-}
-.filter-input:focus {
-    box-shadow: none !important;
-    outline: none !important;
-}
+
 
 

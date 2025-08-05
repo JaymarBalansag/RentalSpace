@@ -1,15 +1,19 @@
 <template>
-  <div class="container mt-5 mb-5 map-container">
-    <div id="map" style="height: 100%"></div>
+  <div class="container-fluid map-container my-1 position-relative" >
+    <MapFilter></MapFilter>
+    <div id="map" style="height: 85vh"></div>
   </div>
 </template>
 
 <script>
 import L from "leaflet";
-
+import MapFilter from "@/components/MapFilter.vue";
 
 export default {
   name: "Map",
+  components: {
+    MapFilter
+  },
   data() {
     return {
       location: null,

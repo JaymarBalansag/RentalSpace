@@ -16,7 +16,7 @@
                             <RouterLink class="nav-link" to="/map">Map</RouterLink>
                         </li>
                         <li class="nav-item">
-                            <RouterLink class="btn btn-outline-danger owner" to="#">Be a Owner!</RouterLink>
+                            <RouterLink class="nav-link" to="/experience">Experience</RouterLink>
                         </li>
                     </ul>
 

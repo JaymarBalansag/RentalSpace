@@ -10,7 +10,9 @@
     color: red;
 }
 
-/* Style for Search and filters */
+.top-shadow {
+    box-shadow: 0px -0px 10px 0px;
+}
 
 
 

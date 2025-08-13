@@ -10,7 +10,7 @@ RouterView
 
 <template>
 
-  <Header></Header>
+  <Header  v-if="$route.path !== '/login'"></Header>
 
   <RouterView></RouterView>
   

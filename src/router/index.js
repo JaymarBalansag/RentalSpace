@@ -3,6 +3,7 @@ import App from '@/App.vue'
 import Map from '@/views/map.vue'
 import properties from '@/views/properties.vue'
 import Login from '@/views/Authentication/login.vue'
+import Register from '@/views/Authentication/register.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,6 +27,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: Login
+    },
+    {
+      path: '/register',
+      name: "register",
+      component: Register
     }
   ],
 })

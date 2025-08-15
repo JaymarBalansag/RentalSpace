@@ -14,22 +14,22 @@
         <form @submit.prevent="handleLogin" class="w-100" style="max-width: 350px;">
           <div class="mb-3">
             <input 
-              v-model="email"
               type="email" 
               class="form-control" 
               placeholder="Email Address" 
               autocomplete="username" 
               required
+              v-model="form.email"
             >
           </div>
           <div class="mb-3">
             <input 
-              v-model="password"
               type="password" 
               class="form-control" 
               placeholder="Password" 
               autocomplete="current-password" 
               required
+              v-model="form.password"
             >
           </div>
           <button type="submit" class="btn btn-primary w-100">Login</button>
@@ -61,49 +61,36 @@
 </template>
 
 <script>
-export default {
-  name: "Login",
-  data() {
-    return {
-      email: "",
-      password: ""
-    };
-  },
-  methods: {
-    async handleLogin() {
-      // Trim inputs to avoid accidental spaces
-      const payload = {
-        email: this.email.trim(),
-        password: this.password
-      };
+  import axios from 'axios';
+  import api from '@/api/axios';
 
-      // Basic frontend validation
-      if (!payload.email || !payload.password) {
-        alert("Please enter your email and password.");
-        return;
-      }
-
-      try {
-        // Send POST request to your backend API
-        const res = await fetch("/api/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-        if (res.ok) {
-          console.log("Login success:", data);
-          // Save token securely (prefer HttpOnly cookies in backend)
-        } else {
-          alert(data.message || "Invalid credentials.");
+  export default {
+    name: "Login",
+    data() {
+      return {
+        form: {
+          email: '',
+          password: ''
         }
-      } catch (error) {
-        console.error("Login error:", error);
+      };
+    },
+    methods: {
+      async handleLogin() {
+        try {
+          // const response = await axios.post('http://localhost:8000/api/login', this.form);
+          const response = await api.get("login")
+          alert(response.data.message); // Show success message
+          localStorage.setItem('token', response.data.token); // Store token
+          this.$router.push('/properties'); // Redirect after login
+        } catch (error) {
+          if (error.response) {
+            alert(error.response.data.message); // Show backend error
+          } else {
+            alert("Something went wrong!");
+          }
+        }
       }
     }
-  }
-};
+  };
 </script>
+

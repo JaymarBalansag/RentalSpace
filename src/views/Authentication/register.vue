@@ -20,25 +20,37 @@
         </div>
 
         <!-- Login Form -->
-        <form @submit.prevent="handleLogin" class="w-100" style="max-width: 350px;">
+        <form @submit.prevent="handleRegister" class="w-100" style="max-width: 350px;">
           <div class="mb-3">
             <input 
-              v-model="email"
+              type="text" 
+              class="form-control" 
+              placeholder="Name" 
+              autocomplete="name" 
+              required
+              v-model="form.name"
+            >
+          </div>
+
+          <div class="mb-3">
+            <input 
               type="email" 
               class="form-control" 
               placeholder="Email Address" 
               autocomplete="username" 
               required
+              v-model="form.email"
             >
           </div>
+          
           <div class="mb-3">
             <input 
-              v-model="password"
               type="password" 
               class="form-control" 
               placeholder="Password" 
               autocomplete="current-password" 
               required
+              v-model="form.password"
             >
           </div>
           <button type="submit" class="btn btn-primary w-100">Create Account</button>
@@ -63,49 +75,36 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: "Register",
   data() {
     return {
-      email: "",
-      password: ""
+      form: {
+        name: '',
+        email: '',
+        password: ''
+      }
     };
   },
   methods: {
-    async handleLogin() {
-      // Trim inputs to avoid accidental spaces
-      const payload = {
-        email: this.email.trim(),
-        password: this.password
-      };
-
-      // Basic frontend validation
-      if (!payload.email || !payload.password) {
-        alert("Please enter your email and password.");
-        return;
-      }
-
+    async handleRegister() {
       try {
-        // Send POST request to your backend API
-        const res = await fetch("/api/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-        if (res.ok) {
-          console.log("Login success:", data);
-          // Save token securely (prefer HttpOnly cookies in backend)
-        } else {
-          alert(data.message || "Invalid credentials.");
-        }
+        const response = await axios.post('http://localhost:8000/api/register', this.form);
+        alert(response.data.message); // Show success message
+        // Optionally store token
+        localStorage.setItem('token', response.data.token);
+        this.$router.push('/properties'); // Redirect after registration
       } catch (error) {
-        console.error("Login error:", error);
+        if (error.response) {
+          alert(error.response.data.message); // Show error from backend
+        } else {
+          alert("Something went wrong!");
+        }
       }
     }
   }
 };
 </script>
+

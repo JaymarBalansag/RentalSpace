@@ -5,12 +5,10 @@ import properties from '@/views/properties.vue'
 import Login from '@/views/Authentication/login.vue'
 import Register from '@/views/Authentication/register.vue'
 
-const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
+const routes = [
+  {
       path: '/',
-      redirect: "/properties"
+      redirect: '/login'
     },
     {
       path: '/map',
@@ -33,7 +31,12 @@ const router = createRouter({
       name: "register",
       component: Register
     }
-  ],
+]
+
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes
 })
+
 
 export default router

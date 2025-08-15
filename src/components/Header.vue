@@ -6,7 +6,7 @@
             <RouterLink class="navbar-brand fw-bold" to="/">RentaSpace</RouterLink>
             <ul class="nav gap-5 d-md-flex d-none">
                 <li class="nav-item">
-                    <RouterLink class="nav-link text-black" to="/">Home</RouterLink>
+                    <RouterLink class="nav-link text-black" to="/properties">Home</RouterLink>
                 </li>
                 <li class="nav-item">
                     <RouterLink class="nav-link text-black" to="/map">Map</RouterLink>
@@ -14,7 +14,7 @@
                 <li class="nav-item">
                     <RouterLink class="nav-link text-black" to="/experience">Experience</RouterLink>
                 </li>
-            </ul>
+            </ul> 
             <button class="btn fs-5 " type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasWithBothOptions" aria-controls="offcanvasWithBothOptions">
                 <i class="bi bi-list"></i>
             </button>

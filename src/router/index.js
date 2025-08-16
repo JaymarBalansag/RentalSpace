@@ -13,7 +13,8 @@ const routes = [
     {
       path: '/map',
       name: 'map',
-      component: Map
+      component: Map,
+      meta: { requiresAuth:true }
     },
     {
       path: '/properties',
@@ -37,6 +38,22 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
+
+router.beforeEach(
+  (to, from, next) => {
+    const isLoggedIn = !!localStorage.getItem("token");
+
+    if((to.path === "/login" || to.path === "/register") && isLoggedIn){
+      return next("/properties");
+    }
+
+    if(to.meta.requiresAuth && !isLoggedIn){
+      return next("/login");
+    }
+    
+    next();
+  }
+);
 
 
 export default router

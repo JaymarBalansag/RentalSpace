@@ -77,15 +77,16 @@
     methods: {
       async handleLogin() {
         try {
-          // const response = await axios.post('http://localhost:8000/api/login', this.form);
-          const response = await api.get("login")
-          alert(response.data.message); // Show success message
-          localStorage.setItem('token', response.data.token); // Store token
-          this.$router.push('/properties'); // Redirect after login
-        } catch (error) {
+          const response = await api.post("/login", this.form);
+          alert(response.data.message); // Success
+          localStorage.setItem("token", response.data.token);
+          this.$router.push("/properties"); // Redirect after login
+          } catch (error) {
           if (error.response) {
-            alert(error.response.data.message); // Show backend error
-          } else {
+            alert(error.response.data.message); // <--- This will catch "The provided credentials are incorrect"
+            this.$router.push("/login")
+          } 
+          else {
             alert("Something went wrong!");
           }
         }

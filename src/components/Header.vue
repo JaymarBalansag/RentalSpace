@@ -12,7 +12,7 @@
                     <RouterLink class="nav-link text-black" to="/map">Map</RouterLink>
                 </li>
                 <li class="nav-item">
-                    <RouterLink class="nav-link text-black" to="/experience">Experience</RouterLink>
+                    <RouterLink class="nav-link text-black" to="/">Experience</RouterLink>
                 </li>
             </ul> 
             <button class="btn fs-5 " type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasWithBothOptions" aria-controls="offcanvasWithBothOptions">
@@ -33,7 +33,7 @@
                     <RouterLink class="nav-link text-black fw-light bottom-text" to="/map"><i class="bi bi-map nav-icons"></i>Map</RouterLink>
                 </li>
                 <li class="nav-item">
-                    <RouterLink class="nav-link text-black fw-light bottom-text" to="/experience"><i class="bi bi-journal nav-icons"></i>Experience</RouterLink>
+                    <RouterLink class="nav-link text-black fw-light bottom-text" to="/"><i class="bi bi-journal nav-icons"></i>Experience</RouterLink>
                 </li>
             </ul>
         </nav>

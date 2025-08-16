@@ -10,7 +10,7 @@ RouterView
 
 <template>
 
-  <Header  v-if="$route.path !== '/login' && $route.path !== '/register'"></Header>
+
 
   <RouterView></RouterView>
   

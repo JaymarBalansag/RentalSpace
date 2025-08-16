@@ -1,4 +1,5 @@
 <template>
+  <Header></Header>
   <div class="container-fluid map-container my-1 position-relative" >
     <MapFilter v-if="!offcanvasState.isOpen"></MapFilter>
     <div id="map" class="" style="height: 85vh"></div>
@@ -9,11 +10,12 @@
 import L from "leaflet";
 import MapFilter from "@/components/MapFilter.vue";
 import { offcanvasState } from "@/store/offCanvasState";
-
+import Header from "@/components/Header.vue";
 export default {
   name: "Map",
   components: {
-    MapFilter
+    MapFilter,
+    Header,
   },
   setup(){
     return {offcanvasState}

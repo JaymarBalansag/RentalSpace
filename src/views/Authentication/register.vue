@@ -25,10 +25,20 @@
             <input 
               type="text" 
               class="form-control" 
-              placeholder="Name" 
+              placeholder="First Name" 
               autocomplete="name" 
               required
-              v-model="form.name"
+              v-model="form.first_name"
+            >
+          </div>
+          <div class="mb-3">
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="Last Name" 
+              autocomplete="name" 
+              required
+              v-model="form.last_name"
             >
           </div>
 
@@ -75,6 +85,8 @@
 </template>
 
 <script>
+import api from '@/api/api';
+import { register } from '@/api/auth';
 import axios from 'axios';
 
 export default {
@@ -82,7 +94,8 @@ export default {
   data() {
     return {
       form: {
-        name: '',
+        first_name: '',
+        last_name: '',
         email: '',
         password: ''
       }
@@ -91,10 +104,7 @@ export default {
   methods: {
     async handleRegister() {
       try {
-        const response = await axios.post('http://localhost:8000/api/register', this.form);
-        alert(response.data.message); // Show success message
-        // Optionally store token
-        localStorage.setItem('token', response.data.token);
+        const res = await register(this.form.first_name, this.form.last_name, this.form.email, this.form.password)
         this.$router.push('/properties'); // Redirect after registration
       } catch (error) {
         if (error.response) {

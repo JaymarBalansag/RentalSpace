@@ -61,8 +61,8 @@
 </template>
 
 <script>
-  import axios from 'axios';
-  import api from '@/api/axios';
+
+  import { login } from '@/api/auth';
 
   export default {
     name: "Login",
@@ -77,11 +77,10 @@
     methods: {
       async handleLogin() {
         try {
-          const response = await api.post("/login", this.form);
-          alert(response.data.message); // Success
-          localStorage.setItem("token", response.data.token);
-          this.$router.push("/properties"); // Redirect after login
-          } catch (error) {
+          const res = await login(this.form.email, this.form.password);
+          alert(`Welcome back ${res.first_name} ${res.last_name}`);
+          this.$router.push("/properties");
+        } catch (error) {
           if (error.response) {
             alert(error.response.data.message); // <--- This will catch "The provided credentials are incorrect"
             this.$router.push("/login")

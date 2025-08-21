@@ -57,20 +57,22 @@
 
 <script>
 import { RouterLink, useRouter } from 'vue-router';
-import api from '@/api/axios';
+import { logout } from '@/api/auth';
     export default {
         name: "offCanvas",
         methods: {
           async handleLogout() {
-            const router = useRouter();
             try {
-              const res = await api.post("/logout");
-              // console.log("LoggedOUt");
-              localStorage.removeItem("token");
-              this.$router.push("/login")
-            }
-            catch (error) {
-              console.error(error);
+              const res = await logout();
+              this.$router.push("/login");
+            } catch (error) {
+              if (error.response) {
+                alert(error.response.data.message); // <--- This will catch "The provided credentials are incorrect"
+                this.$router.push("/login")
+              } 
+              else {
+                alert("Something went wrong!");
+              }
             }
           }
         }

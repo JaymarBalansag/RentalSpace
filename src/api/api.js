@@ -21,26 +21,28 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
+    const originalRequest = error.config;
+
+    // Only try refresh if the request had an access token
+    const hasAuthHeader = originalRequest.headers?.Authorization?.startsWith("Bearer ");
+
+    if (error.response?.status === 401 && hasAuthHeader) {
       try {
-        // call refresh endpoint
         const res = await api.post("/refresh");
         const newToken = res.data.access_token;
 
-        // save new token
         localStorage.setItem("access_token", newToken);
-
-        // retry original request with new token
-        error.config.headers["Authorization"] = `Bearer ${newToken}`;
-        return api.request(error.config);
+        originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+        return api.request(originalRequest);
       } catch (err) {
-        // if refresh fails → clear token + force login
         localStorage.removeItem("access_token");
         window.location.href = "/login";
       }
     }
+
     return Promise.reject(error);
   }
 );
+
 
 export default api;

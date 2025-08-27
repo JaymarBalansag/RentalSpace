@@ -6,7 +6,7 @@
         <div class="row mx-3 my-5 gy-3">
             <div class="container-fluid d-flex ">
                 <h1 class="h2 me-auto">Boarding House</h1>
-                <RouterLink class="link-primary ms-auto">See more <i class="bi bi-three-dots-vertical"></i></RouterLink>
+                <RouterLink to="/" class="link-primary ms-auto">See more <i class="bi bi-three-dots-vertical"></i></RouterLink>
             </div>
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                 <div class="card">
@@ -77,7 +77,7 @@
         <div class="row mx-3 my-5 gy-3">
             <div class="container-fluid d-flex ">
                 <h1 class="h2 me-auto">Boarding House</h1>
-                <RouterLink class="link-primary ms-auto">See more <i class="bi bi-three-dots-vertical"></i></RouterLink>
+                <RouterLink to="/" class="link-primary ms-auto">See more <i class="bi bi-three-dots-vertical"></i></RouterLink>
             </div>
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                 <div class="card">

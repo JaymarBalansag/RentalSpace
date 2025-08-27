@@ -1,14 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import App from '@/App.vue'
 import Map from '@/views/map.vue'
-import properties from '@/views/properties.vue'
+import home from '@/views/home.vue'
 import Login from '@/views/Authentication/login.vue'
 import Register from '@/views/Authentication/register.vue'
+import Profile from '@/views/User/profile.vue'
+import Info from '@/views/User/info.vue'
+import Address from '@/views/User/address.vue'
 
 const routes = [
   {
       path: '/',
-      redirect: '/login'
+      redirect: '/home'
     },
     {
       path: '/map',
@@ -17,9 +20,31 @@ const routes = [
       meta: { requiresAuth:true }
     },
     {
-      path: '/properties',
-      name: 'properties',
-      component: properties
+      path: '/home',
+      name: 'home',
+      component: home
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: Profile,
+      meta: { requiresAuth:true },
+      children: [
+        { 
+          path: '',
+          redirect: '/info'
+        },
+        {
+          path: '/info',
+          name: 'info',
+          component: Info,
+        },
+        {
+          path: '/address',
+          name: 'address',
+          component: Address
+        }
+      ]
     },
     // Authentication Route
     {
@@ -41,10 +66,10 @@ const router = createRouter({
 
 router.beforeEach(
   (to, from, next) => {
-    const isLoggedIn = !!localStorage.getItem("token");
+    const isLoggedIn = !!localStorage.getItem("access_token");
 
     if((to.path === "/login" || to.path === "/register") && isLoggedIn){
-      return next("/properties");
+      return next("/home");
     }
 
     if(to.meta.requiresAuth && !isLoggedIn){

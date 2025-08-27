@@ -6,7 +6,7 @@
             <RouterLink class="navbar-brand fw-bold" to="/">RentaSpace</RouterLink>
             <ul class="nav gap-5 d-md-flex d-none">
                 <li class="nav-item">
-                    <RouterLink class="nav-link text-black" to="/properties">Home</RouterLink>
+                    <RouterLink class="nav-link text-black" to="/home">Home</RouterLink>
                 </li>
                 <li class="nav-item">
                     <RouterLink class="nav-link text-black" to="/map">Map</RouterLink>
@@ -27,7 +27,7 @@
         <nav class="navbar justify-content-center">
             <ul class="nav gap-2">
                 <li class="nav-item">
-                    <RouterLink class="nav-link text-black fw-light bottom-text" to="/properties" ><i class="bi bi-house-door nav-icons"></i>Home</RouterLink>
+                    <RouterLink class="nav-link text-black fw-light bottom-text" to="/home" ><i class="bi bi-house-door nav-icons"></i>Home</RouterLink>
                 </li>
                 <li class="nav-item">
                     <RouterLink class="nav-link text-black fw-light bottom-text" to="/map"><i class="bi bi-map nav-icons"></i>Map</RouterLink>

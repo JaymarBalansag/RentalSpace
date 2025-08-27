@@ -63,7 +63,7 @@
 <script>
 
   import { login } from '@/api/auth';
-
+  import { useUserInfo } from '@/store/userInfo';
   export default {
     name: "Login",
     data() {
@@ -76,10 +76,16 @@
     },
     methods: {
       async handleLogin() {
+        const info = useUserInfo();
         try {
           const res = await login(this.form.email, this.form.password);
-          alert(`Welcome back ${res.first_name} ${res.last_name}`);
-          this.$router.push("/properties");
+          if(res && res.first_name && res.last_name && res.role && res.email){
+            console.log(res);
+            info.setUserInfo(res.first_name, res.last_name, res.role, res.email);
+            info.setLoggedIn(true);
+            alert(`Welcome back! ${info.first_name} ${info.last_name}`);
+            this.$router.push("/home");
+          }
         } catch (error) {
           if (error.response) {
             alert(error.response.data.message); // <--- This will catch "The provided credentials are incorrect"

@@ -105,7 +105,10 @@ export default {
     async handleRegister() {
       try {
         const res = await register(this.form.first_name, this.form.last_name, this.form.email, this.form.password)
-        this.$router.push('/properties'); // Redirect after registration
+        info.setUserInfo(res.first_name, res.last_name, res.role, res.email);
+        info.setLoggedIn(true);
+        alert(`Welcome! ${info.first_name} ${info.last_name}`);
+        this.$router.push('/home'); // Redirect after registration
       } catch (error) {
         if (error.response) {
           alert(error.response.data.message); // Show error from backend

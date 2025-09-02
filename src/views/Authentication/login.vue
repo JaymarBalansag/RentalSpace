@@ -85,6 +85,8 @@
             info.setLoggedIn(true);
             alert(`Welcome back! ${info.first_name} ${info.last_name}`);
             this.$router.push("/home");
+          } else {
+            alert("Login failed. Please try again.");
           }
         } catch (error) {
           if (error.response) {

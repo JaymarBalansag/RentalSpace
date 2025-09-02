@@ -88,6 +88,7 @@
 import api from '@/api/api';
 import { register } from '@/api/auth';
 import axios from 'axios';
+import { useUserInfo } from '@/store/userInfo';
 
 export default {
   name: "Register",
@@ -103,12 +104,19 @@ export default {
   },
   methods: {
     async handleRegister() {
+      const info = useUserInfo();
       try {
         const res = await register(this.form.first_name, this.form.last_name, this.form.email, this.form.password)
-        info.setUserInfo(res.first_name, res.last_name, res.role, res.email);
-        info.setLoggedIn(true);
-        alert(`Welcome! ${info.first_name} ${info.last_name}`);
-        this.$router.push('/home'); // Redirect after registration
+        if(res && res.first_name && res.last_name && res.role && res.email){
+            console.log(res);
+            info.setUserInfo(res.first_name, res.last_name, res.role, res.email);
+            info.setLoggedIn(true);
+            alert(`Welcome! ${info.first_name} ${info.last_name}`);
+            this.$router.push("/home");
+          } else {
+            alert("Login failed. Please try again.");
+          }
+        console.log("pushing complete");
       } catch (error) {
         if (error.response) {
           alert(error.response.data.message); // Show error from backend

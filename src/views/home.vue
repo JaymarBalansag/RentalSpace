@@ -105,7 +105,7 @@
         <!-- Boarding House -->
         <div class="row mx-3 my-5">
             <div class="container-fluid d-flex align-items-end px-0 mb-2">
-                <h1 class="h2 me-auto mb-0">Boarding House</h1>
+                <h1 class="h2 me-auto mb-0">Apartment</h1>
                 <RouterLink to="/" class="link-primary ms-auto">See more <i class="bi bi-three-dots-vertical"></i></RouterLink>
             </div>
             <div class="d-flex overflow-x-auto px-0">

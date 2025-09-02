@@ -5,8 +5,6 @@ import home from '@/views/home.vue'
 import Login from '@/views/Authentication/login.vue'
 import Register from '@/views/Authentication/register.vue'
 import Profile from '@/views/User/profile.vue'
-import Info from '@/views/User/info.vue'
-import Address from '@/views/User/address.vue'
 import Experience from '@/views/experience.vue'
 
 const routes = [
@@ -36,22 +34,6 @@ const routes = [
       name: 'profile',
       component: Profile,
       meta: { requiresAuth:true },
-      children: [
-        { 
-          path: '',
-          redirect: '/info'
-        },
-        {
-          path: '/info',
-          name: 'info',
-          component: Info,
-        },
-        {
-          path: '/address',
-          name: 'address',
-          component: Address
-        }
-      ]
     },
     // Authentication Route
     {

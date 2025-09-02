@@ -7,6 +7,7 @@ import Register from '@/views/Authentication/register.vue'
 import Profile from '@/views/User/profile.vue'
 import Info from '@/views/User/info.vue'
 import Address from '@/views/User/address.vue'
+import Experience from '@/views/experience.vue'
 
 const routes = [
   {
@@ -17,6 +18,12 @@ const routes = [
       path: '/map',
       name: 'map',
       component: Map,
+      meta: { requiresAuth:true }
+    },
+    {
+      path: '/experience',
+      name: 'experience',
+      component: Experience,
       meta: { requiresAuth:true }
     },
     {

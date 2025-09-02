@@ -31,29 +31,31 @@
 
           <div class="modal-body">
             <!-- Your filter fields here -->
-            <div class="mb-3">
-              <label class="form-label">Price Range</label>
-              <input type="range" class="form-range" min="0" max="5000" />
-            </div>
+            
 
             <div class="mb-3">
               <label class="form-label">Location</label>
               <select class="form-select">
-                <option>Any</option>
-                <option>Downtown</option>
-                <option>Suburbs</option>
+                <option>Abuyog</option>
+                <option>Javier</option>
+                <option>Tacloban</option>
               </select>
             </div>
 
             <div class="mb-3">
-              <label class="form-label">Amenities</label>
-              <div>
-                <input type="checkbox" id="wifi" /> <label for="wifi">Wi-Fi</label>
-              </div>
-              <div>
-                <input type="checkbox" id="parking" /> <label for="parking">Parking</label>
-              </div>
+              <label class="form-label">Type</label>
+              <select class="form-select">
+                <option>Boarding House</option>
+                <option>Dorm</option>
+                <option>Apartment</option>
+              </select>
             </div>
+
+            <div class="mb-3">
+              <label class="form-label">Price Range: 0 - 0</label>
+              <input type="range" class="form-range" min="0" max="5000" />
+            </div>
+
           </div>
 
           <div class="modal-footer">

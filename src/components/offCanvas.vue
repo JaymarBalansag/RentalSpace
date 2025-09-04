@@ -2,7 +2,6 @@
 
   <div class="offcanvas offcanvas-end z-top" data-bs-scroll="true" tabindex="-1" id="offcanvasWithBothOptions" aria-labelledby="offcanvasWithBothOptionsLabel">
     <div class="offcanvas-header btn-group dropstart">
-      <!-- <h2 class="offcanvas-title" id="offcanvasWithBothOptionsLabel">Menu</h2> -->
        <div class="dropstart">
          <button class="btn dropdown-toggle w-2" data-bs-toggle="dropdown"><i class="bi bi-person-circle fs-2"></i></button>
           <ul v-if="isLoggedIn" class="dropdown-menu nav-underline">

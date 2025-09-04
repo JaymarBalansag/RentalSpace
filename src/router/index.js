@@ -1,16 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import App from '@/App.vue'
-import Map from '@/views/map.vue'
 import home from '@/views/home.vue'
 import Login from '@/views/Authentication/login.vue'
 import Register from '@/views/Authentication/register.vue'
 import Profile from '@/views/User/profile.vue'
-import Experience from '@/views/experience.vue'
+// import Experience from '@/views/experience.vue'
+import Home from '@/views/Main/Home.vue'
+import Map from '@/views/Main/Map.vue'
+import Experience from '@/views/Main/Experience.vue'
 
 const routes = [
   {
       path: '/',
-      redirect: '/home'
+      redirect: '/Home'
     },
     {
       path: '/map',
@@ -25,9 +27,9 @@ const routes = [
       meta: { requiresAuth:true }
     },
     {
-      path: '/home',
-      name: 'home',
-      component: home
+      path: '/Home',
+      name: 'Home',
+      component: Home
     },
     {
       path: '/profile',

@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "http://localhost:8000/api",
-  withCredentials: true,
+  withCredentials: true, // include cookies (refresh_token)
 });
 
 // Request interceptor → attach token before each request
@@ -23,26 +23,31 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Only try refresh if the request had an access token
+    // ⛔ Prevent infinite loop: don't retry refresh if the failing request IS refresh
+    if (originalRequest.url.includes("/refresh")) {
+      return Promise.reject(error);
+    }
+
     const hasAuthHeader = originalRequest.headers?.Authorization?.startsWith("Bearer ");
 
-    if (error.response?.status === 401 && hasAuthHeader) {
+    if (error.response?.status === 401 && hasAuthHeader && !originalRequest._retry) {
+      originalRequest._retry = true;
       try {
         const res = await api.post("/refresh");
         const newToken = res.data.access_token;
 
         localStorage.setItem("access_token", newToken);
         originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
-        return api.request(originalRequest);
+
+        return api.request(originalRequest); // retry original request
       } catch (err) {
         localStorage.removeItem("access_token");
-        window.location.href = "/login";
+        window.location.href = "/login"; // logout
       }
     }
 
     return Promise.reject(error);
   }
 );
-
 
 export default api;

@@ -8,6 +8,8 @@ import Profile from '@/views/User/profile.vue'
 import Home from '@/views/Main/Home.vue'
 import Map from '@/views/Main/Map.vue'
 import Experience from '@/views/Main/Experience.vue'
+import PaymentWall from '@/views/Payment/paymentWall.vue'
+import PaymentDetails from '@/views/Payment/paymentDetails.vue'
 
 const routes = [
   {
@@ -36,6 +38,17 @@ const routes = [
       name: 'profile',
       component: Profile,
       meta: { requiresAuth:true },
+    },
+    // On development and testing ( Payment )
+    {
+      path: "/payment/wall",
+      name: "paymentWall",
+      component: PaymentWall
+    },
+    {
+      path: '/payment/details',
+      name: "paymentDetails",
+      component: PaymentDetails
     },
     // Authentication Route
     {

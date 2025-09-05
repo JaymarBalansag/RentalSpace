@@ -37,7 +37,7 @@
           <hr>
         </li>
         <li v-if="roleIs === 'user'" class="nav-item">
-          <button @click="isSubscribing" class="btn btn-primary" ><i class="bi bi-bell me-1"></i>List Your Property</button>
+          <button @click="goToPaymentWall" class="btn btn-primary" ><i class="bi bi-bell me-1"></i>List Your Property</button>
         </li>
         <li v-else-if="roleIs === 'admin'" class="nav-item">
           <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
@@ -90,6 +90,9 @@ import AdminLogin from './AdminLogin.vue';
           }
         },
         methods: {
+          goToPaymentWall() {
+            this.$router.push("/payment/wall")
+          },
           async handleLogout() {
             try {
               const res = await logout();  

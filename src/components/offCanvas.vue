@@ -40,13 +40,10 @@
           <button @click="goToPaymentWall" class="btn btn-primary" ><i class="bi bi-bell me-1"></i>List Your Property</button>
         </li>
         <li v-else-if="roleIs === 'admin'" class="nav-item">
-          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
-            Admin Dashboard
-          </button>        
-          <AdminLogin></AdminLogin>
+          <RouterLink class="nav-link fs-6 text-black" to="/">Admin Dashboard</RouterLink>       
         </li>
         <li v-else-if="roleIs === 'owner'" class="nav-item">
-          <RouterLink class="nav-link fs-6 text-black" to="/"><i class="bi bi-kanban me-1"></i>Property Management</RouterLink>
+          <RouterLink class="nav-link fs-6 text-black" to="/Dashboard"><i class="bi bi-kanban me-1"></i>Dashboard</RouterLink>
         </li>
         <li class="nav-item">
           <hr>

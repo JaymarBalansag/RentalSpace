@@ -10,6 +10,14 @@ import Map from '@/views/Main/Map.vue'
 import Experience from '@/views/Main/Experience.vue'
 import PaymentWall from '@/views/Payment/paymentWall.vue'
 import PaymentDetails from '@/views/Payment/paymentDetails.vue'
+import Dashboard from '@/views/Owner/Dashboard.vue'
+import Overview from '@/views/Owner/Overview.vue'
+import Properties from '@/views/Owner/Properties.vue'
+import Tenants from '@/views/Owner/Tenants.vue'
+import Reports from '@/views/Owner/Reports.vue'
+import Billing from '@/views/Owner/Billing.vue'
+import EditProperty from '@/views/Owner/PropertyCrud/editProperty.vue'
+import AddProperty from '@/views/Owner/PropertyCrud/addProperty.vue'
 
 const routes = [
   {
@@ -60,7 +68,50 @@ const routes = [
       path: '/register',
       name: "register",
       component: Register
-    }
+    },
+    // For Owner
+    {
+    path: "/dashboard",
+    name: "OwnerDashboard",
+    component: Dashboard,
+    children: [
+        {
+          path: "/overview",
+          name: "OwnerOverview",
+          component: Overview
+        },
+        {
+          path: "/properties",
+          name: "OwnerProperties",
+          component: Properties
+        },
+        {
+          path: "/dashboard/properties/add",
+          name: "AddProperty",
+          component: AddProperty
+        },
+        {
+          path: "/dashboard/properties/:id/edit",
+          name: "EditProperty",
+          component: EditProperty
+        },
+        {
+          path: "/tenants",
+          name: "OwnerTenants",
+          component: Tenants
+        },
+        {
+          path: "/billing",
+          name: "OwnerBilling",
+          component: Billing
+        },
+        {
+          path: "/reports",
+          name: "OwnerReports",
+          component: Reports
+        }
+      ]
+   }
 ]
 
 const router = createRouter({

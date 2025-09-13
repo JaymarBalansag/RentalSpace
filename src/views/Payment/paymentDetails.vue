@@ -27,8 +27,18 @@
                   <input v-model="email" type="email" class="form-control" readonly>
                 </div>
 
+                <div class="mb-3">
+                  <label class="form-label">Payment Method</label>
+                  <select v-model="paymentMethod" class="form-select">
+                    <option disabled value="">-- Select --</option>
+                    <option value="qrph">QR Ph</option>
+                    <option value="gcash" disabled>GCash (Unavailable)</option>
+                    <option value="maya" disabled>Maya (Unavailable)</option>
+                  </select>
+                </div>
+
                 <button 
-                  @click="confirmPayment" 
+                  @click="confirmPayment"
                   class="btn btn-primary w-100"
                 >
                   Confirm Payment
@@ -38,10 +48,10 @@
               <!-- Right: Summary -->
               <div class="col-md-6 border-start">
                 <div class="text-center">
-                  <img src="@/assets/qr.png" alt="QR Code" class="img-fluid mb-3" style="max-width: 200px;">
-                  <h5 class="fw-bold mb-2">Plan: {{ selectedPlan }}</h5>
-                  <p class="fs-4 fw-light mb-1">Price: {{ planPrice }}</p>
-                  <p class="text-muted small">Scan QR or click Confirm to simulate payment.</p>
+                  <h5 class="fw-bold mb-2">Selected Plan</h5>
+                  <p class="fs-4 mb-1">{{ selectedPlan }}</p>
+                  <p class="fs-5 fw-light">Price: {{ planPrice }}</p>
+                  <p class="text-muted small">Payment simulation only. After confirm, you’ll become an Owner.</p>
                 </div>
               </div>
             </div>
@@ -49,7 +59,7 @@
 
           <!-- Footer -->
           <div class="card-footer text-center text-muted">
-            Your payment is securely processed. (Simulation Mode)
+            Your payment will be securely processed. (Simulation Mode)
           </div>
         </div>
       </div>
@@ -60,6 +70,7 @@
 <script>
 import { RouterLink } from 'vue-router'
 import { useUserInfo } from '@/store/userInfo'
+import { paymentConfirmation } from '@/api/payment'
 
 export default {
   name: "paymentDetails",
@@ -68,7 +79,7 @@ export default {
       name: null,
       email: null,
       role: null,
-      selectedPlan: "Monthly",   // later this should come from route params
+      selectedPlan: "Monthly",   // later from route params
       planPrice: "₱500",
       paymentMethod: ""
     }
@@ -85,21 +96,38 @@ export default {
         this.role = userInfo.role
       }
     },
-    confirmPayment() {
-      if (!this.paymentMethod) {
-        alert("Please select a payment method.")
-        return
+    async confirmPayment() {
+        if (!this.paymentMethod) {
+          alert("⚠ Please select a payment method.")
+          return
+        }
+
+        if (this.role === "owner") {
+          alert("⚠ You are already an Owner")
+          return
+        }
+
+        try {
+          // const res = await api.post("/paymentConfirmation", {
+          //   plan: this.selectedPlan
+          // })
+          const res = await paymentConfirmation(this.selectedPlan, this.paymentMethod);
+
+          const info = useUserInfo()
+          info.setRole("owner")
+
+          localStorage.setItem("userInfo", JSON.stringify(res.data.user))
+
+          alert("✅ Payment confirmed! You are now an Owner.")
+
+          // this.$router.push("/dashboard")  or wherever owner lands
+          this.$router.push("/") // or wherever owner lands
+        } catch (err) {
+          console.error(err)
+          alert("❌ Payment confirmation failed.")
+        }
       }
-
-      // Simulation only: mark user as owner
-      const info = useUserInfo()
-      info.setRole("owner")
-
-      alert(`✅ Payment successful! You are now an Owner on the ${this.selectedPlan} plan.`)
-      this.$router.push("/owner/dashboard")
-    }
-  },
+    },
   components: { RouterLink }
 }
 </script>
-    

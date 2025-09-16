@@ -99,14 +99,7 @@
           <label class="form-label">Lease Term (Months)</label>
           <input v-model="form.lease_term_months" type="number" class="form-control" />
         </div>
-        <div class="mb-3">
-          <label class="form-label">Start Date</label>
-          <input v-model="form.start_date" type="date" class="form-control" />
-        </div>
-        <div class="mb-3">
-          <label class="form-label">End Date</label>
-          <input v-model="form.end_date" type="date" class="form-control" />
-        </div>
+        
         <div class="mb-3">
           <label class="form-label">Renewal Option</label>
           <select v-model="form.renewal_option" class="form-select">
@@ -124,10 +117,10 @@
       <!-- Property Features -->
       <div class="mb-3">
         <label class="form-label">Property Type</label>
-          <select v-model="form.property_id" class="form-select">
+          <select v-model="form.property_type_id" class="form-select">
             <option selected>Select Property Type</option>
             <option 
-              v-for="type in types" 
+              v-for="type in property_types" 
               :key="type.id" 
               :value="type.id"
             >
@@ -148,13 +141,13 @@
       <div class="mb-3">
         <label class="form-label">Parking</label>
         <select v-model="form.parking" class="form-select">
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
+          <option :value="true">Yes</option>
+          <option :value="false">No</option>
+        </select> 
       </div>
     </div>
 
-    <!-- Step 5: Property Details -->
+    <!-- Step 4: Property Details -->
     <div v-if="step === 4" class="card p-3 shadow-sm">
       <h5>Property Details</h5>
       <div class="mb-3">
@@ -219,23 +212,89 @@
       
     </div>
 
-    <!-- Step 5: Location Details -->
+
     <div v-if="step === 5" class="card p-3 shadow-sm">
-      <h5>Location Details</h5>
-      <div class="row mb-3">
-        <div class="col-6 align-self-center">
-          <div class="rounded" id="propertyMap" style="height:80vh"></div>
+      <h5 class="mb-3">Property Details</h5>
+
+      <div class="row">
+        <div class="col mb-3">
+            <label class="form-label">Bedrooms</label>
+            <input v-model="form.bedrooms" type="number" class="form-control" required />
         </div>
-        <div class="col-6">
-          <div class="mb-3">
-            <label class="form-label">Latitude</label>
-            <input type="number" v-model="form.latitude" class="form-control" step="0.000001" />
+        <div class="col mb-3">
+            <label class="form-label">Bathrooms</label>
+            <input v-model="form.bathrooms" type="number" class="form-control" required />
+        </div>
+        <div class="col mb-3">
+            <label class="form-label">Bed Space</label>
+            <input v-model="form.bed_space" type="number" class="form-control" required />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col mb-3">
+          <label class="form-label">Floor Area</label>
+          <input v-model="form.floor_area" type="number" class="form-control" required />
+        </div>
+        <div class="col mb-3">
+          <label class="form-label">Lot Area</label>
+          <input v-model="form.lot_area" type="number" class="form-control" required />
+        </div>
+        <div class="col mb-3">
+          <label class="form-label">Max Size</label>
+          <input v-model="form.max_size" type="number" class="form-control" required />
+        </div>
+      </div>
+
+
+    </div>
+
+    <div v-if="step === 6" class="card p-3 shadow-sm">
+      <h5 class="mb-3">Others</h5>
+      <div class="row">
+        <div class="col mb-3">
+            <label class="form-label">Rules</label>
+            <textarea v-model="form.rules" class="form-control" required></textarea>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col mb-3">       
+          <label class="form-label">Is there a curfew?</label>
+          <select v-model="form.has_curfew" class="form-select">
+            <option :value="false">No</option>
+            <option :value="true">Yes</option>
+          </select>
+
+          <!-- Show time input only if curfew is Yes -->
+          <div v-if="form.has_curfew" class="mt-3">
+            <label class="form-label">Curfew Time</label>
+            <input type="time" v-model="form.curfew_time" class="form-control" />
           </div>
-          <div class="mb-3">
-            <label class="form-label">Longitude</label>
-            <input type="number" v-model="form.longitude" class="form-control" step="0.000001" />
-          </div>
-          <div class="mb-3">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Step 6: Location Details -->
+  <div v-if="step === 7" class="card p-3 shadow-sm">
+    <h5>Location Details</h5>
+    <div class="row mb-3">
+      <div class="col-6 align-self-center">
+        <div class="rounded" ref="propertyMap" style="height:80vh"></div>
+      </div>
+      <div class="col-6">
+        <!-- Location inputs -->
+        <div class="mb-3">
+          <label class="form-label">Latitude</label>
+          <input type="number" v-model="form.latitude" class="form-control" step="0.000001" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Longitude</label>
+          <input type="number" v-model="form.longitude" class="form-control" step="0.000001" />
+        </div>
+        <!-- Region, Province, Municipality, Barangay -->
+        <div class="mb-3">
             <label class="form-label">Region</label>
               <select v-model="form.region_id" class="form-select" @change="getProvinces">
                 <option value="" disabled>Select Region</option>
@@ -294,14 +353,11 @@
               </select>
           </div>
         </div>
-
-      </div>
-      
     </div>
-
+  </div>
 
     <!-- Final Step: Review and Submit -->
-    <div v-if="step === 6" class="card p-3 shadow-sm">
+    <div v-if="step === 8" class="card p-3 shadow-sm">
       <p><strong>Review Your Property:</strong></p>
       <ul>
         <li>Title: {{ form.title }}</li>
@@ -326,7 +382,7 @@ export default {
   data() {
     return {
       step: 1,
-      maxStep: 6,
+      maxStep: 8,
       location: null,
       regions: [],
       provinces: [],
@@ -345,14 +401,16 @@ export default {
         advance_payment_months: 0,
         deposit_required: 0,
         payment_frequency: "monthly",
+
+        // Lease
         lease_term_months: 0,
-        start_date: "",
-        end_date: "",
         renewal_option: "none",
         notice_period: 0,
+        // Lease
+
         property_type_id: "",
         furnishing: "unfurnished",
-        parking: "no",
+        parking: null,
         bedrooms: 0,
         bathrooms: 0,
         bed_space: 0,
@@ -365,7 +423,12 @@ export default {
         province_id: "",
         muncity_id: "",
         barangay_id: "",
+
+        // Adds not on migrations
+        has_curfew: null,
         curfew: null,
+        // Adds not on migrations
+        
         property_facilities: [],
         property_amenities: [],
         rules: "",
@@ -404,23 +467,53 @@ export default {
     // Submit form
     async submitForm() {
       const fd = new FormData();
+
       for (const key in this.form) {
+        const value = this.form[key];
+
+        // Handle images array
         if (key === "images") {
-          this.form.images.forEach((img, idx) => {
+          value.forEach((img, idx) => {
             fd.append(`images[${idx}]`, img);
           });
-        } else if (key === "thumbnail") {
-          if (this.form.thumbnail) fd.append("thumbnail", this.form.thumbnail);
-        } else {
-          fd.append(key, this.form[key]);
+        }
+        // Handle thumbnail
+        else if (key === "thumbnail") {
+          if (value) fd.append("thumbnail", value);
+        }
+        // Handle array fields properly
+        else if (Array.isArray(value)) {
+          value.forEach((v) => {
+            fd.append(`${key}[]`, v);
+          });
+        }
+        // Handle booleans -> cast to 1/0
+        else if (typeof value === "boolean") {
+          fd.append(key, value ? 1 : 0);
+        }
+        // Handle numbers and strings
+        else if (value !== null && value !== undefined) {
+          fd.append(key, value);
         }
       }
 
       try {
         const response = await createProperty(fd);
-        console.log("Property added successfully:", response.data);
+        console.log("Property added successfully:", response);
+        alert("Property created successfully!");
       } catch (error) {
-        console.error("Error submitting property:", error);
+        if (error.response && error.response.status === 422) {
+          const errors = error.response.data.errors;
+          let message = "";
+          for (const field in errors) {
+            message += `${field}: ${errors[field].join(", ")}\n`;
+          }
+          alert(`Validation Errors:\n${message}`);
+          console.error("Validation Errors:", errors);
+        } else {
+          console.error("Error submitting property:", error);
+          alert("Something went wrong. Check console.");
+        }
       }
     },
 
@@ -430,18 +523,50 @@ export default {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
       };
-      this.setMap(this.location.lat, this.location.lng)
-    },
-    setMap(lat, lng){
-        var map = L.map('propertyMap',{
-          zoomControl: false
-        }).setView([lat, lng],15);
 
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-        L.control.zoom(false)
+      console.log(this.location)
+
+      // Update form values para hindi default Manila
+      this.form.latitude = this.location.lat.toFixed(6);
+      this.form.longitude = this.location.lng.toFixed(6);
+
+      this.$nextTick(() => {
+        this.setMap(this.location.lat, this.location.lng);
+      });
     },
+    setMap(lat, lng) {
+  // Ensure the DOM has been updated before initializing the map
+  this.$nextTick(() => {
+    const mapContainer = this.$refs.propertyMap; // Use Vue ref instead of getElementById
+    console.log("Map Container: " +  mapContainer);
+    if (!mapContainer) {
+      console.error("Map container not found.");
+      return;
+    }
+
+    // Initialize the map after ensuring the container exists
+    const map = L.map(mapContainer).setView([lat, lng], 15);
+
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
+    const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+    marker.on("dragend", (e) => {
+      const { lat, lng } = e.target.getLatLng();
+      this.form.latitude = lat.toFixed(6);
+      this.form.longitude = lng.toFixed(6);
+    });
+
+    map.on("click", (e) => {
+      const { lat, lng } = e.latlng;
+      marker.setLatLng([lat, lng]);
+      this.form.latitude = lat.toFixed(6);
+      this.form.longitude = lng.toFixed(6);
+    });
+  });
+},
     handleLocationError(error) {
       alert("Failed to get location: " + error.message);
     },
@@ -503,44 +628,42 @@ export default {
     async getPropertyTypes(){
       try {
         const response = await getPropertyTypes();
-        
+        this.property_types = response
       } catch (error) {
         console.log(`Property Type: ${error}`)
       }
     }
   },
   mounted() {
-    if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        this.location = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        };
-        // Only try to init map if step 4 is already active
-        if (this.step === 4) {
-          this.$nextTick(() => {
-            this.setMap(this.location.lat, this.location.lng);
-          });
-        }
-      },
-      this.handleLocationError,
+        // Run these regardless of geolocation
+      this.getRegions();
+      this.getAmenities();
+      this.getFacilities();
+      this.getPropertyTypes();
 
-      this.getRegions(),
-
-      // Gettting property Details
-      this.getAmenities(),
-      this.getFacilities(),
-    );
-  } else {
-    alert("Geolocation is not supported by this browser.");
-  }
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            console.log('Geolocation Position:', pos.coords); // Add this log
+            this.location = {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+            };
+            this.form.latitude = this.location.lat.toFixed(6);
+            this.form.longitude = this.location.lng.toFixed(6);
+            this.$nextTick(() => {
+              this.setMap(this.location.lat, this.location.lng);
+            });
+          },
+          this.handleLocationError
+        );
+      }
   },
   watch: {
     step(newStep) {
-      if (newStep === 4 && this.location) {
+      if (newStep === 7 && this.location) {
         this.$nextTick(() => {
-          this.setMap(this.location.lat, this.location.lng);
+          this.setMap(this.form.latitude || this.location.lat, this.form.longitude || this.location.lng);
         });
       }
     },

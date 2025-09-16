@@ -47,7 +47,7 @@ export async function getFacilities(){
 // Get Property Types
 export async function getPropertyTypes(){
   const res = await api.get("/property_types");
-  return res.data.property_types;
+  return res.data.types;
 }
 
 // Fetch all properties
@@ -58,7 +58,11 @@ export async function getProperties() {
 
 // Create a new property
 export async function createProperty(propertyData) {
-  const res = await api.post("/properties", propertyData);
+  const res = await api.post("/properties", propertyData, {
+    headers: {
+      "Content-Type": "multipart/form-data"
+    }
+  });
   return res.data;
 }
 

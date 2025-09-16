@@ -1,50 +1,52 @@
 <template>
   <div>
     <h4 class="mb-3">🏠 Properties</h4>
-    <RouterLink to="/dashboard/properties/add" class="btn btn-primary mb-3">
+    <RouterLink to="/dashboard/properties/add" class="btn btn-primary mb-4">
       + Add Property
     </RouterLink>
 
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th>Property Name</th>
-          <th>Location</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="p in properties" :key="p.id">
-          <td>{{ p.title }}</td>
-          <td>{{ p.location ?? 'N/A' }}</td>
-          <td>
-            <span v-if="p.is_available" class="badge bg-success">Active</span>
-            <span v-else class="badge bg-secondary">Inactive</span>
-          </td>
-          <td>
-            <RouterLink
-              :to="`/dashboard/properties/${p.id}/edit`"
-              class="btn btn-sm btn-warning me-2"
-            >
-              Edit
-            </RouterLink>
-            <button
-              class="btn btn-sm btn-danger"
-              @click="deleteProperty(p.id)"
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="row">
+      <div
+        class="col-md-6 col-lg-4 mb-4"
+        v-for="p in properties"
+        :key="p.id"
+      >
+        <div class="card h-100 shadow-sm">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">{{ p.title }}</h5>
+            <p class="card-text">
+              📍 <strong>Location:</strong> {{ p.location ?? 'N/A' }}<br>
+              🔖 <strong>Status:</strong>
+              <span
+                :class="p.is_available ? 'badge bg-success' : 'badge bg-secondary'"
+              >
+                {{ p.is_available ? 'Active' : 'Inactive' }}
+              </span>
+            </p>
+            <div class="mt-auto d-flex justify-content-between">
+              <RouterLink
+                :to="`/dashboard/properties/${p.id}/edit`"
+                class="btn btn-sm btn-warning"
+              >
+                Edit
+              </RouterLink>
+              <button
+                class="btn btn-sm btn-danger"
+                @click="deleteProperty(p.id)"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import { RouterLink } from "vue-router";
-// import api from "@/api"; 
+// import api from "@/api";
 
 export default {
   name: "Properties",
@@ -70,3 +72,4 @@ export default {
   }
 };
 </script>
+

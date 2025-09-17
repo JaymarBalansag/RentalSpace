@@ -1,32 +1,16 @@
 <template>
   <div class="d-flex" style="min-height: 100vh;">
     <!-- Sidebar -->
-    <div class="bg-dark text-white p-3" style="width: 250px;">
+    <div class="bg-dark text-white p-3" style="width: 250px; min-height: 100vh;">
       <h4 class="mb-4">Owner Dashboard</h4>
       <ul class="nav flex-column">
-        <li class="nav-item mb-2">
-          <RouterLink to="/overview" class="nav-link text-white">
-            <i class="bi bi-speedometer2 me-2"></i> Overview
-          </RouterLink>
-        </li>
-        <li class="nav-item mb-2">
-          <RouterLink to="/properties" class="nav-link text-white">
-            <i class="bi bi-building me-2"></i> Properties
-          </RouterLink>
-        </li>
-        <li class="nav-item mb-2">
-          <RouterLink to="/tenants" class="nav-link text-white">
-            <i class="bi bi-people me-2"></i> Tenants
-          </RouterLink>
-        </li>
-        <li class="nav-item mb-2">
-          <RouterLink to="/billing" class="nav-link text-white">
-            <i class="bi bi-cash-stack me-2"></i> Billing
-          </RouterLink>
-        </li>
-        <li class="nav-item mb-2">
-          <RouterLink to="/reports" class="nav-link text-white">
-            <i class="bi bi-bar-chart-line me-2"></i> Reports
+        <li class="nav-item mb-2" v-for="item in navItems" :key="item.name">
+          <RouterLink
+            :to="item.route"
+            class="nav-link text-white"
+            :class="{'active': $route.path === item.route}"
+          >
+            <i :class="item.icon + ' me-2'"></i> {{ item.name }}
           </RouterLink>
         </li>
       </ul>
@@ -36,16 +20,9 @@
     <div class="flex-grow-1 p-4">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3>Welcome, Owner</h3>
-
-        <!-- Dropdown Menu -->
+        <!-- Profile Dropdown -->
         <div class="dropdown">
-          <button 
-            class="btn btn-outline-secondary btn-sm dropdown-toggle" 
-            type="button" 
-            id="dropdownMenuButton" 
-            data-bs-toggle="dropdown" 
-            aria-expanded="false"
-          >
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-person-circle me-1"></i> Profile
           </button>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
@@ -69,8 +46,6 @@
         </div>
       </div>
 
-      
-
       <!-- Placeholder for inner routes -->
       <router-view />
     </div>
@@ -78,10 +53,29 @@
 </template>
 
 <script>
-import { RouterLink } from "vue-router";
+import { RouterLink } from 'vue-router';
 
 export default {
-  name: "OwnerDashboard",
-  components: { RouterLink }
+  name: 'OwnerDashboard',
+  components: { RouterLink },
+  data() {
+    return {
+      navItems: [
+        { name: 'Overview', route: '/overview', icon: 'bi bi-speedometer2' },
+        { name: 'Properties', route: '/properties', icon: 'bi bi-building' },
+        { name: 'Tenants', route: '/tenants', icon: 'bi bi-people' },
+        { name: 'Billing', route: '/billing', icon: 'bi bi-cash-stack' },
+        { name: 'Reports', route: '/reports', icon: 'bi bi-bar-chart-line' },
+      ],
+    };
+  }
 };
 </script>
+
+<style scoped>
+.nav-link.active {
+  background-color: #0056b3;
+  border-radius: 5px;
+  color: #ffffff;
+}
+</style>

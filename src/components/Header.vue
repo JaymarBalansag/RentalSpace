@@ -15,11 +15,11 @@
                     <RouterLink class="nav-link text-light" to="/experience">Experience</RouterLink>
                 </li>
             </ul> 
-            <button class="btn fs-5 " type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasWithBothOptions" aria-controls="offcanvasWithBothOptions">
+            <!-- <button class="btn fs-5 " type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasWithBothOptions" aria-controls="offcanvasWithBothOptions">
                 <i class="bi bi-list text-light"></i>
-            </button>
+            </button> -->
+            <HeaderDropDown></HeaderDropDown>
         </nav>
-        <offCanvas></offCanvas>
     </div>
 
     <!-- Bottom nav on mobile -->
@@ -47,10 +47,12 @@ import { RouterLink } from 'vue-router';
 import offCanvas from './offCanvas.vue';
 import { offcanvasState } from '@/store/offCanvasState';
 import { onMounted } from 'vue';
+import HeaderDropDown from './HeaderDropDown.vue';
     export default {
         name : "Header",
         components: {
-            offCanvas
+            offCanvas,
+            HeaderDropDown
         },
         setup() {
             onMounted(() => {

@@ -1,89 +1,86 @@
 <template>
-  <div class="container p-3">
-    <RouterLink class="btn fs-4 fw-bold" to="/"><i class="bi bi-arrow-90deg-left me-1"></i>Back</RouterLink>
-  </div>
-  <div class="container">
-    <div class="card">
-      <div class="card-header d-flex flex-column align-items-center">
-        <h3 class="card-title fs-1 my-3">User Profile</h3>
-        <div class="circle">
-          <i class="bi bi-person-fill fs-1"></i>
+  <div class="container py-3">
+    <!-- Back Button -->
+    <RouterLink class="btn btn-outline-secondary fw-bold mb-3" to="/">
+      <i class="bi bi-arrow-90deg-left me-1"></i> Back
+    </RouterLink>
+
+    <!-- Profile Card -->
+    <div class="card shadow border-0 rounded-3">
+      <div class="card-header bg-white border-0 text-center">
+      <!-- Avatar Circle -->
+      <div class="d-flex justify-content-center">
+          <div class="profile-circle mb-3">
+            <i class="bi bi-person text-secondary"></i>
+          </div>
         </div>
-        <h4 class="mt-2 fs-3">Jaymar Balansag</h4>
-        <p class="text-muted">jaymar@gmail.com</p>
+        <h3 class="mb-0 fs-2 fw-bold">Jaymar Balansag</h3>
+        <p class="text-muted mb-2">jaymar@gmail.com</p>
       </div>
-      <div v-if="isComplete == false" class="card-body d-flex flex-column align-items-center">
-        <h2>Complete Your Profile To Use Other Features</h2>
-        <button class="btn bg-secondary-subtle fs-5">
-          <i class="bi bi-pencil-square me-1"></i>Complete Profile
+
+      <!-- If profile is incomplete -->
+      <div v-if="!isComplete" class="card-body text-center py-5">
+        <h4 class="fw-bold mb-3">Complete Your Profile to Unlock More Features</h4>
+        <button class="btn btn-primary btn-lg">
+          <i class="bi bi-pencil-square me-2"></i> Complete Profile
         </button>
       </div>
-      <div v-else-if="isComplete == true" class="card-body d-flex flex-column align-items-space justify-content-start mb-5">
-        <div class="row">
-          <div class="col-6 overflow-hidden">
-            <div id="map" class="" style="height: 50vh; width:40vw;"></div>
-          </div>
-          <div class="col-6">
-            <div class="list-group">
-              <button class="list-group-item list-group-item-action">
-                <i class="bi bi-telephone"></i>
-                09771405584
-              </button>
-              <button  class="list-group-item list-group-item-action">
-                <i class="bi bi-signpost"></i>
-                Sitio.Canario
-              </button>
-              <button  class="list-group-item list-group-item-action">
-                <i class="bi bi-building"></i>
-                Abuyog
-              </button>
-              <button  class="list-group-item list-group-item-action">
-                <i class="bi bi-geo"></i>
-                Leyte
-              </button>
-            </div>
-            <!-- Location Information Below -->
-            
 
+      <!-- If profile is complete -->
+      <div v-else class="card-body">
+        <div class="row g-4">
+          <!-- Map -->
+          <div class="col-lg-6">
+            <div id="map" class="rounded shadow-sm" style="height: 50vh;"></div>
+          </div>
 
-          </div>
-        </div>
-        <hr></hr>
-        <div class="row mb-5">
-          <div class="container mb-5">
-            <h1 class="">Preferences</h1>
-          </div>
-          <div class="col-6">
-            <div class="container">
-              <p class="">Amenities</p>
-              <hr>
-              <div class="row">
-                <div class="col-1">
-                  <i class="bi bi-wifi fs-3"></i>
-                </div>
+          <!-- User Info -->
+          <div class="col-lg-6">
+            <div class="list-group shadow-sm rounded">
+              <div class="list-group-item">
+                <i class="bi bi-telephone me-2"></i> 09771405584
               </div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="container">
-              <p class="">Property Type</p>
-              <hr>
-              <div class="row">
-                <div class="col-12 "> 
-                  <i class="bi bi-house fs-3"></i>
-                  Boarding House
-                </div>
+              <div class="list-group-item">
+                <i class="bi bi-signpost me-2"></i> Sitio Canario
+              </div>
+              <div class="list-group-item">
+                <i class="bi bi-building me-2"></i> Abuyog
+              </div>
+              <div class="list-group-item">
+                <i class="bi bi-geo me-2"></i> Leyte
               </div>
             </div>
           </div>
         </div>
-        
+
+        <hr class="my-5">
+
+        <!-- Preferences Section -->
+        <div>
+          <h3 class="fw-bold mb-4">Preferences</h3>
+          <div class="row">
+            <div class="col-md-6 mb-4">
+              <h5 class="fw-semibold">Amenities</h5>
+              <hr>
+              <div class="d-flex gap-3 align-items-center">
+                <i class="bi bi-wifi fs-3"></i>
+                <span>Wi-Fi</span>
+              </div>
+            </div>
+            <div class="col-md-6 mb-4">
+              <h5 class="fw-semibold">Property Type</h5>
+              <hr>
+              <div class="d-flex gap-3 align-items-center">
+                <i class="bi bi-house fs-3"></i>
+                <span>Boarding House</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-
 </template>
-
 
 <script>
 import { RouterLink } from "vue-router";
@@ -91,71 +88,79 @@ import { getUserProfile } from "@/api/user";
 import L from "leaflet";
 
 export default {
-    name: "profile",
-    components: {
+  name: "Profile",
+  components: { RouterLink },
+  data() {
+    return {
+      isComplete: null,
+      location: null,
+      map: null,
+    };
+  },
+  mounted() {
+    this.fetchUserProfile();
 
-    },
-    data() {
-        return {
-
-          isComplete : null,
-          location: null,
-        }
-    },
-    mounted() {
-      this.fetchUserProfile();
-
-        if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          this.handleLocationSuccess,
-          this.handleLocationError,
-        );
-      } else {
-        alert("Geolocation is not supported by this browser.");
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        this.handleLocationSuccess,
+        this.handleLocationError
+      );
+    } else {
+      alert("Geolocation is not supported by this browser.");
+    }
+  },
+  methods: {
+    async fetchUserProfile() {
+      try {
+        const response = await getUserProfile();
+        this.isComplete = response.isComplete;
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
       }
     },
-    methods: {
-      async fetchUserProfile() {
-        try {
-          const response = await getUserProfile();
+    handleLocationSuccess(position) {
+      this.location = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      };
+      this.initMap(this.location.lat, this.location.lng);
+    },
+    initMap(lat, lng) {
+      if (this.map) return; // Prevent re-init
+      this.map = L.map("map", { zoomControl: false }).setView([lat, lng], 15);
 
-          this.isComplete = response.isComplete;
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
-        }
-      },
-      handleLocationSuccess(position) {
-        this.location = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-        this.setMap(this.location.lat, this.location.lng)
-      },
-      setMap(lat, lng){
-          var map = L.map('map',{
-            zoomControl: false
-          }).setView([lat, lng],15);
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(this.map);
 
-          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          }).addTo(map);
-          L.control.zoom(false)
-      },
-      handleLocationError(error) {
-        alert("Failed to get location: " + error.message);
-      },
-    }
-}
+      L.marker([lat, lng]).addTo(this.map).bindPopup("You are here!");
+
+      // Custom zoom controls bottom-right
+      L.control.zoom({ position: "bottomright" }).addTo(this.map);
+    },
+    handleLocationError(error) {
+      alert("Failed to get location: " + error.message);
+    },
+  },
+};
 </script>
 
 <style scoped>
-.circle {
-  width: 15vw;
-  height: 30vh;
-  background-color: #f0f0f0;
+.profile-circle {
+  width: 120px;
+  height: 120px;
+  background-color: #fff;
+  border: 2px solid #dee2e6;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.profile-circle i {
+  font-size: 3rem;
+  line-height: 1;
 }
 </style>

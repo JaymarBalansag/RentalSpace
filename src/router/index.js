@@ -18,6 +18,12 @@ import Reports from '@/views/Owner/Reports.vue'
 import Billing from '@/views/Owner/Billing.vue'
 import EditProperty from '@/views/Owner/PropertyCrud/editProperty.vue'
 import AddProperty from '@/views/Owner/PropertyCrud/addProperty.vue'
+import PropertyWizard from '@/components/PropertyWizard/PropertyWizard.vue'
+import Message from '@/views/User/message.vue'
+import Notification from '@/views/User/notification.vue'
+import Setting from '@/views/User/setting.vue'
+import About from '@/views/User/about.vue'
+import Contactus from '@/views/User/contactus.vue'
 
 const routes = [
   {
@@ -45,6 +51,36 @@ const routes = [
       path: '/profile',
       name: 'profile',
       component: Profile,
+      meta: { requiresAuth:true },
+    },
+    {
+      path: '/messages',
+      name: 'messages',
+      component: Message,
+      meta: { requiresAuth:true },
+    },
+    {
+      path: '/notifications',
+      name: 'notifications',
+      component: Notification,
+      meta: { requiresAuth:true },
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: Setting,
+      meta: { requiresAuth:true },
+    },
+    {
+      path: '/about',
+      name: 'about',
+      component: About,
+      meta: { requiresAuth:true },
+    },
+    {
+      path: '/contactus',
+      name: 'contactus',
+      component: Contactus,
       meta: { requiresAuth:true },
     },
     // On development and testing ( Payment )

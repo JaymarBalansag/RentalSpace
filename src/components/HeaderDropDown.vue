@@ -2,7 +2,7 @@
   <div class="dropdown">
     <!-- Profile Icon Button -->
     <button 
-      class="btn fw-lighter text-light dropdown-toggle" 
+      class="btn fw-lighter text-light dropdown-toggle " 
       id="profileDropdown" 
       data-bs-toggle="dropdown" 
       aria-expanded="false"
@@ -14,6 +14,12 @@
     <ul class="dropdown-menu dropdown-menu-end nav-underline" aria-labelledby="profileDropdown">
       <!-- If Logged In -->
       <template v-if="isLoggedIn">
+        <li>
+          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/profile">
+            Jaymar Balansag
+          </RouterLink>
+        </li>
+        <li><hr class="dropdown-divider"></li>
         <li>
           <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/profile">
             <i class="bi bi-person"></i> Profile

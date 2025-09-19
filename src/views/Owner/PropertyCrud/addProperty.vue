@@ -132,8 +132,8 @@
       <div class="mb-3">
         <label class="form-label">Furnishing</label>
         <select v-model="form.furnishing" class="form-select">
-          <option value="furnished">Furnished</option>
-          <option value="semi">Semi-Furnished</option>
+          <option value="fully-furnished">Furnished</option>
+          <option value="semi-furnished">Semi-Furnished</option>
           <option value="unfurnished">Unfurnished</option>
         </select>
       </div>
@@ -627,7 +627,9 @@ export default {
     },
     async getPropertyTypes(){
       try {
+        console.log("getting tpyes")
         const response = await getPropertyTypes();
+        console.log("got the tpyes")
         this.property_types = response
       } catch (error) {
         console.log(`Property Type: ${error}`)

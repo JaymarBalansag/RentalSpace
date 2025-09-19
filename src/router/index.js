@@ -109,6 +109,7 @@ const routes = [
     {
     path: "/dashboard",
     name: "OwnerDashboard",
+    redirect: "/overview",
     component: Dashboard,
     children: [
         {

@@ -264,7 +264,7 @@
           <select v-model="form.has_curfew" class="form-select">
             <option :value="false">No</option>
             <option :value="true">Yes</option>
-          </select>
+          </select> 
 
           <!-- Show time input only if curfew is Yes -->
           <div v-if="form.has_curfew" class="mt-3">
@@ -426,7 +426,7 @@ export default {
 
         // Adds not on migrations
         has_curfew: null,
-        curfew: null,
+        curfew_time: null,
         // Adds not on migrations
         
         property_facilities: [],

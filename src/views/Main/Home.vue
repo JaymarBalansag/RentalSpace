@@ -11,9 +11,7 @@
         <div class="col-md-3">
           <select class="form-select shadow-sm">
             <option selected disabled>Property Type</option>
-            <option>Boarding House</option>
-            <option>Apartment</option>
-            <option>Dormitory</option>
+            <option v-for="(type, index) in property_types" :key="index">{{ type.type_name }}</option>
           </select>
         </div>
 
@@ -55,7 +53,7 @@
           <h5 class="fw-bold mb-3">Amenities</h5>
           <div class="form-check" v-for="(amenity, index) in amenities" :key="index">
             <input class="form-check-input" type="checkbox" :id="'amenity-' + index">
-            <label class="form-check-label" :for="'amenity-' + index">{{ amenity }}</label>
+            <label class="form-check-label" :for="'amenity-' + index">{{ amenity.amenity_name }}</label>
           </div>
         </div>
 
@@ -63,7 +61,7 @@
           <h5 class="fw-bold mb-3">Facilities</h5>
           <div class="form-check" v-for="(facility, index) in facilities" :key="index">
             <input class="form-check-input" type="checkbox" :id="'facility-' + index">
-            <label class="form-check-label" :for="'facility-' + index">{{ facility }}</label>
+            <label class="form-check-label" :for="'facility-' + index">{{ facility.facility_name }}</label>
           </div>
         </div>
       </aside>
@@ -71,13 +69,13 @@
       <!-- Property Listings -->
       <div class="col-lg-9">
         <div class="row g-4">
-          <div class="col-md-6 col-lg-4" v-for="i in 6" :key="i">
+          <div class="col-md-6 col-lg-4" v-for="(property, index) in properties" :key="index">
             <div class="card h-100 shadow-sm property-card">
-              <img src="../../assets/hotel.jpg" class="card-img-top" alt="Property">
+              <img :src="property.image_url" class="card-img-top" alt="Property">
               <div class="card-body">
-                <h5 class="card-title">Sample Property</h5>
-                <p class="card-text text-muted small">Located near City Center • Fully furnished</p>
-                <p class="fw-bold text-primary mb-2">$250 / month</p>
+                <h5 class="card-title">{{ property.title }}</h5>
+                <p class="card-text text-muted small">{{ property.description }}</p>
+                <p class="fw-bold text-primary mb-2">{{ property.price }} / {{ property.payment_frequency }}</p>
                 <a href="#" class="btn btn-outline-primary btn-sm">View Details</a>
               </div>
             </div>
@@ -92,6 +90,7 @@
 <script>
 import { RouterLink } from 'vue-router';
 import Header from '@/components/Header.vue';
+import { getProperties, getPropertyTypes, getAmenities, getFacilities } from '@/api/property';
 
 export default {
   name: 'Home',
@@ -101,21 +100,54 @@ export default {
   },
   data() {
     return {
-      amenities: [
-        'Electricity & Water',
-        'Private Bedroom',
-        'Furnitures',
-        'Security',
-        'Wi-fi'
-      ],
-      facilities: [
-        'Kitchen',
-        'Parking Space',
-        'Gated Compound',
-        'Common Lounge',
-        'Fitness Area'
-      ]
+      amenities: [],
+      facilities: [],
+      property_types: [],
+      properties: [],
+      message: ""
     };
+  },
+  methods: {
+    async getProperties() {
+      try {
+        const response = await getProperties();
+        this.properties = response.data.properties
+        this.message = response.data.message
+        console.log(this.properties)
+      } catch (error) {
+        console.log("Properties Error: " + error)
+      }
+    },
+    async getAmenities(){
+      try {
+        const response = await getAmenities();
+        this.amenities = response
+      } catch (error) {
+        console.log("Amenities Error: " + error)
+      }
+    },
+    async getFacilities(){
+      try {
+        const response = await getFacilities();
+        this.facilities = response
+      } catch (error) {
+        console.log("Facilities Error: " + error)
+      }
+    },
+    async getPropertyTypes(){
+      try {
+        const response = await getPropertyTypes();
+        this.property_types = response
+      } catch (error) {
+        console.log("Property Types Error: " + error)
+      }
+    },
+  },
+  mounted() {
+    this.getAmenities()
+    this.getFacilities()
+    this.getPropertyTypes()
+    this.getProperties()
   }
 };
 </script>

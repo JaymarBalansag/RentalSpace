@@ -9,9 +9,9 @@
           <div class="card-body d-flex flex-column">
             <h5 class="card-title">{{ property.title }}</h5>
             <p class="card-text">
-              📍 <strong>Location:</strong> {{ property.location ?? 'N/A' }}<br>
+              📍 <strong>Location:</strong> {{ property.provDesc ?? 'N/A' }}, {{ property.regDesc || "" }}<br>
               🔖 <strong>Status:</strong>
-              <span :class="property.is_available ? 'badge bg-success' : 'badge bg-danger'">
+              <span :class="property.is_available ? 'badge bg-success' : 'badge bg-danger ms-1' ">
                 {{ property.is_available ? 'Active' : 'Inactive' }}
               </span>
             </p>
@@ -31,13 +31,13 @@
 </template>
 
 <script>
+import { getProperties } from '@/api/property';
+
 export default {
   data() {
     return {
-      properties: [
-        { id: 1, title: 'Apartment A', location: 'New York', is_available: true },
-        { id: 2, title: 'Boarding House B', location: 'Los Angeles', is_available: false },
-      ],
+      properties: [],
+      message: "",
     };
   },
   methods: {
@@ -46,7 +46,19 @@ export default {
         // perform deletion logic here
       }
     },
+    async getProperties(){
+      try {
+        const response = await getProperties();
+        this.message = response.message
+        this.properties = response.data.properties
+      } catch (error) {
+        console.log("GetProperties: " + error)
+      }
+    }
   },
+  mounted() {
+    this.getProperties();
+  }
 };
 </script>
 

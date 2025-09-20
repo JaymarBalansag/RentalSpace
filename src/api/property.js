@@ -53,7 +53,7 @@ export async function getPropertyTypes(){
 // Fetch all properties
 export async function getProperties() {
   const res = await api.get("/properties");
-  return res.data;
+  return res;
 }
 
 // Create a new property

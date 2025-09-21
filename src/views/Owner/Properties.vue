@@ -31,7 +31,7 @@
 </template>
 
 <script>
-import { getProperties } from '@/api/property';
+import { getOwnerProperties } from '@/api/property';
 
 export default {
   data() {
@@ -48,7 +48,7 @@ export default {
     },
     async getProperties(){
       try {
-        const response = await getProperties();
+        const response = await getOwnerProperties();
         this.message = response.message
         this.properties = response.data.properties
       } catch (error) {

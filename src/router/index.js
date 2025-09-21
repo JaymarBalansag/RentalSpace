@@ -24,6 +24,7 @@ import Notification from '@/views/User/notification.vue'
 import Setting from '@/views/User/setting.vue'
 import About from '@/views/User/about.vue'
 import Contactus from '@/views/User/contactus.vue'
+import CompleteProfile from '@/views/User/CompleteProfile.vue'
 
 const routes = [
   {
@@ -52,6 +53,12 @@ const routes = [
       name: 'profile',
       component: Profile,
       meta: { requiresAuth:true },
+    },
+    {
+      path: '/completion',
+      name: 'profile_completion',
+      component: CompleteProfile,
+      meta: {requiresAuth:true},
     },
     {
       path: '/messages',

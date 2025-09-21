@@ -71,7 +71,7 @@
         <div class="row g-4">
           <div class="col-md-6 col-lg-4" v-for="(property, index) in properties" :key="index">
             <div class="card h-100 shadow-sm property-card">
-              <img :src="property.image_url" class="card-img-top" alt="Property">
+              <img :src="property.image_url" @error="$event.target.src = placeholderImg" class="card-img-top" alt="Property">
               <div class="card-body">
                 <h5 class="card-title">{{ property.title }}</h5>
                 <p class="card-text text-muted small">{{ property.description }}</p>
@@ -90,6 +90,7 @@
 <script>
 import { RouterLink } from 'vue-router';
 import Header from '@/components/Header.vue';
+import placeholderImg from '@/assets/Placeholder/thumbnail_placeholder.jpg'; 
 import { getProperties, getPropertyTypes, getAmenities, getFacilities } from '@/api/property';
 
 export default {
@@ -104,7 +105,8 @@ export default {
       facilities: [],
       property_types: [],
       properties: [],
-      message: ""
+      message: "",
+      placeholderImg,
     };
   },
   methods: {

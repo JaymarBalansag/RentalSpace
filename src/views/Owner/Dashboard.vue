@@ -38,7 +38,7 @@
             </li>
             <li><hr class="dropdown-divider"></li>
             <li>
-              <button class="dropdown-item text-danger">
+              <button @click="handleLogout" class="dropdown-item text-danger">
                 <i class="bi bi-box-arrow-right me-2"></i> Logout
               </button>
             </li>
@@ -54,6 +54,8 @@
 
 <script>
 import { RouterLink } from 'vue-router';
+import { logout } from '@/api/auth';
+import { useUserInfo } from '@/store/userInfo';
 
 export default {
   name: 'OwnerDashboard',
@@ -68,6 +70,23 @@ export default {
         { name: 'Reports', route: '/reports', icon: 'bi bi-bar-chart-line' },
       ],
     };
+  },
+  methods: {
+    async handleLogout() {
+      try {
+        await logout();
+        const info = useUserInfo();
+        info.logout();
+        this.$router.push("/login");
+      } catch (error) {
+        if (error.response) {
+          alert(error.response.data.message);
+          this.$router.push("/login");
+        } else {
+          alert("Something went wrong!");
+        }
+      }
+    }
   }
 };
 </script>

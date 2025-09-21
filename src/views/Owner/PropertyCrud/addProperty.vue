@@ -501,6 +501,7 @@ export default {
         const response = await createProperty(fd);
         console.log("Property added successfully:", response);
         alert("Property created successfully!");
+        this.$router.push("/properties")
       } catch (error) {
         if (error.response && error.response.status === 422) {
           const errors = error.response.data.errors;

@@ -16,7 +16,7 @@
       <template v-if="isLoggedIn">
         <li>
           <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/profile">
-            Jaymar Balansag
+            {{ nameis }}
           </RouterLink>
         </li>
         <li><hr class="dropdown-divider"></li>
@@ -112,6 +112,11 @@ export default {
     roleIs() {
       const info = useUserInfo();
       return info.role;
+    },
+    nameis(){
+      const info = useUserInfo();
+      return info.first_name + " " + info.last_name
+
     }
   },
   methods: {

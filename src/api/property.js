@@ -50,9 +50,14 @@ export async function getPropertyTypes(){
   return res.data.types;
 }
 
-// Fetch all properties
 export async function getProperties() {
   const res = await api.get("/properties");
+  return res;
+}
+
+// Fetch all owner properties
+export async function getOwnerProperties() {
+  const res = await api.get("/owner/properties");
   return res;
 }
 

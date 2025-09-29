@@ -50,6 +50,7 @@ import { getProperties } from '@/api/property';
 import Header from '@/components/Header.vue';
 import L from "leaflet";
 import placeholderImg from '@/assets/Placeholder/thumbnail_placeholder.jpg'; 
+import { RouterLink } from 'vue-router';
 
 
 export default {
@@ -117,7 +118,7 @@ export default {
       L.control.zoom({ position: "topright" }).addTo(this.map);
     },
     popupContent(property) {
-      const imgSrc = property.thumbnail;
+      const imgSrc = property.image_url;
       const placeholder = this.placeholderImg;
       return `
         <div class="card shadow-sm border-0" style="width: 220px;">
@@ -143,6 +144,7 @@ export default {
         </div>
       `;
     }
+
   }
 };
 </script>

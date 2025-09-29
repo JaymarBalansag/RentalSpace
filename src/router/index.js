@@ -25,6 +25,7 @@ import Setting from '@/views/User/setting.vue'
 import About from '@/views/User/about.vue'
 import Contactus from '@/views/User/contactus.vue'
 import CompleteProfile from '@/views/User/CompleteProfile.vue'
+import PropertyDetails from '@/views/Main/PropertyDetails.vue'
 
 const routes = [
   {
@@ -47,6 +48,11 @@ const routes = [
       path: '/Home',
       name: 'Home',
       component: Home
+    },
+    {
+      path: '/property/:id',
+      name: 'PropertyDetails',
+      component: PropertyDetails,
     },
     {
       path: '/profile',

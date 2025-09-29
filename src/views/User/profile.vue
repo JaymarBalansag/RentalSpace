@@ -11,7 +11,15 @@
       <!-- Avatar Circle -->
       <div class="d-flex justify-content-center">
           <div class="profile-circle mb-3">
-            <i class="bi bi-person text-secondary"></i>
+            <img
+            v-if="user.user_img_url"
+            :src="user.user_img_url"
+            alt="Profile"
+            class="img-fluid rounded-circle"
+            style="width: 100%; height: 100%; object-fit: cover;"
+            @error="$event.target.src = placeholderImg"
+          />
+          <i v-else class="bi bi-person text-secondary"></i>
           </div>
         </div>
         <h3 class="mb-0 fs-2 fw-bold">{{ name }}</h3>
@@ -142,6 +150,7 @@ export default {
         this.isComplete = data.isComplete;
         this.user.latitude = data.latitude;
         this.user.longitude = data.longitude
+        this.user.user_img_url = data.user_img_url;
       } catch (error) {
         console.error("Error fetching user profile:", error);
       }

@@ -1,4 +1,5 @@
 import api from "./api";
+import qs from "qs";
 
 export async function isSubscribing(first_name, last_name, email) {
   const res = await api.post("/is-subscribing",{
@@ -70,6 +71,24 @@ export async function createProperty(propertyData) {
   });
   return res.data;
 }
+// Get property by id
+export const getPropertyById = async (id) => {
+  try {
+    const response = await api.get(`/properties/${id}`);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export async function getPropertyByType(type_id, property_id){
+  try {
+    const response = await api.get(`/properties/type/${type_id}${property_id}`);
+    return response;
+  } catch (error) {
+    throw error
+  }
+}
 
 // Update a property
 export async function updateProperty(id, propertyData) {
@@ -87,5 +106,32 @@ export async function deleteProperty(id) {
 export async function getProperty(id) {
   const res = await api.get(`/properties/${id}`);
   return res.data;
+}
+
+export async function getFilteredProperties(amenities, facilities, min_price, max_price) {
+  const params = {};
+
+  if (amenities && amenities.length > 0) {
+    params.amenities = amenities;
+  }
+
+  if (facilities && facilities.length > 0) {
+    params.facilities = facilities;
+  }
+
+  if (min_price && min_price > 0) {
+    params.min_price = min_price;
+  }
+
+  if (max_price && max_price > 0) {
+    params.max_price = max_price;
+  }
+
+  const res = await api.get("/properties/filters", {
+    params,
+    paramsSerializer: p => qs.stringify(p, { arrayFormat: "repeat" })
+  });
+
+  return res;
 }
 

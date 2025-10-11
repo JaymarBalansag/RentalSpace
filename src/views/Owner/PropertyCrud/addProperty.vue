@@ -47,78 +47,25 @@
       </div>
     </div>
 
-    <!-- Step 2: Agreement, Pricing & Uploads -->
-    <div v-if="step === 2" class="card p-3 shadow-sm">
-      <div class="mb-3">
-        <label class="form-label">Agreement Type <span class="text-danger">*</span></label>
-        <select v-model="form.agreement_type" class="form-select">
-          <option value="rental">Rental</option>
-          <option value="lease">Lease</option>
-        </select>
-      </div>
+    <!-- Step 2: Property Details -->
+  <div v-if="step === 2" class="card p-3 shadow-sm">
 
-      <div class="mb-3">
-        <label class="form-label">Price <span class="text-danger">*</span></label>
-        <input v-model="form.price" type="number" class="form-control" required />
-      </div>
+      <div class="row">
 
-      <div class="mb-3">
-        <label class="form-label d-block">Utilities Included</label>
-        <div class="form-check form-check-inline">
-          <input v-model="form.utilities_included" class="form-check-input" type="radio" :value="true" id="utilitiesYes" />
-          <label class="form-check-label" for="utilitiesYes">Yes</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input v-model="form.utilities_included" class="form-check-input" type="radio" :value="false" id="utilitiesNo" />
-          <label class="form-check-label" for="utilitiesNo">No</label>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Advance Payment (Months)</label>
-        <input v-model="form.advance_payment_months" type="number" class="form-control" />
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Deposit Required</label>
-        <input v-model="form.deposit_required" type="number" class="form-control" />
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Payment Frequency</label>
-        <select v-model="form.payment_frequency" class="form-select">
-          <option value="monthly">Monthly</option>
-          <option value="quarterly">Quarterly</option>
-          <option value="yearly">Yearly</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Step 3: Lease Details & Features -->
-    <div v-if="step === 3" class="card p-3 shadow-sm">
-      <div v-if="form.agreement_type === 'lease'">
-        <div class="mb-3">
-          <label class="form-label">Lease Term (Months)</label>
-          <input v-model="form.lease_term_months" type="number" class="form-control" />
-        </div>
-        
-        <div class="mb-3">
-          <label class="form-label">Renewal Option</label>
-          <select v-model="form.renewal_option" class="form-select">
-            <option value="none">None</option>
-            <option value="manual">Manual Renewal</option>
-            <option value="auto">Auto Renewal</option>
+        <!-- Agreement Type -->
+        <div class="col-6">
+          <label class="form-label">Agreement Type <span class="text-danger">*</span></label>
+          <select v-model="form.agreement_type" class="form-select">
+            <option value="rental">Rental</option>
+            <option value="lease">Lease</option>
           </select>
         </div>
-        <div class="mb-3">
-          <label class="form-label">Notice Period (Days)</label>
-          <input v-model="form.notice_period" type="number" class="form-control" />
-        </div>
-      </div>
 
-      <!-- Property Features -->
-      <div class="mb-3">
-        <label class="form-label">Property Type</label>
+        <!-- Property Type -->
+         <div class="col-6">
+          <label class="form-label">Property Type</label>
           <select v-model="form.property_type_id" class="form-select">
-            <option selected>Select Property Type</option>
+            <option disabled selected value="">Select Property Type</option>
             <option 
               v-for="type in property_types" 
               :key="type.id" 
@@ -127,129 +74,176 @@
               {{ type.type_name }}
             </option>
           </select>
+
+          
+         </div>
       </div>
 
-      <div class="mb-3">
-        <label class="form-label">Furnishing</label>
-        <select v-model="form.furnishing" class="form-select">
-          <option value="fully-furnished">Furnished</option>
-          <option value="semi-furnished">Semi-Furnished</option>
-          <option value="unfurnished">Unfurnished</option>
-        </select>
-      </div>
+      <!-- Utilities Included -->
+      <div class="row mb-3 mt-3">
 
-      <div class="mb-3">
-        <label class="form-label">Parking</label>
-        <select v-model="form.parking" class="form-select">
-          <option :value="true">Yes</option>
-          <option :value="false">No</option>
-        </select> 
-      </div>
-    </div>
-
-    <!-- Step 4: Property Details -->
-    <div v-if="step === 4" class="card p-3 shadow-sm">
-      <h5>Property Details</h5>
-      <div class="mb-3">
-        <div class="card p-3 shadow-sm">
-          <div class="card-header">
-            <label class="form-label fs-5">Amenities</label>
-
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div 
-                v-for="amenity in amenities" 
-                :key="amenity.id" 
-                class="col-md-4 col-sm-6 mb-2"
-              >
-                <div class="form-check">
-                  <input 
-                    class="form-check-input" 
-                    type="checkbox" 
-                    :id="'amenity-' + amenity.id" 
-                    :value="amenity.id"
-                    v-model="form.property_amenities"
-                  />
-                  <label class="form-check-label" :for="'amenity-' + amenity.id">
-                    {{ amenity.amenity_name }}
-                  </label>
-                </div>
-              </div>
+        <!-- Utilities -->
+        <div class="col-6">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light">
+              <label for="" class="form-label fs-5 mb-0">Utilities</label>
             </div>
-          </div>
-      </div>
-      <div class="mb-3">
-        <div class="card p-3 shadow-sm">
-          <div class="card-header">
-            <label class="form-label fs-5">Facilities</label>
-          </div>
 
-          <div class="card-body">
-            <div class="row">
-              <div 
-                v-for="facility in facilities" 
-                :key="facility.id" 
-                class="col-md-4 col-sm-6 mb-2">
-                <div class="form-check">
-                  <input 
-                    class="form-check-input" 
-                    type="checkbox" 
-                    :id="'facility-' + facility.id" 
-                    :value="facility.id"
-                    v-model="form.property_facilities"
-                  />
-                  <label class="form-check-label" :for="'facility-' + facility.id">
-                    {{ facility.facility_name }}
-                  </label>
+            <div class="card-body">
+              <label class="form-label d-block">Utilities Included</label>
+
+              <div class="row">
+                <div 
+                  v-for="utility in utilitiesList" 
+                  :key="utility.value" 
+                  class="col-md-4 col-sm-6 mb-2"
+                >
+                  <div class="form-check">
+                    <input 
+                      class="form-check-input" 
+                      type="checkbox" 
+                      :id="'utility-' + utility.value" 
+                      :value="utility.value"
+                      v-model="form.utilities"
+                      @change="updateUtilitiesIncluded"
+                    />
+                    <label class="form-check-label" :for="'utility-' + utility.value">
+                      {{ utility.label }}
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        <div class="col-6">
+          <div class="mb-3">
+            <label class="form-label">Furnishing</label>
+            <select v-model="form.furnishing" class="form-select">
+              <option value="fully-furnished">Furnished</option>
+              <option value="semi-furnished">Semi-Furnished</option>
+              <option value="unfurnished">Unfurnished</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Parking</label>
+            <select v-model="form.parking" class="form-select">
+              <option :value="true">Yes</option>
+              <option :value="false">No</option>
+            </select>
+          </div>
+        </div>
+
       </div>
-    </div>
+
       
-    </div>
+      <!-- End of lease details -->
+
+      <!-- This is for rental details  -->
 
 
-    <div v-if="step === 5" class="card p-3 shadow-sm">
-      <h5 class="mb-3">Property Details</h5>
+      <!-- End of rental details -->
 
       <div class="row">
-        <div class="col mb-3">
+        <div class="col mb-3" v-if="showBedrooms">
             <label class="form-label">Bedrooms</label>
             <input v-model="form.bedrooms" type="number" class="form-control" required />
         </div>
-        <div class="col mb-3">
+        <div class="col mb-3" v-if="showBathrooms"  >
             <label class="form-label">Bathrooms</label>
             <input v-model="form.bathrooms" type="number" class="form-control" required />
         </div>
-        <div class="col mb-3">
+        <div class="col mb-3" v-if="showBedSpace">
             <label class="form-label">Bed Space</label>
             <input v-model="form.bed_space" type="number" class="form-control" required />
         </div>
       </div>
-
       <div class="row">
-        <div class="col mb-3">
+        <div class="col mb-3" v-if="showSizeFiels">
           <label class="form-label">Floor Area</label>
           <input v-model="form.floor_area" type="number" class="form-control" required />
         </div>
-        <div class="col mb-3">
+        <div class="col mb-3" v-if="showSizeFiels">
           <label class="form-label">Lot Area</label>
           <input v-model="form.lot_area" type="number" class="form-control" required />
         </div>
-        <div class="col mb-3">
+        <div class="col mb-3" v-if="showSizeFiels">
           <label class="form-label">Max Size</label>
           <input v-model="form.max_size" type="number" class="form-control" required />
         </div>
       </div>
 
+      <!-- Amenities and Facilities -->
+      <div class="row mt-4">
 
-    </div>
+        <!-- Amenities -->
+        <div class="col-md-6 mb-3">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light">
+              <label class="form-label fs-5 mb-0">Amenities</label>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div
+                  v-for="amenity in amenities"
+                  :key="amenity.id"
+                  class="col-md-6 col-sm-12 mb-2"
+                >
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      :id="'amenity-' + amenity.id"
+                      :value="amenity.id"
+                      v-model="form.property_amenities"
+                    />
+                    <label class="form-check-label" :for="'amenity-' + amenity.id">
+                      {{ amenity.amenity_name }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <div v-if="step === 6" class="card p-3 shadow-sm">
+        <!-- Facilities -->
+        <div class="col-md-6 mb-3">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light">
+              <label class="form-label fs-5 mb-0">Facilities</label>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div
+                  v-for="facility in facilities"
+                  :key="facility.id"
+                  class="col-md-6 col-sm-12 mb-2"
+                >
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      :id="'facility-' + facility.id"
+                      :value="facility.id"
+                      v-model="form.property_facilities"
+                    />
+                    <label class="form-check-label" :for="'facility-' + facility.id">
+                      {{ facility.facility_name }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      
+
       <h5 class="mb-3">Others</h5>
       <div class="row">
         <div class="col mb-3">
@@ -274,102 +268,266 @@
         </div>
       </div>
 
+
     </div>
 
-    <!-- Step 6: Location Details -->
-  <div v-if="step === 7" class="card p-3 shadow-sm">
-    <h5>Location Details</h5>
-    <div class="row mb-3">
-      <div class="col-6 align-self-center">
-        <div class="rounded" ref="propertyMap" style="height:80vh"></div>
+    <!-- Step 3: Price -->
+    <div v-if="step === 3" class="card p-3 shadow-sm">
+
+      <div class="mb-3" >
+        <label class="form-label">Price <span class="text-danger">*</span></label>
+        <input v-model="form.price" type="number" class="form-control" required />
       </div>
-      <div class="col-6">
-        <!-- Location inputs -->
-        <div class="mb-3">
-          <label class="form-label">Latitude</label>
-          <input type="number" v-model="form.latitude" class="form-control" step="0.000001" />
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Longitude</label>
-          <input type="number" v-model="form.longitude" class="form-control" step="0.000001" />
-        </div>
-        <!-- Region, Province, Municipality, Barangay -->
-        <div class="mb-3">
-            <label class="form-label">Region</label>
-              <select v-model="form.region_id" class="form-select" @change="getProvinces">
-                <option value="" disabled>Select Region</option>
-                <option 
-                  v-for="region in regions" 
-                  :key="region.id" 
-                  :value="region.id"
-                  :data-code="region.regCode"
-                >
-                  {{ region.regDesc }}
-                </option>
-              </select>
-          </div>
+      <div class="mb-3" v-if="form.agreement_type === 'rental'">
+        <label class="form-label">Advance Payment (Months)</label>
+        <input v-model="form.advance_payment_months" type="number" class="form-control" />
+      </div>
+      <div class="mb-3" v-if="form.agreement_type === 'rental'">
+        <label class="form-label">Deposit Required</label>
+        <input v-model="form.deposit_required" type="number" class="form-control" />
+      </div>
+      <div class="mb-3" v-if="form.agreement_type === 'rental'">
+        <label class="form-label">Payment Frequency</label>
+        <select v-model="form.payment_frequency" class="form-select">
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      </div>
 
-          <div class="mb-3">
-            <label class="form-label">Province</label>
-              <select v-model="form.province_id" class="form-select" @change="getMuncities">
-                <option value="" disabled>Select Province</option>
-                <option 
-                  v-for="province in provinces" 
-                  :key="province.id" 
-                  :value="province.id"
-                  :data-code="province.provCode"
-                >
-                  {{ province.provDesc }}
-                </option>
-              </select>
-          </div>
+      <!-- This is for lease details -->
+      <div class="mb-3" v-if="form.agreement_type === 'lease'">
+        <label class="form-label">Lease Term (Months)</label>
+        <input v-model="form.lease_term_months" type="number" class="form-control" />
+      </div>
+      <div class="mb-3" v-if="form.agreement_type === 'lease'">
+        <label class="form-label">Renewal Option</label>
+        <select v-model="form.renewal_option" class="form-select">
+          <option value="none">None</option>
+          <option value="manual">Manual Renewal</option>
+          <option value="auto">Auto Renewal</option>
+        </select>
+      </div>
+      <div class="mb-3" v-if="form.agreement_type === 'lease'">
+        <label class="form-label">Notice Period (Days)</label>
+        <input v-model="form.notice_period" type="number" class="form-control" />
+      </div>
 
-          <div class="mb-3">
-            <label class="form-label">Municipal and Cities</label>
-              <select v-model="form.muncity_id" class="form-select" @change="getBarangays">
-                <option value="" disabled>Select Municipal / City</option>
-                <option 
-                  v-for="muncity in muncities" 
-                  :key="muncity.id" 
-                  :value="muncity.id"
-                  :data-code="muncity.muncityCode"
-                >
-                  {{ muncity.muncityDesc }}
-                </option>
-              </select>
-          </div>
+      
 
-          <div class="mb-3">
-            <label class="form-label">Barangays</label>
-              <select v-model="form.barangay_id" class="form-select">
-                <option value="" disabled>Select Barangays</option>
-                <option 
-                  v-for="brgy in barangays" 
-                  :key="brgy.id" 
-                  :value="brgy.id"
-                >
-                  {{ brgy.brgyDesc }}
-                </option>
-              </select>
-          </div>
-        </div>
+      
     </div>
-  </div>
 
-    <!-- Final Step: Review and Submit -->
-    <div v-if="step === 8" class="card p-3 shadow-sm">
-      <p><strong>Review Your Property:</strong></p>
-      <ul>
-        <li>Title: {{ form.title }}</li>
-        <li>Description: {{ form.description }}</li>
-        <li v-if="form.thumbnail">Thumbnail selected ✅</li>
-        <li>{{ form.images.length }} additional images selected ✅</li>
-        <li>Price: {{ form.price }} </li>
-        <li>Utilities Included: {{ form.utilities_included ? 'Yes' : 'No' }}</li>
-        <li>Advance Payment: {{ form.advance_payment_months }} months</li>
-        <li>Deposit Required: {{ form.deposit_required }}</li>
-      </ul>
-      <button class="btn btn-success" @click="submitForm">Submit Property</button>
+
+
+      <!-- Step 4: Location Details -->
+    <div v-if="step === 4" class="card p-3 shadow-sm">
+      <h5>Location Details</h5>
+      <div class="row mb-3">
+        <div class="col-6 align-self-center">
+          <div class="rounded" ref="propertyMap" style="height:80vh"></div>
+        </div>
+        <div class="col-6">
+          <!-- Location inputs -->
+          <div class="mb-3">
+            <label class="form-label">Latitude</label>
+            <input type="number" v-model="form.latitude" class="form-control" step="0.000001" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Longitude</label>
+            <input type="number" v-model="form.longitude" class="form-control" step="0.000001" />
+          </div>
+          <!-- Region, Province, Municipality, Barangay -->
+          <div class="mb-3">
+              <label class="form-label">Region</label>
+                <select v-model="form.region_id" class="form-select" @change="getProvinces">
+                  <option value="" disabled>Select Region</option>
+                  <option 
+                    v-for="region in regions" 
+                    :key="region.id" 
+                    :value="region.id"
+                    :data-code="region.regCode"
+                  >
+                    {{ region.regDesc }}
+                  </option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Province</label>
+                <select v-model="form.province_id" class="form-select" @change="getMuncities">
+                  <option value="" disabled>Select Province</option>
+                  <option 
+                    v-for="province in provinces" 
+                    :key="province.id" 
+                    :value="province.id"
+                    :data-code="province.provCode"
+                  >
+                    {{ province.provDesc }}
+                  </option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Municipal and Cities</label>
+                <select v-model="form.muncity_id" class="form-select" @change="getBarangays">
+                  <option value="" disabled>Select Municipal / City</option>
+                  <option 
+                    v-for="muncity in muncities" 
+                    :key="muncity.id" 
+                    :value="muncity.id"
+                    :data-code="muncity.muncityCode"
+                  >
+                    {{ muncity.muncityDesc }}
+                  </option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Barangays</label>
+                <select v-model="form.barangay_id" class="form-select">
+                  <option value="" disabled>Select Barangays</option>
+                  <option 
+                    v-for="brgy in barangays" 
+                    :key="brgy.id" 
+                    :value="brgy.id"
+                  >
+                    {{ brgy.brgyDesc }}
+                  </option>
+                </select>
+            </div>
+          </div>
+      </div>
+    </div>
+
+      <!-- Final Step: Review and Submit -->
+    <div v-if="step === 5" class="card p-3 shadow-sm">
+      <h5 class="mb-3">📋 Review Your Property Details</h5>
+
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <tbody>
+            <tr>
+              <th>Title</th>
+              <td>{{ form.title }}</td>
+            </tr>
+            <tr>
+              <th>Description</th>
+              <td>{{ form.description }}</td>
+            </tr>
+            <tr>
+              <th>Agreement Type</th>
+              <td>{{ form.agreement_type }}</td>
+            </tr>
+            <tr>
+              <th>Property Type</th>
+              <td>
+                {{ property_types.find(p => p.id === form.property_type_id)?.type_name || 'N/A' }}
+              </td>
+            </tr>
+            <tr>
+              <th>Price</th>
+              <td>₱{{ form.price?.toLocaleString() }}</td>
+            </tr>
+            <tr v-if="form.agreement_type === 'rental'">
+              <th>Advance Payment</th>
+              <td>{{ form.advance_payment_months || 0 }} month(s)</td>
+            </tr>
+            <tr v-if="form.agreement_type === 'rental'">
+              <th>Deposit Required</th>
+              <td>{{ form.deposit_required || 0 }}</td>
+            </tr>
+            <tr v-if="form.agreement_type === 'rental'">
+              <th>Payment Frequency</th>
+              <td>{{ form.payment_frequency }}</td>
+            </tr>
+            <tr v-if="form.agreement_type === 'lease'">
+              <th>Lease Term</th>
+              <td>{{ form.lease_term_months || 0 }} month(s)</td>
+            </tr>
+            <tr v-if="form.agreement_type === 'lease'">
+              <th>Renewal Option</th>
+              <td>{{ form.renewal_option }}</td>
+            </tr>
+            <tr v-if="form.agreement_type === 'lease'">
+              <th>Notice Period</th>
+              <td>{{ form.notice_period || 0 }} day(s)</td>
+            </tr>
+            <tr>
+              <th>Furnishing</th>
+              <td>{{ form.furnishing?.replace('-', ' ') || 'N/A' }}</td>
+            </tr>
+            <tr>
+              <th>Parking</th>
+              <td>{{ form.parking ? 'Yes' : 'No' }}</td>
+            </tr>
+            <tr>
+              <th>Utilities</th>
+              <td>
+                <span v-if="form.utilities && form.utilities.length">
+                  {{ form.utilities.join(', ') }}
+                </span>
+                <span v-else>No utilities selected</span>
+              </td>
+            </tr>
+            <tr>
+              <th>Amenities</th>
+              <td>
+                <span v-if="form.property_amenities.length">
+                  {{ form.property_amenities.length }} selected
+                </span>
+                <span v-else>None</span>
+              </td>
+            </tr>
+            <tr>
+              <th>Facilities</th>
+              <td>
+                <span v-if="form.property_facilities.length">
+                  {{ form.property_facilities.length }} selected
+                </span>
+                <span v-else>None</span>
+              </td>
+            </tr>
+            <tr>
+              <th>Rules</th>
+              <td>{{ form.rules || 'N/A' }}</td>
+            </tr>
+            <tr>
+              <th>Curfew</th>
+              <td>
+                <span v-if="form.has_curfew">Yes ({{ form.curfew_time }})</span>
+                <span v-else>No</span>
+              </td>
+            </tr>
+            <tr>
+              <th>Location</th>
+              <td>
+                {{ regions.find(r => r.id === form.region_id)?.regDesc }},
+                {{ provinces.find(p => p.id === form.province_id)?.provDesc }},
+                {{ muncities.find(m => m.id === form.muncity_id)?.muncityDesc }},
+                {{ barangays.find(b => b.id === form.barangay_id)?.brgyDesc }}
+              </td>
+            </tr>
+            <tr>
+              <th>Coordinates</th>
+              <td>Lat: {{ form.latitude }} | Lng: {{ form.longitude }}</td>
+            </tr>
+            <tr>
+              <th>Images</th>
+              <td>
+                <span v-if="form.thumbnail">✅ Thumbnail selected</span><br />
+                <span>{{ form.images.length }} additional image(s)</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="text-end">
+        <button class="btn btn-success px-4" @click="submitForm">
+          <i class="bi bi-check-circle"></i> Submit Property
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -382,7 +540,7 @@ export default {
   data() {
     return {
       step: 1,
-      maxStep: 8,
+      maxStep: 5,
       location: null,
       regions: [],
       provinces: [],
@@ -397,6 +555,7 @@ export default {
         description: "",
         agreement_type: "rental",
         price: null,
+        utilities: [],
         utilities_included: null,
         advance_payment_months: 0,
         deposit_required: 0,
@@ -662,9 +821,47 @@ export default {
         );
       }
   },
+  computed: {
+    utilitiesList() {
+      return [
+        { value: 'electricity', label: 'Electricity' },
+        { value: 'water', label: 'Water' },
+        { value: 'internet', label: 'Internet' },
+        { value: 'cooking_gas', label: 'Cooking Gas' },
+      ];
+    },
+    selectedPropertyName() {
+      const selected = this.property_types.find(type => type.id === this.form.property_type_id);
+      return selected ? selected.type_name : "";
+    },
+    showBedrooms() {
+      if (!this.selectedPropertyName) return false;
+      return this.selectedPropertyName.toLowerCase() !== 'commercial space';
+    },
+    showBedSpace() {
+      if (!this.selectedPropertyName) return false;
+
+      // Hide bedrooms for these property types:
+      const excludedTypes = ['commercial space', 'hotel', 'apartment', 'condo'];
+
+      // Return false if the selected type is in the excluded list
+      return !excludedTypes.includes(this.selectedPropertyName.toLowerCase());
+    },
+    showBathrooms(){
+      if (!this.selectedPropertyName) return false;
+      return this.selectedPropertyName.toLowerCase() !== 'commercial space';
+    },
+    showSizeFiels(){
+      if (!this.selectedPropertyName) return false;
+      const includedTypes = ['apartment', 'condo', 'commercial space', 'hotel'];
+      return includedTypes.includes(this.selectedPropertyName.toLowerCase());
+    }
+    
+
+  },
   watch: {
     step(newStep) {
-      if (newStep === 7 && this.location) {
+      if (newStep === 4 && this.location) {
         this.$nextTick(() => {
           this.setMap(this.form.latitude || this.location.lat, this.form.longitude || this.location.lng);
         });

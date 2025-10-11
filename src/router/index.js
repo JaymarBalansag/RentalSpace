@@ -26,7 +26,9 @@ import About from '@/views/User/about.vue'
 import Contactus from '@/views/User/contactus.vue'
 import CompleteProfile from '@/views/User/CompleteProfile.vue'
 import PropertyDetails from '@/views/Main/PropertyDetails.vue'
-
+import AdminDashboard from '@/views/Admin/AdminDashboard.vue'
+import OwnerList from '@/views/Admin/owners/ownerList.vue'
+import TenantsList from '@/views/Admin/tenants/tenantsList.vue'
 const routes = [
   {
       path: '/',
@@ -161,7 +163,28 @@ const routes = [
           component: Reports
         }
       ]
-   }
+   },
+   {
+    path: "/admin/dashboard",
+    name: "AdminDashboard",
+    component: AdminDashboard,
+    meta: { requiresAuth:true },
+    children: [
+      {
+        path: "/admin/owners",
+        name: "AdminOwners",
+        component: OwnerList,
+        meta: {requiresAuth:true}
+      },
+      {
+        path: "/admin/tenants",
+        name: "AdminTenants",
+        component: TenantsList,
+        meta: {requiresAuth: true}
+      }
+    ]
+   },
+
 ]
 
 const router = createRouter({

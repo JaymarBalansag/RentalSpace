@@ -49,7 +49,7 @@
           </RouterLink>
         </li>
         <li v-else-if="roleIs === 'admin'">
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/">
+          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/admin/dashboard">
             <i class="bi bi-speedometer2"></i> Admin Dashboard
           </RouterLink>
         </li>

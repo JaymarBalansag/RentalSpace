@@ -1,76 +1,62 @@
 <template>
-  <Header></Header>
+  <Header />
 
   <div class="container py-5 mb-5">
     <div class="text-center mb-5">
-      <h2 class="fw-bold">Choose Your Plan</h2>
-      <p class="text-muted">Flexible options for property owners to start listing and managing tenants.</p>
+      <h2 class="fw-bold">Choose Your Subscription Plan</h2>
+      <p class="text-muted">
+        Subscribe as a property owner to start listing, managing tenants, and growing your business.
+      </p>
     </div>
 
     <div class="row justify-content-center g-4">
-      <!-- Per Transaction -->
-      <div class="col-md-4">
-        <div class="card h-100 shadow-sm border-0">
-          <div class="card-header bg-white text-center">
-            <h4 class="fw-normal">Per Booking</h4>
-            <h2 class="fw-bold text-primary">₱50</h2>
-            <small class="text-muted">per successful tenant booking</small>
-          </div>
-          <div class="card-body d-flex flex-column">
-            <p class="card-text text-center">
-              Perfect if you only expect a few tenants. Pay only when you earn.
-            </p>
-            <ul class="list-unstyled mt-3 mb-4 text-start">
-              <li><i class="bi bi-check2 text-success"></i> Pay only when a tenant books</li>
-              <li><i class="bi bi-check2 text-success"></i> No upfront costs</li>
-              <li><i class="bi bi-check2 text-success"></i> Simple and flexible</li>
-            </ul>
-            <button class="btn btn-outline-primary mt-auto">Choose Plan</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Monthly -->
-      <div class="col-md-4">
+      <!-- Monthly Plan -->
+      <div class="col-md-5">
         <div class="card h-100 shadow-lg border-primary border-2">
           <div class="card-header bg-primary text-white text-center">
-            <h4 class="fw-normal">Monthly</h4>
-            <h2 class="fw-bold">$10</h2>
+            <h4 class="fw-normal mb-1">Monthly Plan</h4>
+            <h2 class="fw-bold">₱50</h2>
             <small>per month</small>
             <span class="badge bg-warning text-dark ms-2">Most Popular</span>
           </div>
           <div class="card-body d-flex flex-column">
             <p class="card-text text-center">
-              Great for active landlords with multiple listings and tenants.
+              Ideal for new landlords or those testing the platform. Billed monthly, cancel anytime.
             </p>
             <ul class="list-unstyled mt-3 mb-4 text-start">
-              <li><i class="bi bi-check2 text-success"></i> 5 Slot listings</li>
-              <li><i class="bi bi-check2 text-success"></i> Unlimited bookings</li>
-              <li><i class="bi bi-check2 text-success"></i> Priority support</li>
+              <li><i class="bi bi-check2 text-success"></i> Up to 5 property listings</li>
+              <li><i class="bi bi-check2 text-success"></i> Full access to reservation system</li>
+              <li><i class="bi bi-check2 text-success"></i> Admin verification for all listings</li>
+              <li><i class="bi bi-check2 text-success"></i> 24/7 support and updates</li>
             </ul>
-            <button @click="goToMonthyPage" class="btn btn-primary mt-auto">Choose Plan</button>
+            <button @click="selectPlan('monthly',50)" class="btn btn-primary mt-auto">
+              Subscribe Monthly
+            </button>
           </div>
         </div>
       </div>
 
-      <!-- Yearly -->
-      <div class="col-md-4">
+      <!-- Annual Plan -->
+      <div class="col-md-5">
         <div class="card h-100 shadow-sm border-0">
           <div class="card-header bg-white text-center">
-            <h4 class="fw-normal">Yearly</h4>
-            <h2 class="fw-bold text-primary">$100</h2>
+            <h4 class="fw-normal mb-1">Annual Plan</h4>
+            <h2 class="fw-bold text-primary">₱500</h2>
             <small class="text-muted">per year</small>
           </div>
           <div class="card-body d-flex flex-column">
             <p class="card-text text-center">
-              Best value for long-term property owners who want to save more.
+              Best value for long-term property owners who want to save more and focus on growth.
             </p>
             <ul class="list-unstyled mt-3 mb-4 text-start">
-              <li><i class="bi bi-check2 text-success"></i> 10 Slot listings</li>
-              <li><i class="bi bi-check2 text-success"></i> Unlimited bookings</li>
-              <li><i class="bi bi-check2 text-success"></i> Save 20% vs monthly</li>
+              <li><i class="bi bi-check2 text-success"></i> Up to 15 property listings</li>
+              <li><i class="bi bi-check2 text-success"></i> Unlimited tenant bookings</li>
+              <li><i class="bi bi-check2 text-success"></i> Priority admin verification</li>
+              <li><i class="bi bi-check2 text-success"></i> Save 20% compared to monthly plan</li>
             </ul>
-            <button class="btn btn-outline-primary mt-auto">Choose Plan</button>
+            <button @click="selectPlan('annual',500)" class="btn btn-outline-primary mt-auto">
+              Subscribe Annually
+            </button>
           </div>
         </div>
       </div>
@@ -79,17 +65,30 @@
 </template>
 
 <script>
-import Header from '@/components/Header.vue';
+import Header from '@/components/Header.vue'
 
 export default {
-  name: "paymentWall",
-  components: {
-    Header
-  },
+  name: "PaymentWall",
+  components: { Header },
   methods: {
-    goToMonthyPage(){
-      this.$router.push("/payment/details");
+    selectPlan(planType) {
+      // Redirect to payment details page with selected plan type
+      this.$router.push({ 
+        path: '/payment/details', 
+        query: { plan: planType,
+          price: planType === 'monthly' ? 50 : 500
+        }
+      });
     }
   }
 }
 </script>
+
+<style scoped>
+.card {
+  transition: transform 0.2s ease-in-out;
+}
+.card:hover {
+  transform: translateY(-5px);
+}
+</style>

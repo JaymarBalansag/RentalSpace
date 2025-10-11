@@ -9,18 +9,17 @@
         
         <!-- Property Type -->
         <div class="col-md-3">
-          <select class="form-select shadow-sm">
-            <option selected disabled>Property Type</option>
-            <option v-for="(type, index) in property_types" :key="index">{{ type.type_name }}</option>
+          <select class="form-select shadow-sm" v-model="selectedType">
+            <option v-for="(type, index) in property_types" :key="index" :value="type.id" >{{ type.type_name }}</option>
           </select>
         </div>
 
         <!-- Agreement Type -->
         <div class="col-md-3">
-          <select class="form-select shadow-sm">
-            <option selected disabled>Agreement Type</option>
-            <option>Rental</option>
-            <option>Lease</option>
+          <select class="form-select shadow-sm" v-model="selectedAgreement">
+            <option disabled value="">Agreement Type</option>
+            <option value="Rental">Rental</option>
+            <option value="Lease">Lease</option>
           </select>
         </div>
 
@@ -155,7 +154,9 @@ export default {
         { label: "₱5,001 - ₱10,000", min: 5001, max: 10000 },
         { label: "₱10,000+", min: 10001, max: 999999 }
       ],
-      selectedPriceRange: null
+      selectedPriceRange: null,
+      selectedType: null,
+      selectedAgreement: null,
     };
   },
   methods: {
@@ -195,7 +196,7 @@ export default {
     async getFilteredProperties() {
       try {
         // alert("filter: " + this.selectedAmenities + " " + this.selectedFacilities)
-        const response = await getFilteredProperties(this.selectedAmenities, this.selectedFacilities, this.min_price, this.max_price);
+        const response = await getFilteredProperties(this.selectedAmenities, this.selectedFacilities, this.min_price, this.max_price, this.selectedType, this.selectedAgreement);
         this.properties = response.data.properties;
         this.message = response.data.message;
       } catch (error) {
@@ -210,6 +211,16 @@ export default {
     this.getProperties()
   },
   watch: {
+    selectedType: {
+      handler() {
+        this.getFilteredProperties();
+      }
+    },
+    selectedAgreement: {
+      handler() {
+        this.getFilteredProperties();
+      }
+    },
     selectedAmenities: {
       handler() {
         this.getFilteredProperties();

@@ -108,7 +108,7 @@ export async function getProperty(id) {
   return res.data;
 }
 
-export async function getFilteredProperties(amenities, facilities, min_price, max_price) {
+export async function getFilteredProperties(amenities, facilities, min_price, max_price, selectedType, selectedAgreement) {
   const params = {};
 
   if (amenities && amenities.length > 0) {
@@ -125,6 +125,14 @@ export async function getFilteredProperties(amenities, facilities, min_price, ma
 
   if (max_price && max_price > 0) {
     params.max_price = max_price;
+  }
+
+  if (selectedType) {
+    params.property_type = selectedType;
+  }
+
+  if (selectedAgreement) {
+    params.agreement_type = selectedAgreement;
   }
 
   const res = await api.get("/properties/filters", {

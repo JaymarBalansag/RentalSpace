@@ -1,65 +1,85 @@
 <template>
-  <div class="container py-5">
-    <div class="row justify-content-center">
-      <div class="col-lg-8">
-        <div class="card shadow border-0">
-          <!-- Header -->
-          <div class="card-header d-flex align-items-center">
-            <RouterLink to="/payment/wall" class="text-decoration-none text-black d-flex align-items-center">
-              <i class="bi bi-arrow-left fs-4 me-2"></i>
-              Back
-            </RouterLink>
-            <h3 class="ms-auto me-auto mb-0">Payment Details</h3>
-          </div>
+  <div class="bg-light py-5">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
 
-          <!-- Body -->
-          <div class="card-body">
-            <div class="row">
-              <!-- Left: Form -->
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label">Name</label>
-                  <input v-model="name" type="text" class="form-control" readonly>
-                </div>
+            <!-- Header -->
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              <RouterLink to="/payment/wall" class="text-white text-decoration-none d-flex align-items-center">
+                <i class="bi bi-arrow-left fs-4 me-2"></i>
+                Back
+              </RouterLink>
+              <h3 class="ms-auto me-auto mb-0 fw-semibold">Payment Details</h3>
+            </div>
 
-                <div class="mb-3">
-                  <label class="form-label">Email</label>
-                  <input v-model="email" type="email" class="form-control" readonly>
-                </div>
+            <!-- Body -->
+            <div class="card-body p-4">
+              <div class="row">
+                
+                <!-- Left: Form -->
+                <div class="col-md-6 border-end">
+                  <h5 class="fw-bold mb-3 text-primary">Your Information</h5>
+                  
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">Full Name</label>
+                    <input v-model="name" type="text" class="form-control shadow-sm" readonly>
+                  </div>
 
-                <div class="mb-3">
-                  <label class="form-label">Payment Method</label>
-                  <select v-model="paymentMethod" class="form-select">
-                    <option disabled value="">-- Select --</option>
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">Email Address</label>
+                    <input v-model="email" type="email" class="form-control shadow-sm" readonly>
+                  </div>
+
+                  <h5 class="fw-bold mt-4 mb-3 text-primary">Payment Method</h5>
+                  <select v-model="paymentMethod" class="form-select shadow-sm">
+                    <option disabled value="">-- Select Payment Method --</option>
                     <option value="qrph">QR Ph</option>
                     <option value="gcash" disabled>GCash (Unavailable)</option>
                     <option value="maya" disabled>Maya (Unavailable)</option>
                   </select>
+
+                  <button 
+                    @click="confirmPayment"
+                    class="btn btn-primary w-100 mt-4 fw-semibold py-2"
+                  >
+                    <i class="bi bi-credit-card me-2"></i> Confirm Payment
+                  </button>
                 </div>
 
-                <button 
-                  @click="confirmPayment"
-                  class="btn btn-primary w-100"
-                >
-                  Confirm Payment
-                </button>
-              </div>
+                <!-- Right: Plan Summary -->
+                <div class="col-md-6">
+                  <div class="text-center p-4">
+                    <h5 class="fw-bold text-primary mb-3">Selected Plan</h5>
 
-              <!-- Right: Summary -->
-              <div class="col-md-6 border-start">
-                <div class="text-center">
-                  <h5 class="fw-bold mb-2">Selected Plan</h5>
-                  <p class="fs-4 mb-1">{{ selectedPlan }}</p>
-                  <p class="fs-5 fw-light">Price: {{ planPrice }}</p>
-                  <p class="text-muted small">Payment simulation only. After confirm, you’ll become an Owner.</p>
+                    <div class="p-4 rounded-4 border border-primary-subtle shadow-sm bg-white">
+                      <h3 class="fw-bold mb-2">{{ selectedPlan }}</h3>
+                      <p class="fs-4 text-primary fw-semibold mb-2">₱{{ planPrice }}</p>
+                      <p class="text-muted small mb-3">Billed {{ planBilling }}</p>
+
+                      <hr>
+
+                      <ul class="list-unstyled text-start small">
+                        <li><i class="bi bi-check2 text-success"></i> Verified listing approval</li>
+                        <li><i class="bi bi-check2 text-success"></i> Access to property dashboard</li>
+                        <li><i class="bi bi-check2 text-success"></i> Manage bookings and tenants</li>
+                      </ul>
+                    </div>
+
+                    <p class="text-muted mt-3 small">
+                      💡 Simulation mode only — payment gateway is disabled for demo purposes.
+                    </p>
+                  </div>
                 </div>
+
               </div>
             </div>
-          </div>
 
-          <!-- Footer -->
-          <div class="card-footer text-center text-muted">
-            Your payment will be securely processed. (Simulation Mode)
+            <!-- Footer -->
+            <div class="card-footer text-center bg-white py-3 text-muted small">
+              Your payment information is processed securely and privately.
+            </div>
           </div>
         </div>
       </div>
@@ -73,61 +93,83 @@ import { useUserInfo } from '@/store/userInfo'
 import { paymentConfirmation } from '@/api/payment'
 
 export default {
-  name: "paymentDetails",
+  name: "PaymentDetails",
+  components: { RouterLink },
   data() {
     return {
       name: null,
       email: null,
       role: null,
-      selectedPlan: "Monthly",   // later from route params
-      planPrice: "₱500",
+      selectedPlan: "Monthly",
+      planPrice: 50,
+      planBilling: "per month",
       paymentMethod: ""
     }
   },
   mounted() {
     this.getUserInfo()
+    this.getPlanDetails()
   },
   methods: {
     getUserInfo() {
       const userInfo = JSON.parse(localStorage.getItem("userInfo"))
       if (userInfo) {
-        this.name = userInfo.first_name + " " + userInfo.last_name
+        this.name = `${userInfo.first_name} ${userInfo.last_name}`
         this.email = userInfo.email
         this.role = userInfo.role
       }
     },
-    async confirmPayment() {
-        if (!this.paymentMethod) {
-          alert("⚠ Please select a payment method.")
-          return
-        }
-
-        if (this.role === "owner") {
-          alert("⚠ You are already an Owner")
-          return
-        }
-
-        try {
-          // const res = await api.post("/paymentConfirmation", {
-          //   plan: this.selectedPlan
-          // })
-          const res = await paymentConfirmation(this.selectedPlan, this.paymentMethod);
-
-          const info = useUserInfo()
-          info.setRole("owner")
-
-          localStorage.setItem("userInfo", JSON.stringify(res.data.user))
-
-          alert("✅ Payment confirmed! You are now an Owner.")
-
-          // this.$router.push("/dashboard")  or wherever owner lands
-          this.$router.push("/") // or wherever owner lands
-        } catch (err) {
-          console.error(err)
-          alert("❌ Payment confirmation failed.")
-        }
+    getPlanDetails() {
+      const plan = this.$route.query.plan
+      if (plan === "annual") {
+        this.selectedPlan = "Annual"
+        this.planPrice = 5000
+        this.planBilling = "per year"
       }
     },
-  components: { RouterLink }
+    async confirmPayment() {
+      if (!this.paymentMethod) {
+        alert("⚠ Please select a payment method.")
+        return
+      }
+
+      if (this.role === "owner") {
+        alert("⚠ You are already an Owner")
+        return
+      }
+
+      try {
+        const res = await paymentConfirmation(this.selectedPlan, this.paymentMethod, this.planPrice)
+        const info = useUserInfo()
+        info.setRole("owner")
+        localStorage.setItem("userInfo", JSON.stringify(res.data.user))
+
+        alert("✅ Payment confirmed! You are now an Owner.")
+        this.$router.push("/")
+      } catch (err) {
+        console.error(err)
+        alert("❌ Payment confirmation failed.")
+      }
+    }
+  }
 }
 </script>
+
+<style scoped>
+.card {
+  border-radius: 1rem;
+}
+
+.form-control,
+.form-select {
+  border-radius: 0.5rem;
+}
+
+.btn-primary {
+  border-radius: 0.5rem;
+}
+
+.bg-light {
+  background-color: #f8f9fb !important;
+}
+</style>

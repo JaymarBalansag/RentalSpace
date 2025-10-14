@@ -33,8 +33,8 @@
 
           <!-- ✅ Display data when available -->
           <tbody v-if="hasProperties && properties.length > 0">
-            <tr v-for="property in properties" :key="property.id">
-              <td>{{ property.id }}</td>
+            <tr v-for="property in properties" :key="property.property_id">
+              <td>{{ property.property_id }}</td>
               <td>{{ property.title }}</td>
               <td>{{ property.first_name }} {{ property.last_name }}</td>
               <td>{{ property.type_name }}</td>
@@ -50,7 +50,7 @@
                   <button class="btn btn-sm btn-info me-1" @click="viewDetails(property)">
                     View
                   </button>
-                  <button class="btn btn-sm btn-success me-1" @click="approveProperty(property.id)">
+                  <button class="btn btn-sm btn-success me-1" @click="approveProperty(property.property_id)">
                     Approve
                   </button>
                   <button class="btn btn-sm btn-danger me-1" @click="rejectProperty(property.id)">
@@ -140,9 +140,9 @@ export default {
     async fetchActiveProperties(page = 1) {
       try {
         const res = await getActiveProperties(page);
-        if (res.status === 200 && res.data.data.length > 0) {
+        if (res) {
           this.hasProperties = true;
-          this.properties = res.data.data;
+          this.properties = res.data.data.data;
           this.pagination = res.data;
         } else {
           this.hasProperties = false;

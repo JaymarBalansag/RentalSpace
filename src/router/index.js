@@ -29,6 +29,7 @@ import PropertyDetails from '@/views/Main/PropertyDetails.vue'
 import AdminDashboard from '@/views/Admin/AdminDashboard.vue'
 import OwnerList from '@/views/Admin/owners/ownerList.vue'
 import TenantsList from '@/views/Admin/tenants/tenantsList.vue'
+import AdminProperty from '@/views/Admin/property/AdminProperty.vue'
 const routes = [
   {
       path: '/',
@@ -181,7 +182,13 @@ const routes = [
         name: "AdminTenants",
         component: TenantsList,
         meta: {requiresAuth: true}
-      }
+      },
+      {
+        path: "/admin/properties",
+        name: "AdminProperties",
+        component: AdminProperty,
+        meta: {requiresAuth: true}
+      } 
     ]
    },
 

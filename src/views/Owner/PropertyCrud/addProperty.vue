@@ -324,10 +324,72 @@
     <div v-if="step === 4" class="card p-3 shadow-sm">
       <h5>Location Details</h5>
       <div class="row mb-3">
-        <div class="col-6 align-self-center">
+        <div class="col">
+          <label class="form-label">Region</label>
+          <select v-model="form.region_id" class="form-select" @change="getProvinces">
+            <option value="" disabled>Select Region</option>
+            <option 
+              v-for="region in regions" 
+              :key="region.id" 
+              :value="region.id"
+              :data-code="region.regCode"
+            >
+              {{ region.regDesc }}
+            </option>
+          </select>
+        </div>
+
+        <div class="col">
+          <label class="form-label">Province</label>
+          <select v-model="form.province_id" class="form-select" @change="getMuncities">
+            <option value="" disabled>Select Province</option>
+            <option 
+              v-for="province in provinces" 
+              :key="province.id" 
+              :value="province.id"
+              :data-code="province.provCode"
+            >
+              {{ province.provDesc }}
+            </option>
+          </select>
+        </div>
+
+        <div class="col">
+          <label class="form-label">Municipal and Cities</label>
+          <select v-model="form.muncity_id" class="form-select" @change="getBarangays">
+            <option value="" disabled>Select Municipal / City</option>
+            <option 
+              v-for="muncity in muncities" 
+              :key="muncity.id" 
+              :value="muncity.id"
+              :data-code="muncity.muncityCode"
+            >
+              {{ muncity.muncityDesc }}
+            </option>
+          </select>
+        </div>
+
+        <div class="col">
+          <label class="form-label">Barangays</label>
+          <select v-model="form.barangay_id" class="form-select">
+            <option value="" disabled>Select Barangays</option>
+            <option 
+              v-for="brgy in barangays" 
+              :key="brgy.id" 
+              :value="brgy.id"
+            >
+              {{ brgy.brgyDesc }}
+            </option>
+          </select>
+        </div>
+
+      </div>
+      
+      <div class="row mb-3">
+        <div class="col-9 align-self-center">
           <div class="rounded" ref="propertyMap" style="height:80vh"></div>
         </div>
-        <div class="col-6">
+        <div class="col-3">
           <!-- Location inputs -->
           <div class="mb-3">
             <label class="form-label">Latitude</label>
@@ -338,7 +400,7 @@
             <input type="number" v-model="form.longitude" class="form-control" step="0.000001" />
           </div>
           <!-- Region, Province, Municipality, Barangay -->
-          <div class="mb-3">
+          <!-- <div class="mb-3">
               <label class="form-label">Region</label>
                 <select v-model="form.region_id" class="form-select" @change="getProvinces">
                   <option value="" disabled>Select Region</option>
@@ -395,7 +457,7 @@
                     {{ brgy.brgyDesc }}
                   </option>
                 </select>
-            </div>
+            </div> -->
           </div>
       </div>
     </div>
@@ -539,6 +601,8 @@ import { createProperty, getRegion, getProvinces, getBarangays, getMunCities, ge
 export default {
   data() {
     return {
+      map: null,
+      marker: null,
       step: 1,
       maxStep: 5,
       location: null,
@@ -695,41 +759,67 @@ export default {
       });
     },
     setMap(lat, lng) {
-  // Ensure the DOM has been updated before initializing the map
-  this.$nextTick(() => {
-    const mapContainer = this.$refs.propertyMap; // Use Vue ref instead of getElementById
-    console.log("Map Container: " +  mapContainer);
-    if (!mapContainer) {
-      console.error("Map container not found.");
-      return;
-    }
+      this.$nextTick(() => {
+        const mapContainer = this.$refs.propertyMap;
+        if (!mapContainer) {
+          console.error("Map container not found.");
+          return;
+        }
 
-    // Initialize the map after ensuring the container exists
-    const map = L.map(mapContainer).setView([lat, lng], 15);
+        // 🧹 Destroy existing map if it exists
+        if (this.map) {
+          this.map.remove();
+          this.map = null;
+          this.marker = null;
+        }
 
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(map);
+        // 🗺️ Initialize map again
+        this.map = L.map(mapContainer).setView([lat, lng], 15);
 
-    const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        }).addTo(this.map);
 
-    marker.on("dragend", (e) => {
-      const { lat, lng } = e.target.getLatLng();
-      this.form.latitude = lat.toFixed(6);
-      this.form.longitude = lng.toFixed(6);
-    });
+        this.marker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
 
-    map.on("click", (e) => {
-      const { lat, lng } = e.latlng;
-      marker.setLatLng([lat, lng]);
-      this.form.latitude = lat.toFixed(6);
-      this.form.longitude = lng.toFixed(6);
-    });
-  });
-},
+        // ✅ Update coordinates when dragging
+        this.marker.on("dragend", (e) => {
+          const { lat, lng } = e.target.getLatLng();
+          this.form.latitude = lat.toFixed(6);
+          this.form.longitude = lng.toFixed(6);
+        });
+
+        // ✅ Update coordinates when clicking
+        this.map.on("click", (e) => {
+          const { lat, lng } = e.latlng;
+          this.marker.setLatLng([lat, lng]);
+          this.form.latitude = lat.toFixed(6);
+          this.form.longitude = lng.toFixed(6);
+        });
+      });
+    },
     handleLocationError(error) {
       alert("Failed to get location: " + error.message);
     },
+    async geocodeLocation(query) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Philippines')}`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+          const { lat, lon } = data[0];
+          this.form.latitude = parseFloat(lat).toFixed(6);
+          this.form.longitude = parseFloat(lon).toFixed(6);
+
+            this.setMap(lat, lon);
+        } else {
+          console.warn("No coordinates found for:", query);
+        }
+      } catch (err) {
+        console.error("Geocoding error:", err);
+      }
+    },
+
     // Code for getting psgc adresses
     async getRegions() {
       try {
@@ -750,6 +840,7 @@ export default {
       this.form.province_id = "";
       this.form.muncity_id = "";
       this.form.barangay_id = "";
+
     },
 
     async getMuncities(event) {
@@ -759,6 +850,7 @@ export default {
       this.barangays = [];
       this.form.muncity_id = "";
       this.form.barangay_id = "";
+
     },
 
     async getBarangays(event) {
@@ -766,6 +858,8 @@ export default {
       const res = await getBarangays(muncityCode);
       this.barangays = res;
       this.form.barangay_id = "";
+
+
     },
 
     // Code for Property Details

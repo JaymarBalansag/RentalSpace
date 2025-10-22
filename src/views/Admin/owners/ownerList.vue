@@ -40,7 +40,7 @@
     <div class="card shadow-sm border-0">
       <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
         <span>All Owners</span>
-        <small class="text-muted">{{ filteredOwners.length }} result(s)</small>
+        <small class="text-muted">result(s)</small>
       </div>
 
       <div class="table-responsive">
@@ -57,18 +57,18 @@
             </tr>
           </thead>
 
-          <tbody>
-            <tr v-for="(owner, index) in filteredOwners" :key="owner.id">
-              <td>{{ index + 1 }}</td>
-              <td class="fw-semibold">{{ owner.name }}</td>
+          <tbody >
+            <tr v-for="(owner, index) in owners" :key="owner.id">
+              <td>{{ owner.id }}</td>
+              <td class="fw-semibold">{{ owner.first_name }} {{ owner.last_name }}</td>
               <td>{{ owner.email }}</td>
-              <td>{{ owner.propertyCount }}</td>
+              <td>not yet implemented</td>
               <td>
                 <span :class="`badge bg-${owner.status === 'Active' ? 'success' : 'secondary'}`">
                   {{ owner.status }}
                 </span>
               </td>
-              <td>{{ owner.dateJoined }}</td>
+              <td>{{ owner.created_at }}</td>
               <td>
                 <div class="btn-group">
                   <button class="btn btn-sm btn-outline-primary">
@@ -83,13 +83,15 @@
                 </div>
               </td>
             </tr>
+          </tbody>
 
-            <tr v-if="filteredOwners.length === 0">
+          <!-- <tbody v-else>
+            <tr>
               <td colspan="7" class="text-center text-muted py-4">
-                No matching owners found.
+                No owner found
               </td>
             </tr>
-          </tbody>
+          </tbody> -->
         </table>
       </div>
     </div>
@@ -97,6 +99,8 @@
 </template>
 
 <script>
+import { getOwner } from '@/api/Admin/AdminOwner/AdminOwner';
+
 export default {
   name: "ownerList",
 
@@ -104,40 +108,8 @@ export default {
     return {
       search: "",
       filterStatus: "",
-      owners: [
-        {
-          id: 1,
-          name: "Juan Dela Cruz",
-          email: "juan.cruz@example.com",
-          propertyCount: 5,
-          status: "Active",
-          dateJoined: "2025-02-15",
-        },
-        {
-          id: 2,
-          name: "Maria Santos",
-          email: "maria.santos@example.com",
-          propertyCount: 3,
-          status: "Inactive",
-          dateJoined: "2025-01-12",
-        },
-        {
-          id: 3,
-          name: "Jose Ramirez",
-          email: "jose.ramirez@example.com",
-          propertyCount: 8,
-          status: "Active",
-          dateJoined: "2024-12-09",
-        },
-        {
-          id: 4,
-          name: "Ana Villanueva",
-          email: "ana.villanueva@example.com",
-          propertyCount: 2,
-          status: "Active",
-          dateJoined: "2024-11-02",
-        },
-      ],
+      owners: [],
+      hasOwners: null
     };
   },
 
@@ -162,7 +134,26 @@ export default {
       this.search = "";
       this.filterStatus = "";
     },
+    async fetchOwners() {
+      try {
+        const res = await getOwner();
+        
+        if(res){
+          this.owners = res.data.data;
+          this.hasOwners = true;
+        } else {
+          this.hasOwner = false;
+          this.owners = [];
+        }
+      } catch (error) {
+        
+        console.error("Error fetching owners:", error);
+      }
+    }
   },
+  mounted() {
+    this.fetchOwners();
+  }
 };
 </script>
 

@@ -50,12 +50,48 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="fw-bold text-primary">Admin Dashboard</h4>
         <div>
+          
+          <!-- <button class="btn btn-primary">
+            <i class="bi bi-person-circle me-2"></i> Admin
+          </button> -->
+
+
+
+          
+        </div>
+
+        <div class="dropdown d-flex">
           <button class="btn btn-outline-primary me-2">
             <i class="bi bi-bell"></i>
           </button>
-          <button class="btn btn-primary">
-            <i class="bi bi-person-circle me-2"></i> Admin
+          <button
+            class="btn btn-outline-primary dropdown-toggle d-flex align-items-center"
+            type="button"
+            id="dropdownMenuButton"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            <i class="bi bi-person-circle me-2"></i>
+            Profile
           </button>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+            <li>
+              <RouterLink to="/home" class="dropdown-item">
+                <i class="bi bi-house-door me-2"></i> Go to Home
+              </RouterLink>
+            </li>
+            <li>
+              <RouterLink to="/profile" class="dropdown-item">
+                <i class="bi bi-gear me-2"></i> Account Settings
+              </RouterLink>
+            </li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <button @click="" class="dropdown-item text-danger">
+                <i class="bi bi-box-arrow-right me-2"></i> Logout
+              </button>
+            </li>
+          </ul>
         </div>
       </div>
 
@@ -75,7 +111,7 @@ export default {
       navItems: [
         { label: "Dashboard", link: "/admin/dashboard", icon: "bi bi-speedometer2" },
         { label: "Owners", link: "/admin/owners", icon: "bi bi-person-badge" },
-        { label: "Tenants", link: "/admin/tenants", icon: "bi bi-people" },
+        { label: "Users", link: "/admin/tenants", icon: "bi bi-people" },
         { label: "Properties", link: "/admin/properties", icon: "bi bi-house-door" },
         { label: "Reservations", link: "/admin/reservations", icon: "bi bi-calendar-check" },
         { label: "Reports", link: "/admin/reports", icon: "bi bi-file-earmark-text" },

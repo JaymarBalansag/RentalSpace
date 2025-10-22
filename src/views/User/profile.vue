@@ -141,7 +141,7 @@ export default {
     async fetchUserProfile() {
       try {
         const response = await getUserProfile();
-        console.log(response)
+        console.log("response",response)
         const data = response.data.user[0]
         this.user.phone_number = data.phone_number;
         this.user.province = data.provDesc

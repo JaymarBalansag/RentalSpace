@@ -22,9 +22,9 @@
           </div>
           <div class="col-md-3">
             <select v-model="filterStatus" class="form-select">
-              <option value="">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="all">All Status</option>
+              <option value="complete">Complete Profile</option>
+              <option value="incomplete">Incomplete Profile</option>
             </select>
           </div>
           <div class="col-md-3 text-end">
@@ -39,8 +39,8 @@
     <!-- Owners Table -->
     <div class="card shadow-sm border-0">
       <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-        <span>All Owners</span>
-        <small class="text-muted">{{ filteredOwners.length }} result(s)</small>
+        <span>All Users</span>
+        <small class="text-muted">result(s)</small>
       </div>
 
       <div class="table-responsive">
@@ -48,27 +48,33 @@
           <thead class="table-light">
             <tr>
               <th>#</th>
-              <th>Owner Name</th>
+              <th>User Image</th>
+              <th>User Name</th>
               <th>Email</th>
-              <th>Properties</th>
-              <th>Status</th>
+              <th>Region</th>
+              <th>Province</th>
+              <th>Municipal / City</th>
+              <th>Barangay</th>
+              <th>Street</th>
               <th>Date Joined</th>
               <th>Action</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr v-for="(owner, index) in filteredOwners" :key="owner.id">
-              <td>{{ index + 1 }}</td>
-              <td class="fw-semibold">{{ owner.name }}</td>
-              <td>{{ owner.email }}</td>
-              <td>{{ owner.propertyCount }}</td>
+            <tr v-for="(user, index) in users" :key="user.id">
+              <td>{{ user.id }}</td>
               <td>
-                <span :class="`badge bg-${owner.status === 'Active' ? 'success' : 'secondary'}`">
-                  {{ owner.status }}
-                </span>
+                <img :src="user.user_img_url ? user.user_img_url : null " alt="User image" width="50" height="50" class="rounded-circle">
               </td>
-              <td>{{ owner.dateJoined }}</td>
+              <td class="fw-semibold">{{ user.first_name }} {{ user.last_name }}</td>
+              <td>{{ user.email ? user.email : 'N/A' }}</td>
+              <td>{{ user.regDesc ? user.regDesc : 'N/A' }}</td>
+              <td>{{ user.provDesc ? user.provDesc : 'N/A' }}</td>
+              <td>{{ user.muncityDesc ? user.muncityDesc : 'N/A' }}</td>
+              <td>{{ user.brgyDesc ? user.brgyDesc : 'N/A' }}</td>
+              <td>{{ user.street ? user.street : 'N/A' }}</td>
+              <td>{{ user.created_at }}</td>
               <td>
                 <div class="btn-group">
                   <button class="btn btn-sm btn-outline-primary">
@@ -76,19 +82,14 @@
                   </button>
                   <button
                     class="btn btn-sm"
-                    :class="owner.status === 'Active' ? 'btn-outline-danger' : 'btn-outline-success'"
+                    :class="user.isComplete  ? 'btn-outline-success' : 'btn-outline-danger' "
                   >
-                    <i :class="owner.status === 'Active' ? 'bi bi-x-circle' : 'bi bi-check-circle'"></i>
+                    <i :class="user.isComplete  ? 'bi bi-check-circle' : 'bi bi-x-circle' "></i>
                   </button>
                 </div>
               </td>
             </tr>
 
-            <tr v-if="filteredOwners.length === 0">
-              <td colspan="7" class="text-center text-muted py-4">
-                No matching owners found.
-              </td>
-            </tr>
           </tbody>
         </table>
       </div>
@@ -97,6 +98,9 @@
 </template>
 
 <script>
+import { getUsers } from '@/api/Admin/AdminUser/AdminUser';
+import { getUserByStatus } from '@/api/Admin/AdminUser/AdminUser';
+
 export default {
   name: "tenantsList",
 
@@ -104,65 +108,54 @@ export default {
     return {
       search: "",
       filterStatus: "",
-      owners: [
-        {
-          id: 1,
-          name: "Juan Dela Cruz",
-          email: "juan.cruz@example.com",
-          propertyCount: 5,
-          status: "Active",
-          dateJoined: "2025-02-15",
-        },
-        {
-          id: 2,
-          name: "Maria Santos",
-          email: "maria.santos@example.com",
-          propertyCount: 3,
-          status: "Inactive",
-          dateJoined: "2025-01-12",
-        },
-        {
-          id: 3,
-          name: "Jose Ramirez",
-          email: "jose.ramirez@example.com",
-          propertyCount: 8,
-          status: "Active",
-          dateJoined: "2024-12-09",
-        },
-        {
-          id: 4,
-          name: "Ana Villanueva",
-          email: "ana.villanueva@example.com",
-          propertyCount: 2,
-          status: "Active",
-          dateJoined: "2024-11-02",
-        },
-      ],
+      users: [],
     };
   },
-
   computed: {
-    filteredOwners() {
-      return this.owners.filter((owner) => {
-        const matchSearch =
-          owner.name.toLowerCase().includes(this.search.toLowerCase()) ||
-          owner.email.toLowerCase().includes(this.search.toLowerCase());
-
-        const matchStatus =
-          this.filterStatus === "" ||
-          owner.status.toLowerCase() === this.filterStatus.toLowerCase();
-
-        return matchSearch && matchStatus;
-      });
-    },
+    
   },
-
   methods: {
     resetFilter() {
       this.search = "";
       this.filterStatus = "";
     },
+    async getUsers(){
+      try {
+        const res = await getUsers();
+        this.users = [];
+        this.users = res.data.data;
+      } catch (error) {
+        console.error(error)
+      }
+    },
+    async getToggleUserStatus(status){
+      try {
+        console.log("Fetching users by:", status);
+
+        let res;
+        if (status === "all") {
+          res = await getUsers();
+        } else {
+          res = await getUserByStatus(status);
+        }
+
+        console.log("API response:", res.data); // 🔍 check if this contains data
+        this.users = [];
+        this.users = res.data.data || res.data; // adjust if backend doesn’t wrap in .data.data
+        console.log("Users updated:", this.users.length);
+      } catch (error) {
+        console.error(error)
+      }
+    },
   },
+  mounted() {
+    this.getUsers();
+  },
+  watch: {
+    filterStatus(newVal) {
+      this.getToggleUserStatus(newVal);
+    },
+  }
 };
 </script>
 

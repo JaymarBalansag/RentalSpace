@@ -92,6 +92,7 @@ export default {
         { name: 'Overview', route: '/overview', icon: 'bi bi-speedometer2' },
         { name: 'Properties', route: '/properties', icon: 'bi bi-building' },
         { name: 'Tenants', route: '/tenants', icon: 'bi bi-people' },
+        { name: 'Bookings', route: '/bookings', icon: 'bi bi-book' },
         { name: 'Billing', route: '/billing', icon: 'bi bi-cash-stack' },
         { name: 'Reports', route: '/reports', icon: 'bi bi-bar-chart-line' },
       ],

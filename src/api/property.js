@@ -104,8 +104,8 @@ export async function deleteProperty(id) {
 
 // Fetch a single property by ID
 export async function getProperty(id) {
-  const res = await api.get(`/properties/${id}`);
-  return res.data;
+    const res = await api.get(`/properties/${id}`);
+    return res.data;
 }
 
 export async function getFilteredProperties(amenities, facilities, min_price, max_price, selectedType, selectedAgreement) {
@@ -143,3 +143,13 @@ export async function getFilteredProperties(amenities, facilities, min_price, ma
   return res;
 }
 
+
+export async function submitBookingRequest(id) {
+  try {
+    console.log(id);
+    const res = await api.post(`/bookings/${id}`);
+    return res;
+  } catch (error) {
+    return error
+  }
+}

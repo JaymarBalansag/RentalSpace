@@ -30,6 +30,8 @@ import AdminDashboard from '@/views/Admin/AdminDashboard.vue'
 import OwnerList from '@/views/Admin/owners/ownerList.vue'
 import TenantsList from '@/views/Admin/tenants/tenantsList.vue'
 import AdminProperty from '@/views/Admin/property/AdminProperty.vue'
+import TestMessage from '@/views/User/TestMessage.vue'
+import Bookings from '@/views/Owner/Bookings.vue'
 const routes = [
   {
       path: '/',
@@ -154,6 +156,11 @@ const routes = [
           component: Tenants
         },
         {
+          path: "/bookings",
+          name: "OwnerBookings",
+          component: Bookings
+        },
+        {
           path: "/billing",
           name: "OwnerBilling",
           component: Billing
@@ -191,6 +198,12 @@ const routes = [
       } 
     ]
    },
+   {
+    path: "/testMessage",
+    name: "TestMessage",
+    component: TestMessage,
+    meta: { requiresAuth:true }
+   }
 
 ]
 

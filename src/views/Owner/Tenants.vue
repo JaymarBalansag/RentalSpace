@@ -3,10 +3,14 @@
     <h4 class="mb-3">👥 Tenants</h4>
     <div class="d-flex justify-content-between mb-3">
       <div class="d-flex gap-2">
+        <select class="form-select" aria-label="Default select example" v-model="selectedProperty">
+          <option value="0">All</option>
+          <option v-for="property in properties" :key="property.id" :value="property.id">{{ property.title }}</option>
+        </select>
         <input type="text" class="form-control" placeholder="Search Tenant..." v-model="searchQuery" />
         <button class="btn btn-outline-secondary" @click="clearSearch">Clear</button>
       </div>
-      <button class="btn btn-primary">Add Tenant</button>
+      <button class="btn btn-primary">Show Inactive Tenant</button>
     </div>
 
     <table class="table table-bordered table-striped">
@@ -14,18 +18,18 @@
         <tr>
           <th>Name</th>
           <th>Property</th>
-          <th>Contact</th>
+          <th>Email</th>
           <th>Rent Status</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="tenant in filteredTenants" :key="tenant.id" class="table-row-hover">
-          <td>{{ tenant.name }}</td>
-          <td>{{ tenant.property }}</td>
-          <td>{{ tenant.contact }}</td>
+        <tr v-for="tenant in tenants" :key="tenant.id" class="table-row-hover">
+          <td>{{ tenant.first_name }} {{ tenant.last_name }}</td>
+          <td>{{ tenant.property_title }}</td>
+          <td>{{ tenant.tenant_email }}</td>
           <td>
-            <span :class="tenant.rent_status === 'Paid' ? 'badge bg-success' : 'badge bg-warning'">
-              {{ tenant.rent_status }}
+            <span :class="tenant.rent_status === 'active' ? 'badge bg-warning' : 'badge bg-success'">
+              {{ tenant.status }}
             </span>
           </td>
         </tr>
@@ -35,14 +39,16 @@
 </template>
 
 <script>
+import { getTenantsByProperty, getTenantsList } from '@/api/Owner/tenants';
+import { getOwnerProperties } from '@/api/property';
+
 export default {
   data() {
     return {
-      tenants: [
-        { id: 1, name: 'Juan Dela Cruz', property: 'Boarding House A', contact: '09123456789', rent_status: 'Paid' },
-        { id: 2, name: 'Maria Clara', property: 'Apartment B', contact: '09123456780', rent_status: 'Pending' },
-      ],
+      selectedProperty: 0,
+      tenants: [],
       searchQuery: '',
+      properties: []
     };
   },
   computed: {
@@ -50,9 +56,46 @@ export default {
       return this.tenants.filter(tenant => tenant.name.toLowerCase().includes(this.searchQuery.toLowerCase()));
     }
   },
+  mounted() {
+    this.getPropertyType();
+    this.getTenants();
+  },
   methods: {
     clearSearch() {
       this.searchQuery = '';
+    },
+
+    async getPropertyType(){
+      try {
+        const response = await getOwnerProperties();
+        this.properties = response.data.properties;
+      } catch (error) {
+        console.error(error);
+      }
+    },
+
+    // Gets the tenants based on property type selected
+
+    async getTenants() {
+      switch (Number(this.selectedProperty)) {
+        case 0:
+          // console.log(this.selectedProperty);
+          const response = await getTenantsList();
+          this.tenants = response.data.data;
+
+          break;
+        default:
+          // console.log(this.selectedProperty);
+          const res = await getTenantsByProperty(this.selectedProperty);
+          this.tenants = res.data.data;
+
+          break;
+      }
+    }
+  },
+  watch: {
+    selectedProperty() {
+      this.getTenants();
     }
   }
 };

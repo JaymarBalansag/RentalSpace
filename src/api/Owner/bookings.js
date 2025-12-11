@@ -44,3 +44,15 @@ export async function submitAgreement(agreement, property_id) {
         return error
     }
 }
+
+export async function approveBooking(booking_id){
+    try {
+        console.log(booking_id)
+        const response = await api.post(`/bookings/${booking_id}/approve`)
+        
+        return response;
+
+    } catch (error) {
+        return error;
+    }
+}

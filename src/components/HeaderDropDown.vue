@@ -11,7 +11,7 @@
     </button>
 
     <!-- Dropdown Menu -->
-    <ul class="dropdown-menu dropdown-menu-end nav-underline" aria-labelledby="profileDropdown">
+    <ul class="dropdown-menu dropdown-menu-end " aria-labelledby="profileDropdown">
       <!-- If Logged In -->
       <template v-if="isLoggedIn">
         <li>

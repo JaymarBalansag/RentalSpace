@@ -238,7 +238,6 @@ import { RouterLink } from "vue-router";
 import { submitBookingRequest } from "@/api/property";
 import BookingRequestModal from "@/components/Bookins/BookingRequestModal.vue";
 import { submitAgreement } from "@/api/Owner/bookings.js";
-import { Modal } from "bootstrap";
 
 
 export default {
@@ -313,12 +312,6 @@ export default {
         if(response.status == 400){
           alert("Booking Already Exists for this property.");
         }
-        
-        const modalElement = document.getElementById("staticBackdrop");
-        const modalInstance = Modal.getOrCreateInstance(modalElement);
-        modalInstance.hide();
-
-        this.showModal = false;
         
 
 

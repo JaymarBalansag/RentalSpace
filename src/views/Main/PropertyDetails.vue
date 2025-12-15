@@ -37,12 +37,38 @@
           Type: <span class="fw-semibold">{{ property.type_name }}</span>
         </p>
 
+        <!-- Owner Info -->
+        <div class="d-flex align-items-center gap-3 p-3 border rounded mb-4 bg-light">
+          <img
+            :src="property.owner_profile_photo || placeholderImg"
+            class="rounded-circle"
+            width="50"
+            height="50"
+            alt="Owner"
+          />
+
+          <div class="flex-grow-1">
+            <p class="mb-0 fw-semibold">{{ property.owner_name }}</p>
+            <small class="text-muted">Property Owner</small>
+          </div>
+
+          <!-- Future profile button -->
+          
+          <!-- <button
+            class="btn btn-sm btn-outline-secondary"
+          >
+            View Profile
+          </button> -->
+         
+        </div>
+
+
         <div class="mt-4 d-flex gap-2">
           <!-- <button class="btn btn-primary px-4" @click="submitBookingRequest(property.id)">
             <i class="bi bi-calendar-check"></i> Book Now
           </button> -->
 
-          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userAgreementModal">
+          <button :disabled="property.owner_id === this.authId"  type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userAgreementModal">
             <i class="bi bi-calendar-check"></i> Book Now
           </button>
 
@@ -146,7 +172,12 @@
           </div>
           
 
-          <button class="btn btn-outline-secondary px-4">
+          <button
+            class="btn btn-outline-secondary px-4"
+            :disabled="property.owner_id === this.authId"
+            @click="contactOwner(property.owner_id, property.id)"
+            :title="property.owner_id === authId ? 'You cannot contact yourself' : ''"
+          >
             <i class="bi bi-chat-dots"></i> Contact Owner
           </button>
         </div>
@@ -221,6 +252,66 @@
       </div>
     </div>
     <!-- Related Properties -->
+
+    <!-- Ratings & Comments -->
+    <div class="mt-5">
+      <h4 class="fw-bold mb-3 text-primary">Ratings & Reviews</h4>
+
+      <!-- Average Rating -->
+      <div class="d-flex align-items-center mb-3">
+        <div class="me-3">
+          <span class="fs-3 fw-bold">4.2</span> / 5
+        </div>
+        <div>
+          <span v-for="star in 5" :key="star" class="text-warning me-1">
+            <i :class="star <= 4 ? 'bi bi-star-fill' : 'bi bi-star'" ></i>
+          </span>
+          <small class="text-muted ms-2">(15 reviews)</small>
+        </div>
+      </div>
+
+      <!-- User Reviews List -->
+      <div class="list-group mb-4">
+        <div class="list-group-item" v-for="(review, i) in dummyReviews" :key="i">
+          <div class="d-flex align-items-center mb-2">
+            <img :src="review.user_img || placeholderImg" class="rounded-circle me-2" width="40" height="40" />
+            <div>
+              <p class="mb-0 fw-semibold">{{ review.user_name }}</p>
+              <div>
+                <span v-for="star in 5" :key="star" class="text-warning me-1">
+                  <i :class="star <= review.rating ? 'bi bi-star-fill' : 'bi bi-star'" ></i>
+                </span>
+              </div>
+            </div>
+          </div>
+          <p class="mb-0 text-muted">{{ review.comment }}</p>
+        </div>
+      </div>
+
+      <!-- Property Images Carousel -->
+      <div class="mb-4">
+        <h5 class="fw-bold mb-2">Property Images</h5>
+        <div id="propertyImagesCarousel" class="carousel slide" data-bs-ride="carousel">
+          <div class="carousel-inner">
+            <div v-for="(img, index) in propertyImages" :key="index" 
+                :class="['carousel-item', { active: index === 0 }]">
+              <img :src="img" class="d-block w-100" style="height: 300px; object-fit: cover;" />
+            </div>
+          </div>
+          <button class="carousel-control-prev" type="button" data-bs-target="#propertyImagesCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#propertyImagesCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+    <!-- Ratings & Comments -->
+
+
+
   </div>
 
   <!-- Loader / Fallback -->
@@ -238,6 +329,8 @@ import { RouterLink } from "vue-router";
 import { submitBookingRequest } from "@/api/property";
 import BookingRequestModal from "@/components/Bookins/BookingRequestModal.vue";
 import { submitAgreement } from "@/api/Owner/bookings.js";
+import { initiateConversation } from "@/api/messages";
+import { getAuthUserId } from "@/api/user";
 
 
 export default {
@@ -251,7 +344,17 @@ export default {
       property_type: "",
       property_type_id: "",
       showModal : false,
-
+      authId: null,
+      dummyReviews: [
+        { user_name: "Juan Dela Cruz", rating: 5, comment: "Very clean and well-maintained property!", user_img: null },
+        { user_name: "Maria Santos", rating: 4, comment: "Great location but a bit noisy at night.", user_img: null },
+        { user_name: "Pedro Reyes", rating: 4, comment: "Friendly owner and smooth booking process.", user_img: null },
+      ],
+      propertyImages: [
+        placeholderImg,
+        placeholderImg,
+        placeholderImg
+      ],
       // Modal Options
       agreement: {
         stay_months: null,
@@ -319,8 +422,33 @@ export default {
         console.error("Agreement Submit Error:", error);
       }
     },
+    async getAuthId() {
+      try {
+        const response = await getAuthUserId();
+        this.authId = response.data.userid;
+      } catch (error) {
+        console.error("Error fetching auth ID:", error);
+      }
+    },
+    async contactOwner(receiver_id, property_id) {
+      try {
+        // if(receiver_id === this.authId){
+        //   alert("You cannot contact yourself.");
+        //   return;
+        // }
+        // alert(receiver_id);
+        // alert(property_id);
+        const response = await initiateConversation(receiver_id, property_id);
+        
+        console.log("Initiate Conversation Response:", response);
+        this.$router.push({ path: '/messages', query: { user: receiver_id } });
+      } catch (error) {
+        console.log("Contact Owner Error:", error);
+      }
+    }
   },
   mounted() {
+    this.getAuthId();
   },
   watch: {
     '$route.params.id': {

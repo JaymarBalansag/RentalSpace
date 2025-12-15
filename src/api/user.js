@@ -6,9 +6,9 @@ export async function getUserProfile() {
 }
 
 export async function completeProfile(formData) {
-  for (let pair of formData.entries()) {
-    console.log(pair[0]+ ': ' + pair[1]);
-  }
+  // for (let pair of formData.entries()) {
+  //   console.log(pair[0]+ ': ' + pair[1]);
+  // }
   const res = await api.post("/profile_completion", formData, {
     headers: {
       "Content-Type" : "multipart/form-data"
@@ -16,4 +16,13 @@ export async function completeProfile(formData) {
   })
   return res
 
+}
+
+export async function getAuthUserId() {
+  try {
+    const response = await api.get("/UID");
+    return response;
+  } catch (error) {
+    return error;
+  }
 }

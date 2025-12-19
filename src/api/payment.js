@@ -10,11 +10,9 @@ const email = null;
 
 
 
-export async function paymentConfirmation(plan, method, price){
-    
-    return await api.post("/paymentConfirmation", {
-        plan: plan,
-        payment_method: method,
-        price: price
-    });
+export function paymentConfirmation(plan, method) {
+  return api.post("/payment/confirm", {
+    plan,
+    payment_method: method
+  });
 }

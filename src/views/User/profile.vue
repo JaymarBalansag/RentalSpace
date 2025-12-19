@@ -1,89 +1,166 @@
 <template>
-  <div class="container py-3">
+  <div class="container py-4">
     <!-- Back Button -->
-    <RouterLink class="btn btn-outline-secondary fw-bold mb-3" to="/">
-      <i class="bi bi-arrow-90deg-left me-1"></i> Back
+    <RouterLink class="btn btn-outline-secondary fw-semibold mb-3" to="/">
+      <i class="bi bi-arrow-left me-1"></i> Back
     </RouterLink>
 
     <!-- Profile Card -->
-    <div class="card shadow border-0 rounded-3">
-      <div class="card-header bg-white border-0 text-center">
-      <!-- Avatar Circle -->
-      <div class="d-flex justify-content-center">
-          <div class="profile-circle mb-3">
+    <div class="card shadow border-0 rounded-4 position-relative">
+      <!-- Edit Button (Top Right) -->
+      <RouterLink
+        to="/profile/edit"
+        class="btn btn-sm btn-outline-primary position-absolute end-0 mt-3 me-3"
+      >
+        <i class="bi bi-pencil"></i> Edit
+      </RouterLink>
+
+      <!-- Header -->
+      <div class="card-header bg-white border-0 text-center pt-4">
+        <div class="d-flex justify-content-center mb-3">
+          <div class="profile-circle">
             <img
-            v-if="user.user_img_url"
-            :src="user.user_img_url"
-            alt="Profile"
-            class="img-fluid rounded-circle"
-            style="width: 100%; height: 100%; object-fit: cover;"
-            @error="$event.target.src = placeholderImg"
-          />
-          <i v-else class="bi bi-person text-secondary"></i>
+              v-if="user.user_img_url"
+              :src="user.user_img_url"
+              alt="Profile"
+              class="img-fluid rounded-circle"
+              @error="$event.target.src = placeholderImg"
+            />
+            <i v-else class="bi bi-person text-secondary"></i>
           </div>
         </div>
-        <h3 class="mb-0 fs-2 fw-bold">{{ name }}</h3>
+
+        <h3 class="fw-bold mb-1">{{ name }}</h3>
         <p class="text-muted mb-2">{{ email }}</p>
+
+        <!-- Profile Status -->
+        <span
+          class="badge px-3 py-2"
+          :class="isComplete ? 'bg-success' : 'bg-warning text-dark'"
+        >
+          {{ isComplete ? 'Profile Complete' : 'Profile Incomplete' }}
+        </span>
       </div>
 
-      <!-- If profile is incomplete -->
-      <div v-if="this.isComplete == 0" class="card-body text-center py-5">
-        <h4 class="fw-bold mb-3">Complete Your Profile to Unlock More Features</h4>
-        <RouterLink to="/completion" class="btn btn-primary btn-lg">
-          <i class="bi bi-pencil-square me-2"></i> Complete Profile
-        </RouterLink>
-      </div>
-
-      <!-- If profile is complete -->
-      <div v-else class="card-body">
-        <div class="row g-4">
-          <!-- Map -->
-          <div class="col-lg-6">
-            <div id="map" class="rounded shadow-sm" style="height: 50vh;"></div>
-          </div>
-
-          <!-- User Info -->
-          <div class="col-lg-6">
-            <div class="list-group shadow-sm rounded">
-              <div class="list-group-item">
-                <i class="bi bi-telephone me-2"></i> {{ this.user.phone_number }}
-              </div>
-              <div class="list-group-item">
-                <i class="bi bi-signpost me-2"></i> {{ this.user.streets}}
-              </div>
-              <div class="list-group-item">
-                <i class="bi bi-building me-2"></i> {{ this.user.muncity }}
-              </div>
-              <div class="list-group-item">
-                <i class="bi bi-geo me-2"></i> {{ this.user.province }}
-              </div>
-            </div>
-          </div>
+      <!-- Body -->
+      <div class="card-body">
+        <!-- Incomplete Profile -->
+        <div v-if="!isComplete" class="text-center py-5">
+          <h5 class="fw-bold mb-3">
+            Complete your profile to unlock full features
+          </h5>
+          <RouterLink to="/completion" class="btn btn-primary btn-lg">
+            <i class="bi bi-pencil-square me-2"></i> Complete Profile
+          </RouterLink>
         </div>
 
-        <hr class="my-5">
+        <!-- Complete Profile -->
+        <div v-else>
+          <!-- User Info -->
+          <div class="row g-4 mb-5">
+            <div class="col-lg-6">
+              <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">
+                    <i class="bi bi-person-lines-fill me-2"></i> Contact Information
+                  </h5>
 
-        <!-- Preferences Section -->
-        <div>
-          <h3 class="fw-bold mb-4">Preferences</h3>
-          <div class="row">
-            <div class="col-md-6 mb-4">
-              <h5 class="fw-semibold">Amenities</h5>
-              <hr>
-              <div class="d-flex gap-3 align-items-center">
-                <i class="bi bi-wifi fs-3"></i>
-                <span>Wi-Fi</span>
+                  <div class="list-group list-group-flush">
+                    <div class="list-group-item">
+                      <i class="bi bi-telephone me-2"></i>
+                      {{ user.phone_number || 'Not provided' }}
+                    </div>
+                    <div class="list-group-item">
+                      <i class="bi bi-signpost me-2"></i>
+                      {{ user.streets || 'Not provided' }}
+                    </div>
+                    <div class="list-group-item">
+                      <i class="bi bi-building me-2"></i>
+                      {{ user.muncity || 'Not provided' }}
+                    </div>
+                    <div class="list-group-item">
+                      <i class="bi bi-geo-alt me-2"></i>
+                      {{ user.province || 'Not provided' }}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="col-md-6 mb-4">
-              <h5 class="fw-semibold">Property Type</h5>
-              <hr>
-              <div class="d-flex gap-3 align-items-center">
-                <i class="bi bi-house fs-3"></i>
-                <span>Boarding House</span>
+
+            <!-- Map -->
+            <div class="col-lg-6">
+              <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">
+                    <i class="bi bi-map me-2"></i> Location
+                  </h5>
+                  <div id="map" class="rounded-3" style="height: 320px;"></div>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Preferences -->
+          <div class="card shadow-sm border-0">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-semibold mb-0">
+                  <i class="bi bi-sliders me-2"></i> Preferences
+                </h5>
+
+                <RouterLink
+                  to="/profile/preferences/edit"
+                  class="btn btn-sm btn-outline-primary"
+                >
+                  <i class="bi bi-pencil"></i> Edit
+                </RouterLink>
+              </div>
+
+              <div class="row g-4">
+
+              <!-- Amenities -->
+              <div class="col-md-6">
+                <h6 class="fw-semibold mb-2">Amenities</h6>
+
+                <div class="d-flex flex-wrap gap-2">
+                  <span
+                    v-for="(amenity, index) in amenities"
+                    :key="'amenity-' + index"
+                    class="badge rounded-pill bg-light text-dark border"
+                  >
+                    {{ amenity }}
+                  </span>
+
+                  <span v-if="!amenities.length" class="text-muted small">
+                    No preferences set
+                  </span>
+                </div>
+              </div>
+
+              <!-- Property Types -->
+              <div class="col-md-6">
+                <h6 class="fw-semibold mb-2">Property Type</h6>
+
+                <div class="d-flex flex-wrap gap-2">
+                  <span
+                    v-for="(type, index) in propertyTypes"
+                    :key="'type-' + index"
+                    class="badge rounded-pill bg-light text-dark border"
+                  >
+                    {{ type }}
+                  </span>
+
+                  <span v-if="!propertyTypes.length" class="text-muted small">
+                    No preferences set
+                  </span>
+                </div>
+              </div>
+
+            </div>
+
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -92,7 +169,7 @@
 
 <script>
 import { RouterLink } from "vue-router";
-import { getUserProfile } from "@/api/user";
+import { getUserPreferences, getUserProfile } from "@/api/user";
 import L from "leaflet";
 import { useUserInfo } from "@/store/userInfo";
 
@@ -103,91 +180,91 @@ export default {
     return {
       user: {
         streets: null,
-        barangay: null,
-        province:null,
+        province: null,
         muncity: null,
         phone_number: null,
         latitude: null,
-        longitude: null
+        longitude: null,
+        user_img_url: null,
       },
-      isComplete: null,
-      location: null,
+      isComplete: false,
       map: null,
+      amenities: [],
+      propertyTypes: [],
     };
   },
   computed: {
     name() {
       const info = useUserInfo();
-      return info.first_name + " " + info.last_name
+      return `${info.first_name} ${info.last_name}`;
     },
     email() {
-      const info = useUserInfo();
-      return info.email
+      return useUserInfo().email;
     },
   },
   mounted() {
     this.fetchUserProfile();
+    this.fetchPreferences();
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        this.handleLocationSuccess,
-        this.handleLocationError
+        this.initFromBrowserLocation,
+        () => this.initMap()
       );
-    } else {
-      alert("Geolocation is not supported by this browser.");
     }
   },
   methods: {
     async fetchUserProfile() {
-      try {
-        const response = await getUserProfile();
-        console.log("response",response)
-        const data = response.data.user[0]
-        this.user.phone_number = data.phone_number;
-        this.user.province = data.provDesc
-        this.user.streets = data.streets
-        this.user.muncity = data.muncityDesc
-        this.isComplete = data.isComplete;
-        this.user.latitude = data.latitude;
-        this.user.longitude = data.longitude
-        this.user.user_img_url = data.user_img_url;
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-      }
-    },
-    handleLocationSuccess(position) {
-      this.location = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-      };
-      this.initMap(this.location.lat, this.location.lng);
-    },
-    initMap(lat, lng) {
-      let latitude = lat; 
-      let longitude = lng;
+      const response = await getUserProfile();
+      const data = response.data.user[0];
 
+      Object.assign(this.user, {
+        phone_number: data.phone_number,
+        province: data.provDesc,
+        streets: data.streets,
+        muncity: data.muncityDesc,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        user_img_url: data.user_img_url,
+      });
 
-      if(parseFloat(this.user.latitude) && parseFloat(this.user.longitude)){
-        latitude = this.user.latitude
-        longitude = this.user.longitude
-      }
-      
-      if (this.map) return; // Prevent re-init
-      this.map = L.map("map", { zoomControl: false }).setView([latitude, longitude], 15);
+      this.isComplete = data.isComplete;
+    },
+    initFromBrowserLocation(pos) {
+      this.initMap(pos.coords.latitude, pos.coords.longitude);
+    },
+    initMap(lat = 14.5995, lng = 120.9842) {
+      const latitude = this.user.latitude || lat;
+      const longitude = this.user.longitude || lng;
+
+      if (this.map) return;
+
+      this.map = L.map("map", { zoomControl: false }).setView(
+        [latitude, longitude],
+        15
+      );
 
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        attribution: "&copy; OpenStreetMap contributors",
       }).addTo(this.map);
 
-      L.marker([latitude, longitude]).addTo(this.map).bindPopup("You are here!").openPopup();
+      L.marker([latitude, longitude])
+        .addTo(this.map)
+        .bindPopup("Registered location");
 
-      // Custom zoom controls bottom-right
       L.control.zoom({ position: "bottomright" }).addTo(this.map);
     },
-    handleLocationError(error) {
-      alert("Failed to get location: " + error.message);
-    },
+    async fetchPreferences() {
+      try {
+        const response = await getUserPreferences();
+
+        this.amenities = response.data.amenities;
+        this.propertyTypes = response.data.property_types;
+
+      } catch (error) {
+        console.error("Error fetching preferences:", error);
+      }
+    }
   },
 };
 </script>
@@ -196,17 +273,23 @@ export default {
 .profile-circle {
   width: 120px;
   height: 120px;
-  background-color: #fff;
-  border: 2px solid #dee2e6;
   border-radius: 50%;
+  background: #fff;
+  border: 2px solid #dee2e6;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.profile-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .profile-circle i {
   font-size: 3rem;
-  line-height: 1;
 }
 </style>

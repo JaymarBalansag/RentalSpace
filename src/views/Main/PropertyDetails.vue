@@ -350,11 +350,7 @@ export default {
         { user_name: "Maria Santos", rating: 4, comment: "Great location but a bit noisy at night.", user_img: null },
         { user_name: "Pedro Reyes", rating: 4, comment: "Friendly owner and smooth booking process.", user_img: null },
       ],
-      propertyImages: [
-        placeholderImg,
-        placeholderImg,
-        placeholderImg
-      ],
+      propertyImages: [],
       // Modal Options
       agreement: {
         stay_months: null,
@@ -378,6 +374,7 @@ export default {
         this.property = response.data.property;
         this.property_type = response.data.property.type_name
         this.property_type_id = response.data.property.type_id
+        this.propertyImages = response.data.property.images;
         
         // * Fetch related properties (same type, exclude current one)
         const related = await getPropertyByType(this.property_type_id, id)

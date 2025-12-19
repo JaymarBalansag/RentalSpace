@@ -29,7 +29,7 @@
               <li><i class="bi bi-check2 text-success"></i> Admin verification for all listings</li>
               <li><i class="bi bi-check2 text-success"></i> 24/7 support and updates</li>
             </ul>
-            <button @click="selectPlan('monthly',50)" class="btn btn-primary mt-auto">
+            <button @click="selectPlan('Monthly')" class="btn btn-primary mt-auto">
               Subscribe Monthly
             </button>
           </div>
@@ -54,7 +54,7 @@
               <li><i class="bi bi-check2 text-success"></i> Priority admin verification</li>
               <li><i class="bi bi-check2 text-success"></i> Save 20% compared to monthly plan</li>
             </ul>
-            <button @click="selectPlan('annual',500)" class="btn btn-outline-primary mt-auto">
+            <button @click="selectPlan('Annual')" class="btn btn-outline-primary mt-auto">
               Subscribe Annually
             </button>
           </div>
@@ -70,19 +70,20 @@ import Header from '@/components/Header.vue'
 export default {
   name: "PaymentWall",
   components: { Header },
+  data() {
+    return {}
+  },
   methods: {
     selectPlan(planType) {
-      // Redirect to payment details page with selected plan type
       this.$router.push({ 
-        path: '/payment/details', 
-        query: { plan: planType,
-          price: planType === 'monthly' ? 50 : 500
-        }
-      });
+        path: '/payment/details',
+        query: { plan: planType }
+      })
     }
   }
 }
 </script>
+
 
 <style scoped>
 .card {

@@ -32,6 +32,7 @@ import TenantsList from '@/views/Admin/tenants/tenantsList.vue'
 import AdminProperty from '@/views/Admin/property/AdminProperty.vue'
 import TestMessage from '@/views/User/TestMessage.vue'
 import Bookings from '@/views/Owner/Bookings.vue'
+import EditPreference from '@/views/User/editPreference.vue'
 const routes = [
   {
       path: '/',
@@ -69,6 +70,12 @@ const routes = [
       path: '/completion',
       name: 'profile_completion',
       component: CompleteProfile,
+      meta: {requiresAuth:true},
+    },
+    {
+      path: '/profile/preferences/edit',
+      name: 'edit_preferences',
+      component: EditPreference,
       meta: {requiresAuth:true},
     },
     {

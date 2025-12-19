@@ -26,3 +26,21 @@ export async function getAuthUserId() {
     return error;
   }
 }
+
+export async function getUserPreferences() {
+  const response = await api.get("/user/preferences");
+  return response;
+}   
+
+export async function updateUserPreferences(amenities, property_types) {
+  const response = await api.post("/user/preferences", {
+    amenities,
+    property_types,
+  });
+  return response;
+}
+
+export async function getUserPreferencesForEdit() {
+  const response = await api.get("/user/preferences/edit");
+  return response;
+}

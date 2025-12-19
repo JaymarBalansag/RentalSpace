@@ -100,9 +100,9 @@ export default {
       name: null,
       email: null,
       role: null,
-      selectedPlan: "Monthly",
+      selectedPlan: null,
       planPrice: 50,
-      planBilling: "per month",
+      planBilling: "",
       paymentMethod: ""
     }
   },
@@ -119,12 +119,22 @@ export default {
         this.role = userInfo.role
       }
     },
-    getPlanDetails() {
+    async getPlanDetails() {
       const plan = this.$route.query.plan
-      if (plan === "annual") {
+
+      if (plan === "Annual") {
         this.selectedPlan = "Annual"
-        this.planPrice = 5000
+        this.planPrice = 500
         this.planBilling = "per year"
+      } else if (plan === "Monthly") {
+        this.selectedPlan = "Monthly"
+        this.planPrice = 50
+        this.planBilling = "per month"
+      } else {
+        this.$router.push({
+          path: '/payment/wall',
+          query: { message: 'Invalid plan selected' }
+        })
       }
     },
     async confirmPayment() {
@@ -133,22 +143,21 @@ export default {
         return
       }
 
-      if (this.role === "owner") {
-        alert("⚠ You are already an Owner")
-        return
-      }
-
       try {
-        const res = await paymentConfirmation(this.selectedPlan, this.paymentMethod, this.planPrice)
+        const res = await paymentConfirmation(
+          this.selectedPlan,
+          this.paymentMethod
+        )
+
         const info = useUserInfo()
         info.setRole("owner")
+
         localStorage.setItem("userInfo", JSON.stringify(res.data.user))
 
-        alert("✅ Payment confirmed! You are now an Owner.")
+        alert("✅ Subscription activated!")
         this.$router.push("/")
       } catch (err) {
-        console.error(err)
-        alert("❌ Payment confirmation failed.")
+        alert(err.response?.data?.message || "❌ Payment failed")
       }
     }
   }

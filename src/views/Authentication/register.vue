@@ -85,7 +85,6 @@ export default {
   },
   methods: {
     async handleRegister() {
-      const info = useUserInfo();
       try {
         const res = await register(
           this.form.first_name, 
@@ -93,10 +92,13 @@ export default {
           this.form.email, 
           this.form.password
         );
-        if (res && res.first_name) {
-          info.setUserInfo(res.first_name, res.last_name, res.role, res.email);
-          info.setLoggedIn(true);
-          this.$router.push("/home");
+
+        if (res) {
+          // ✅ store success flag
+          sessionStorage.setItem("registerSuccess", "true");
+
+          // redirect to login
+          this.$router.push("/login");
         } else {
           alert("Registration failed. Try again.");
         }

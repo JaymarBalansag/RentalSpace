@@ -1,4 +1,9 @@
 <template>
+
+  <!-- Success Toast -->
+  <successToast v-if="showSuccess" message="🎉 Register successful! Please log in."></successToast>
+
+
   <div class="auth-container d-flex align-items-center justify-content-center vh-100">
     <div class="card shadow-lg border-0 rounded-4 auth-card">
       <!-- Logo -->
@@ -52,12 +57,18 @@
 <script>
 import { login } from '@/api/auth';
 import { useUserInfo } from '@/store/userInfo';
+import successToast from '@/components/successToast.vue';
+import { getUserProfile } from '@/api/user';
 
 export default {
   name: "Login",
+  components: {
+    successToast
+  },
   data() {
     return {
-      form: { email: '', password: '' }
+      form: { email: '', password: '' },
+      showSuccess: false
     };
   },
   methods: {
@@ -66,8 +77,17 @@ export default {
       try {
         const res = await login(this.form.email, this.form.password);
         if (res && res.first_name) {
-          info.setUserInfo(res.first_name, res.last_name, res.role, res.email);
-          info.setLoggedIn(true);
+
+          // fetch profile image right after login
+          const profileRes = await getUserProfile();
+          const data = profileRes.data.user[0];
+          const profile_photo = data.user_img_url || null;
+
+          info.setUserInfo(res.first_name, res.last_name, res.role, res.email, profile_photo );
+
+          sessionStorage.setItem("loginSuccess", "true");
+
+
           this.$router.push("/home");
         } else {
           alert("Invalid credentials");
@@ -75,7 +95,28 @@ export default {
       } catch (error) {
         alert(error.response?.data?.message || "Something went wrong");
       }
+    },
+    registerSuccessToast() {
+      const toastEl = this.$refs.successToast;
+      
+      toastEl.classList.add("show");
+
+      setTimeout(() => {
+        toastEl.classList.remove("show");
+      }, 4000);
+
+      sessionStorage.removeItem("registerSuccess");
     }
+  },
+  mounted() {
+
+    const registerSuccess = sessionStorage.getItem("registerSuccess");
+
+    if(registerSuccess){
+      this.showSuccess = true;
+      sessionStorage.removeItem("registerSuccess")
+    }
+
   }
 };
 </script>

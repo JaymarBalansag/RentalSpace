@@ -11,6 +11,7 @@
       <RouterLink
         to="/profile/edit"
         class="btn btn-sm btn-outline-primary position-absolute end-0 mt-3 me-3"
+        v-if="this.isComplete"
       >
         <i class="bi bi-pencil"></i> Edit
       </RouterLink>

@@ -2,12 +2,19 @@
   <div class="dropdown">
     <!-- Profile Icon Button -->
     <button 
+      type="button"
       class="btn fw-lighter text-light dropdown-toggle " 
       id="profileDropdown" 
       data-bs-toggle="dropdown" 
       aria-expanded="false"
     >
-      <i class="bi bi-person-circle fs-2"></i>
+      <img
+        :src="Profile || placeholderImg"
+        class="rounded-circle"
+        width="50"
+        height="50"
+        alt="User profile picture"
+      />
     </button>
 
     <!-- Dropdown Menu -->
@@ -16,27 +23,10 @@
       <template v-if="isLoggedIn">
         <li>
           <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/profile">
-            {{ nameis }}
+            <i class="bi bi-person"></i> {{ nameis }}
           </RouterLink>
         </li>
         <li><hr class="dropdown-divider"></li>
-        <li>
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/profile">
-            <i class="bi bi-person"></i> Profile
-          </RouterLink>
-        </li>
-        <li>
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/messages">
-            <i class="bi bi-chat-dots"></i> Messages
-          </RouterLink>
-        </li>
-        <li>
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/notifications">
-            <i class="bi bi-bell"></i> Notifications
-          </RouterLink>
-        </li>
-        <li><hr class="dropdown-divider"></li>
-
         <!-- Role-based Items -->
         <li v-if="roleIs === 'user'">
           <button @click="goToPaymentWall" class="dropdown-item text-primary">
@@ -54,22 +44,26 @@
           </RouterLink>
         </li>
         <li><hr class="dropdown-divider"></li>
+        <li>
+          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/messages">
+            <i class="bi bi-chat-dots"></i> Messages
+          </RouterLink>
+        </li>
+        <li>
+          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/notifications">
+            <i class="bi bi-bell"></i> Notifications
+          </RouterLink>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+
+        
 
         <li>
           <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/settings">
             <i class="bi bi-gear"></i> Settings
           </RouterLink>
         </li>
-        <li>
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/about">
-            <i class="bi bi-file-earmark"></i> About
-          </RouterLink>
-        </li>
-        <li>
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/contactus">
-            <i class="bi bi-envelope"></i> Contact Us
-          </RouterLink>
-        </li>
+        
         <li><hr class="dropdown-divider"></li>
         <li>
           <button @click="handleLogout" class="dropdown-item text-danger d-flex gap-2 align-items-center">
@@ -100,6 +94,8 @@ import { RouterLink } from 'vue-router';
 import { logout } from '@/api/auth';
 import { useUserInfo } from '@/store/userInfo';
 import { isSubscribing } from '@/api/property';
+import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
+
 
 export default {
   name: "ProfileDropdown",
@@ -116,7 +112,16 @@ export default {
     nameis(){
       const info = useUserInfo();
       return info.first_name + " " + info.last_name
-
+    },
+    Profile(){
+      const info = useUserInfo();
+      return info.profile_photo;
+    }
+  },
+  data() {
+    return {
+      userprofile : null,
+      placeholderImg: placeholderImg
     }
   },
   methods: {
@@ -127,6 +132,7 @@ export default {
       try {
         await logout();
         const info = useUserInfo();
+        this.userprofile = null;
         info.logout();
         this.$router.push("/login");
       } catch (error) {
@@ -137,7 +143,8 @@ export default {
           alert("Something went wrong!");
         }
       }
-    }
-  }
+    },
+    
+  },
 }
 </script>

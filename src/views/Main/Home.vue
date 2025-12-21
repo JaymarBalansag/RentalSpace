@@ -1,5 +1,8 @@
 <template>
-  <Header />
+  <!-- <Header /> -->
+
+  <!-- Success Toast -->
+  <successToast v-if="showSuccess" message="🎉 Login successful, Welcome!" ></successToast>
 
   <!-- Search Filter -->
   <div class="container-fluid bg-light py-5">
@@ -128,18 +131,20 @@
 
 <script>
 import { RouterLink } from 'vue-router';
-import Header from '@/components/Header.vue';
 import placeholderImg from '@/assets/Placeholder/thumbnail_placeholder.jpg'; 
 import { getProperties, getPropertyTypes, getAmenities, getFacilities, getFilteredProperties } from '@/api/property';
+import successToast from '@/components/successToast.vue';
+
 
 export default {
   name: 'Home',
   components: {
-    Header,
-    RouterLink
+    RouterLink,
+    successToast
   },
   data() {
     return {
+      showSuccess: false,
       amenities: [],
       facilities: [],
       property_types: [],
@@ -202,13 +207,36 @@ export default {
       } catch (error) {
         console.log("Filtered Properties Error: " + error)
       }
+    },
+    checkToast() {
+      const toastEl = this.$refs.successToast;
+
+      // show the toast
+      toastEl.classList.add('show');
+
+      // hide it again after 4 seconds (4000 ms)
+      setTimeout(() => {
+        toastEl.classList.remove('show');
+      }, 4000);
+
+
+      sessionStorage.removeItem("loginSuccess")
     }
+
   },
   mounted() {
     this.getAmenities()
     this.getFacilities()
     this.getPropertyTypes()
     this.getProperties()
+
+    const success = sessionStorage.getItem("loginSuccess");
+
+    if(success){
+      this.showSuccess = true;
+      sessionStorage.removeItem("loginSuccess")
+    }
+    
   },
   watch: {
     selectedType: {

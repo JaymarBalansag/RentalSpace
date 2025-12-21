@@ -3,198 +3,185 @@
     <div class="card shadow border-0 rounded-4">
       <div class="card-body p-4">
         <RouterLink to="/profile" class="btn btn-secondary mb-3">Back</RouterLink>
-        
+
         <!-- Progress Bar -->
         <div class="mb-4">
           <div class="progress" style="height: 8px;">
-            <div 
-              class="progress-bar bg-primary" 
-              role="progressbar" 
+            <div
+              class="progress-bar bg-primary"
+              role="progressbar"
               :style="{ width: progress + '%' }"
             ></div>
           </div>
-          <p class="text-muted small mt-2">Step {{ step }} of 4</p>
+          <p class="text-muted small mt-2">Step {{ step }} of 5</p>
         </div>
 
-        <!-- Step 1: Basic Info -->
+        <!-- STEP 1: Basic Info -->
         <div v-if="step === 1">
           <h4 class="fw-bold mb-3">Basic Information</h4>
           <div class="row g-3">
             <div class="col-md-6">
-              <input 
-                type="text" 
-                class="form-control form-control-lg rounded-3" 
-                placeholder="First Name" 
-                v-model="form.first_name"
-                disabled
-              />
+              <input class="form-control form-control-lg" v-model="form.first_name" disabled />
             </div>
             <div class="col-md-6">
-              <input 
-                type="text" 
-                class="form-control form-control-lg rounded-3" 
-                placeholder="Last Name" 
-                v-model="form.last_name"
-                disabled
-              />
+              <input class="form-control form-control-lg" v-model="form.last_name" disabled />
             </div>
             <div class="col-md-12">
-              <input 
-                type="email" 
-                class="form-control form-control-lg rounded-3" 
-                placeholder="Email Address" 
-                v-model="form.email"
-                disabled
-              />
+              <input class="form-control form-control-lg" v-model="form.email" disabled />
             </div>
             <div class="col-md-12">
-              <input 
-                type="text" 
-                class="form-control form-control-lg rounded-3" 
-                placeholder="Phone Number" 
+              <input
+                class="form-control form-control-lg"
+                placeholder="Phone Number"
                 v-model="form.phone_number"
               />
             </div>
           </div>
         </div>
 
-        <!-- Step 2: Profile Picture -->
+        <!-- STEP 2: Profile Picture -->
         <div v-if="step === 2">
           <h4 class="fw-bold mb-3">Profile Picture</h4>
           <div class="text-center">
-            <div class="profile-preview mx-auto mb-3">
-              <img 
-                v-if="previewImg" 
-                :src="previewImg" 
-                class="img-fluid rounded-circle" 
-                style="width: 120px; height: 120px; object-fit: cover;"
-              />
-              <i v-else class="bi bi-person-circle text-secondary fs-1"></i>
-            </div>
-            <input type="file"  class="form-control" @change="handleImageUpload" />
+            <img
+              v-if="previewImg"
+              :src="previewImg"
+              class="rounded-circle mb-3"
+              style="width:120px;height:120px;object-fit:cover"
+            />
+            <i v-else class="bi bi-person-circle fs-1 text-secondary"></i>
+            <input type="file" class="form-control mt-3" @change="handleImageUpload" />
           </div>
         </div>
 
-        <!-- Step 3: Address -->
+        <!-- STEP 3: Address -->
         <div v-if="step === 3">
           <h4 class="fw-bold mb-3">Address Details</h4>
           <div class="row g-3">
             <div class="col-md-6">
-              <input 
-                type="text" 
-                class="form-control form-control-lg rounded-3" 
-                placeholder="Street" 
-                v-model="form.streets"
-              />
+              <input class="form-control form-control-lg" placeholder="Street" v-model="form.streets" />
             </div>
+
             <div class="col-md-6">
-              <select v-model="form.region_id" class="form-select form-select-lg rounded-3" @change="getProvinces">
-                <option value="" disabled>Select Region</option>
-                <option 
-                  v-for="region in regions" 
-                  :key="region.id" 
-                  :value="region.id"
-                  :data-code="region.regCode"
-                >
-                  {{ region.regDesc }}
+              <select class="form-select form-select-lg" v-model="form.region_id" @change="getProvinces">
+                <option disabled value="">Select Region</option>
+                <option v-for="r in regions" :key="r.id" :value="r.id" :data-code="r.regCode">
+                  {{ r.regDesc }}
                 </option>
               </select>
             </div>
+
             <div class="col-md-6">
-              <select v-model="form.province_id" class="form-select form-select-lg rounded-3" @change="getMuncities">
-                <option value="" disabled>Select Province</option>
-                <option 
-                  v-for="province in provinces" 
-                  :key="province.id" 
-                  :value="province.id"
-                  :data-code="province.provCode"
-                >
-                  {{ province.provDesc }}
+              <select class="form-select form-select-lg" v-model="form.province_id" @change="getMuncities">
+                <option disabled value="">Select Province</option>
+                <option v-for="p in provinces" :key="p.id" :value="p.id" :data-code="p.provCode">
+                  {{ p.provDesc }}
                 </option>
               </select>
             </div>
+
             <div class="col-md-6">
-              <select v-model="form.muncity_id" class="form-select form-select-lg rounded-3" @change="getBarangays">
-                <option value="" disabled>Select Municipal / City</option>
-                <option 
-                  v-for="muncity in muncities" 
-                  :key="muncity.id" 
-                  :value="muncity.id"
-                  :data-code="muncity.muncityCode"
-                >
-                  {{ muncity.muncityDesc }}
+              <select class="form-select form-select-lg" v-model="form.muncity_id" @change="getBarangays">
+                <option disabled value="">Select Municipality</option>
+                <option v-for="m in muncities" :key="m.id" :value="m.id" :data-code="m.muncityCode">
+                  {{ m.muncityDesc }}
                 </option>
               </select>
             </div>
+
             <div class="col-md-12">
-              <select v-model="form.barangay_id" class="form-select form-select-lg rounded-3">
-                <option value="" disabled>Select Barangays</option>
-                <option 
-                  v-for="brgy in barangays" 
-                  :key="brgy.id" 
-                  :value="brgy.id"
-                >
-                  {{ brgy.brgyDesc }}
+              <select class="form-select form-select-lg" v-model="form.barangay_id">
+                <option disabled value="">Select Barangay</option>
+                <option v-for="b in barangays" :key="b.id" :value="b.id">
+                  {{ b.brgyDesc }}
                 </option>
               </select>
             </div>
           </div>
         </div>
 
-        <!-- Step 4: Location -->
-        <div v-if="step === 4">
+        <!-- STEP 4: Map -->
+        <div v-show="step === 4">
           <h4 class="fw-bold mb-3">Your Location</h4>
-          <p class="text-muted small">We’ll use this to help you find nearby properties.</p>
-          <div id="map" class="rounded shadow-sm" style="height: 40vh;"></div>
-          <!-- optional live coords display -->
-          <div class="mt-2 small text-muted">
-            Lat: <strong>{{ form.latitude ? form.latitude.toFixed(6) : '—' }}</strong> ,
-            Lng: <strong>{{ form.longitude ? form.longitude.toFixed(6) : '—' }}</strong>
+          <div id="map" style="height:40vh" class="rounded shadow"></div>
+          <div class="small mt-2 text-muted">
+            Lat: {{ form.latitude }} | Lng: {{ form.longitude }}
           </div>
         </div>
 
-        <!-- Navigation -->
+        <!-- STEP 5: SUMMARY -->
+        <div v-if="step === 5">
+          <h4 class="fw-bold mb-3">Summary</h4>
+
+          <table class="table table-bordered">
+            <tbody>
+              <tr><th>First Name</th><td>{{ form.first_name }}</td></tr>
+              <tr><th>Last Name</th><td>{{ form.last_name }}</td></tr>
+              <tr><th>Email</th><td>{{ form.email }}</td></tr>
+              <tr><th>Phone</th><td>{{ form.phone_number }}</td></tr>
+              <tr><th>Street</th><td>{{ form.streets }}</td></tr>
+              <tr><th>Region ID</th><td>{{ form.region_id }}</td></tr>
+              <tr><th>Province ID</th><td>{{ form.province_id }}</td></tr>
+              <tr><th>Municipality ID</th><td>{{ form.muncity_id }}</td></tr>
+              <tr><th>Barangay ID</th><td>{{ form.barangay_id }}</td></tr>
+              <tr><th>Latitude</th><td>{{ form.latitude }}</td></tr>
+              <tr><th>Longitude</th><td>{{ form.longitude }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- NAVIGATION -->
         <div class="d-flex justify-content-between mt-4">
-          <button 
-            v-if="step > 1" 
-            class="btn btn-outline-secondary rounded-3 px-4"
-            @click="prevStep"
-          >
+          <button v-if="step > 1" class="btn btn-outline-secondary" @click="prevStep">
             Previous
           </button>
-          <button 
-            v-if="step < 4" 
-            class="btn btn-primary rounded-3 px-4 ms-auto"
-            @click="nextStep"
-          >
+
+          <button v-if="step < 5" class="btn btn-primary ms-auto" @click="nextStep">
             Next
           </button>
-          <button 
-            v-if="step === 4" 
-            class="btn btn-success rounded-3 px-4 ms-auto"
-            @click="submitProfile"
-          >
+
+          <button v-if="step === 5" class="btn btn-success ms-auto" @click="validateSubmitProfile">
             Finish
           </button>
         </div>
       </div>
     </div>
+
+    <!-- Confirm Modal -->
+    <confirmModal
+      :show="showConfirmModal"
+      title="Confirm Profile Completion"
+      message="Are you sure all the information you entered is correct?"
+      confirm-text="Yes, Submit"
+      @confirm="submitProfile"
+      @cancel="closeConfirmModal"
+    />
+
+
+
   </div>
 </template>
 
 <script>
-import { getProvinces, getRegion, getMunCities, getBarangays } from "@/api/property";
-import { useUserInfo } from "@/store/userInfo";
 import L from "leaflet";
 import { RouterLink } from "vue-router";
+import { getRegion, getProvinces, getMunCities, getBarangays } from "@/api/property";
 import { completeProfile } from "@/api/user";
+import { useUserInfo } from "@/store/userInfo";
+import confirmModal from "@/components/confirmModal.vue";
 
 export default {
-  name: "CompleteProfile",
-  components: { RouterLink },
+  components: { RouterLink, confirmModal },
+
   data() {
     return {
       step: 1,
+      map: null,
+      marker: null,
+      previewImg: null,
+      showConfirmModal: false,
+      isSubmitting: false,
+
       form: {
         first_name: "",
         last_name: "",
@@ -209,287 +196,179 @@ export default {
         latitude: null,
         longitude: null,
       },
-      previewImg: null,
+
       regions: [],
       provinces: [],
-      muncities: [], // <<-- fixed name (was cities)
+      muncities: [],
       barangays: [],
-      map: null,
-      marker: null,
-      location: null,
     };
   },
-  mounted() {
-    // load region list
-    this.getRegions();
 
-    // get user's geolocation and store coords (do NOT initialize map here)
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        this.handleLocationSuccess,
-        this.handleLocationError,
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-      );
-    } else {
-      // just set fallback coords in data; map will initialize when step === 4
-      this.form.latitude = 8.228;
-      this.form.longitude = 124.245;
-    }
-  },
   computed: {
     progress() {
-      return (this.step / 4) * 100;
+      return (this.step / 5) * 100;
     },
     userInfo() {
       return useUserInfo();
-    }
-  },
-  watch: {
-    // initialize map only when step 4 is active and map hasn't been created yet
-    step(newStep) {
-      if (newStep === 4) {
-        this.$nextTick(() => {
-          if (!this.map) {
-            const lat = this.form.latitude || (this.location && this.location.lat) || 8.228;
-            const lng = this.form.longitude || (this.location && this.location.lng) || 124.245;
-            this.setMap(lat, lng);
-          } else {
-            // ensure map redraw if container changed/display toggled
-            try { this.map.invalidateSize(); } catch (e) { /* ignore */ }
-          }
-        });
-      }
     },
+  },
 
-    // load user info into form reactively (keeps first/last/email set)
-    userInfo: {
-      handler(newVal) {
-        if (newVal?.first_name) {
-          this.form.first_name = newVal.first_name;
-          this.form.last_name = newVal.last_name;
-          this.form.email = newVal.email;
-        }
+  mounted() {
+    this.getRegions();
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        this.form.latitude = pos.coords.latitude;
+        this.form.longitude = pos.coords.longitude;
       },
-      immediate: true,
-      deep: true,
-    }
-  },
-  methods: {
-    nextStep() {
-      if (this.step < 4) this.step++;
-    },
-    prevStep() {
-      if (this.step > 1) this.step--;
-    },
-
-    handleImageUpload(event) {
-      const file = event.target.files[0];
-      if (file) {
-        // store File object in form for submission, keep preview URL for UI
-        this.form.user_img = file;
-        this.previewImg = URL.createObjectURL(file);
+      () => {
+        this.form.latitude = 12.8797;
+        this.form.longitude = 121.774;
       }
-    },
+    );
+  },
 
-    // When geolocation returns, just save coords — don't init map here (map may not be in DOM)
-    handleLocationSuccess(position) {
-      this.location = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-      };
-      this.form.latitude = this.location.lat;
-      this.form.longitude = this.location.lng;
-
-      // If user is already on step 4, create map safely now
-      if (this.step === 4 && !this.map) {
+  watch: {
+    step(val) {
+      if (val === 4) {
         this.$nextTick(() => {
-          const lat = this.form.latitude || this.location.lat;
-          const lng = this.form.longitude || this.location.lng;
-          this.setMap(lat, lng);
+          if (!this.map) this.initMap();
+          else this.map.invalidateSize();
         });
       }
     },
 
-    handleLocationError(error) {
-      console.warn("Failed to get location:", error && error.message);
-      // just set fallback coords — map will initialize via watcher when step 4 is shown
-      this.form.latitude = 8.228;
-      this.form.longitude = 124.245;
+    userInfo: {
+      immediate: true,
+      handler(user) {
+        if (!user) return;
+        this.form.first_name = user.first_name;
+        this.form.last_name = user.last_name;
+        this.form.email = user.email;
+      },
     },
+  },
 
-    // create map once and add a draggable marker that updates form coords
-    setMap(lat, lng) {
-      // Safety: ensure DOM exists (we call from watcher with $nextTick)
-      if (!document.getElementById("map")) {
-        console.error("Map container not found when trying to initialize map.");
-        return;
-      }
+  methods: {
+    initMap() {
+      this.map = L.map("map").setView([this.form.latitude, this.form.longitude], 15);
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(this.map);
 
-      // If map already exists, update view & marker
-      if (this.map) {
-        try {
-          this.map.setView([lat, lng], 15);
-          if (this.marker) {
-            this.marker.setLatLng([lat, lng]);
-          } else {
-            this.marker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
-            this.marker.on("dragend", (e) => {
-              const pos = e.target.getLatLng();
-              this.form.latitude = pos.lat;
-              this.form.longitude = pos.lng;
-            });
-          }
-        } catch (e) {
-          console.warn("Error updating existing map:", e);
-        }
-        return;
-      }
+      this.marker = L.marker([this.form.latitude, this.form.longitude], { draggable: true }).addTo(this.map);
 
-      // Create the map
-      this.map = L.map("map", { zoomControl: false }).setView([lat, lng], 15);
-
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(this.map);
-
-      L.control.zoom({ position: "topright" }).addTo(this.map);
-
-      // Add draggable marker
-      this.marker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
-
-      this.marker.on("dragend", (e) => {
-        const pos = e.target.getLatLng();
-        this.form.latitude = pos.lat;
-        this.form.longitude = pos.lng;
+      this.marker.on("dragend", e => {
+        const p = e.target.getLatLng();
+        this.form.latitude = p.lat;
+        this.form.longitude = p.lng;
       });
 
-      // Click on map moves marker
-      this.map.on("click", (e) => {
-        const { lat: clat, lng: clng } = e.latlng;
-        if (this.marker) {
-          this.marker.setLatLng([clat, clng]);
-        } else {
-          this.marker = L.marker([clat, clng], { draggable: true }).addTo(this.map);
-          this.marker.on("dragend", (ev) => {
-            const pos = ev.target.getLatLng();
-            this.form.latitude = pos.lat;
-            this.form.longitude = pos.lng;
-          });
-        }
-        this.form.latitude = clat;
-        this.form.longitude = clng;
+      this.map.on("click", e => {
+        this.marker.setLatLng(e.latlng);
+        this.form.latitude = e.latlng.lat;
+        this.form.longitude = e.latlng.lng;
       });
-
-      // initialize form coords
-      this.form.latitude = lat;
-      this.form.longitude = lng;
     },
+
+    handleImageUpload(e) {
+      const file = e.target.files[0];
+      this.form.user_img = file;
+      this.previewImg = URL.createObjectURL(file);
+    },
+
+    async getRegions() { this.regions = await getRegion(); },
+    async getProvinces(e) { this.provinces = await getProvinces(e.target.selectedOptions[0].dataset.code); },
+    async getMuncities(e) { this.muncities = await getMunCities(e.target.selectedOptions[0].dataset.code); },
+    async getBarangays(e) { this.barangays = await getBarangays(e.target.selectedOptions[0].dataset.code); },
+
+    nextStep() { this.step++; },
+    prevStep() { this.step--; },
 
     async submitProfile() {
-        try {
-            const formData = new FormData();
+      try {
+        this.showConfirmModal = false;
+        this.isSubmitting = true;
 
-            for (const key in this.form) {
-                const value = this.form[key];
+        const fd = new FormData();
+        Object.entries(this.form).forEach(([k, v]) => {
+          if (v) fd.append(k, v);
+        });
 
-                // Handle thumbnail
-                if (key === "user_img") {
-                if (value) formData.append("user_img", value);
-                }
-                // Handle array fields properly
-                else if (Array.isArray(value)) {
-                value.forEach((v) => {
-                    formData.append(`${key}[]`, v);
-                });
-                }
-                // Handle booleans -> cast to 1/0
-                else if (typeof value === "boolean") {
-                formData.append(key, value ? 1 : 0);
-                }
-                // Handle numbers and strings
-                else if (value !== null && value !== undefined) {
-                formData.append(key, value);
-                }
-            }   
+        const res = await completeProfile(fd);
 
-            console.log(formData);
 
-            const res = await completeProfile(formData);
+        // Update Pinia store
+        const userStore = useUserInfo();
+        userStore.profile_photo = res.data.userImage;
 
-            console.log("Profile saved:", res.data);
-            alert("Profile completed successfully!");
-            this.$router.push("/profile")
-        } catch (err) {
-            console.error("Profile submit error:", err);
-            alert("Something went wrong. Please try again.");
+        // this.showSuccessToast("Profile completed successfully!");
+        alert("Profile completed successfully!");
+        setTimeout(() => {
+          this.$router.push("/profile");
+        }, 1500);
+
+      } catch (err) {
+        alert("Something went wrong. Please try again.");
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+
+    validateSubmitProfile() {
+      const requiredFields = [
+        "phone_number",
+        "streets",
+        "region_id",
+        "province_id",
+        "muncity_id",
+        "barangay_id",
+        "latitude",
+        "longitude",
+      ];
+
+      for (const field of requiredFields) {
+        if (!this.form[field]) {
+          // this.showErrorToast("Please complete all required fields.");
+          alert("Please complete all required fields.");
+          return;
         }
+      }
+
+      // Passed validation → show modal
+      this.showConfirmModal = true;
+    },
+    closeConfirmModal() {
+      this.showConfirmModal = false;
     },
 
-    /* --- API helpers for address dropdowns --- */
-    async getRegions() {
-      try {
-        const res = await getRegion();
-        this.regions = res;
-      } catch (error) {
-        console.error("Region Error:", error);
-      }
+    async confirmSubmit() {
+      this.showConfirmModal = false;
+      await this.submitProfile();
     },
 
-    async getProvinces(event) {
-      try {
-        const regCode = event.target.options[event.target.selectedIndex].dataset.code;
-        const res = await getProvinces(regCode);
-        this.provinces = res;
-        this.muncities = [];
-        this.barangays = [];
-        this.form.province_id = "";
-        this.form.muncity_id = "";
-        this.form.barangay_id = "";
-      } catch (err) {
-        console.error("Provinces Error:", err);
-      }
-    },
-
-    async getMuncities(event) {
-      try {
-        const provCode = event.target.options[event.target.selectedIndex].dataset.code;
-        const res = await getMunCities(provCode);
-        this.muncities = res;
-        this.barangays = [];
-        this.form.muncity_id = "";
-        this.form.barangay_id = "";
-      } catch (err) {
-        console.error("Muncities Error:", err);
-      }
-    },
-
-    async getBarangays(event) {
-      try {
-        const muncityCode = event.target.options[event.target.selectedIndex].dataset.code;
-        const res = await getBarangays(muncityCode);
-        this.barangays = res;
-        this.form.barangay_id = "";
-      } catch (err) {
-        console.error("Barangays Error:", err);
-      }
-    },
   },
 };
 </script>
 
-<style scoped>
-.progress {
-  background-color: #e9ecef;
-}
+<style>
 
-.profile-preview {
-  width: 120px;
-  height: 120px;
-  border: 2px dashed #dee2e6;
-  border-radius: 50%;
+  .modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 9999;
 }
+
+.modal-custom {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+
+
 </style>

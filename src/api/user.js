@@ -2,6 +2,7 @@ import api from "./api";
 
 export async function getUserProfile() {
   const res = await api.get("/user");
+  // console.log(res)
   return res;
 }
 

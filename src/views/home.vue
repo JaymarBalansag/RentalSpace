@@ -208,14 +208,12 @@
 <style src="../assets/component-style/propertiesStyle.css"></style>
 
 <script>
-import Header from '@/components/Header.vue';
 import PropertyFilter from '@/components/PropertyFilter.vue';
 export default {
     name: 'properties',
     components: {
         PropertyFilter,
-        Header,
-    }
+   }
 
 }
 

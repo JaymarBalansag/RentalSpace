@@ -48,7 +48,6 @@ const routes = [
       path: '/experience',
       name: 'experience',
       component: Experience,
-      meta: { requiresAuth:true }
     },
     {
       path: '/Home',
@@ -219,9 +218,13 @@ const router = createRouter({
   routes
 })
 
+let prevRoute = null;
+
 router.beforeEach(
   (to, from, next) => {
     const isLoggedIn = !!localStorage.getItem("access_token");
+
+    prevRoute = from;
 
     if((to.path === "/login" || to.path === "/register") && isLoggedIn){
       return next("/home");
@@ -236,4 +239,4 @@ router.beforeEach(
 );
 
 
-export default router
+export {router, prevRoute};

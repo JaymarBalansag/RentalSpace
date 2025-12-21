@@ -1,5 +1,4 @@
 <template>
-  <Header />
 
   <div class="container-fluid p-4 bg-light">
     <div class="row">
@@ -47,7 +46,6 @@
 
 <script>
 import { getProperties } from '@/api/property';
-import Header from '@/components/Header.vue';
 import L from "leaflet";
 import placeholderImg from '@/assets/Placeholder/thumbnail_placeholder.jpg'; 
 import { RouterLink } from 'vue-router';
@@ -55,7 +53,7 @@ import { RouterLink } from 'vue-router';
 
 export default {
   name: 'Map',
-  components: { Header },
+  components: {  },
   data() {
     return {
       location: null,

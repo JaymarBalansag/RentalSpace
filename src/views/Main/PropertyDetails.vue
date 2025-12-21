@@ -1,5 +1,4 @@
 <template>
-  <Header />
 
   <div class="container py-5" v-if="property">
     <!-- Back Button -->
@@ -68,7 +67,7 @@
             <i class="bi bi-calendar-check"></i> Book Now
           </button> -->
 
-          <button :disabled="property.owner_id === this.authId"  type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userAgreementModal">
+          <button :disabled="property.owner_id === this.authId || !isLoggedIn"  type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userAgreementModal">
             <i class="bi bi-calendar-check"></i> Book Now
           </button>
 
@@ -174,7 +173,7 @@
 
           <button
             class="btn btn-outline-secondary px-4"
-            :disabled="property.owner_id === this.authId"
+            :disabled="property.owner_id === this.authId || !isLoggedIn"
             @click="contactOwner(property.owner_id, property.id)"
             :title="property.owner_id === authId ? 'You cannot contact yourself' : ''"
           >
@@ -324,20 +323,21 @@
 <script>
 import { getPropertyById, getProperties, getPropertyByType } from "@/api/property";
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
-import Header from "@/components/Header.vue";
 import { RouterLink } from "vue-router";
 import { submitBookingRequest } from "@/api/property";
 import BookingRequestModal from "@/components/Bookins/BookingRequestModal.vue";
 import { submitAgreement } from "@/api/Owner/bookings.js";
 import { initiateConversation } from "@/api/messages";
 import { getAuthUserId } from "@/api/user";
+import { useUserInfo } from '@/store/userInfo';
 
 
 export default {
   name: "PropertyDetails",
-  components: { Header, RouterLink, BookingRequestModal },
+  components: { RouterLink, BookingRequestModal },
   data() {
     return {
+      isLoggedIn: null,
       property: null,
       relatedProperties: [],
       placeholderImg,
@@ -445,7 +445,15 @@ export default {
     }
   },
   mounted() {
-    this.getAuthId();
+    
+    this.isLoggedIn = localStorage.getItem("access_token") ? true : false;
+
+    if(this.isLoggedIn){
+      // console.log("User is logged in.");
+      this.getAuthId();
+    } else {
+      // console.log("User is not logged in.");
+    }
   },
   watch: {
     '$route.params.id': {
@@ -454,7 +462,7 @@ export default {
         this.fetchProperty();
         }
     },
-}
+  },
 };
 </script>
 

@@ -6,7 +6,7 @@
     >
         <div class="d-flex">
         <div class="toast-body">
-            {{message}} {{ name }}
+            {{message}} {{ name  }}
         </div>
         <button
             type="button"
@@ -32,7 +32,10 @@ export default {
     computed: {
         name() {
             const info = useUserInfo();
-            return info.first_name + " " + info.last_name
+            if(info.first_name && info.last_name){
+                return info.first_name + " " + info.last_name
+            }
+            return ""
         }
     },
     methods: {

@@ -1,4 +1,6 @@
 <template>
+  <Header></Header>
+
   <div class="bg-light py-5">
     <div class="container">
       <div class="row justify-content-center">
@@ -41,7 +43,7 @@
                   </select>
 
                   <button 
-                    @click="confirmPayment"
+                    @click="validatedPayment"
                     class="btn btn-primary w-100 mt-4 fw-semibold py-2"
                   >
                     <i class="bi bi-credit-card me-2"></i> Confirm Payment
@@ -85,18 +87,31 @@
       </div>
     </div>
   </div>
+
+  <!-- Confirm Modal -->
+    <ConfirmModal
+      :show="showConfirmModal"
+      title="Confirm Payment"
+      message="Are you sure all the information you entered is correct?"
+      confirm-text="Yes, I'm Sure"
+      @confirm="confirmPayment"
+      @cancel="closeConfirmModal"
+    />
 </template>
 
 <script>
 import { RouterLink } from 'vue-router'
 import { useUserInfo } from '@/store/userInfo'
 import { paymentConfirmation } from '@/api/payment'
+import ConfirmModal from '@/components/confirmModal.vue';
+import Header from '@/components/Header.vue';
 
 export default {
   name: "PaymentDetails",
-  components: { RouterLink },
+  components: { RouterLink, ConfirmModal, Header },
   data() {
     return {
+      showConfirmModal: false,
       name: null,
       email: null,
       role: null,
@@ -121,7 +136,7 @@ export default {
     },
     async getPlanDetails() {
       const plan = this.$route.query.plan
-
+      console.log("plan" + plan)
       if (plan === "Annual") {
         this.selectedPlan = "Annual"
         this.planPrice = 500
@@ -137,12 +152,21 @@ export default {
         })
       }
     },
-    async confirmPayment() {
+    validatedPayment() {
       if (!this.paymentMethod) {
         alert("⚠ Please select a payment method.")
         return
       }
 
+      if(!this.selectedPlan){
+        alert("⚠ Please select a payment plan.")
+        return
+      }
+
+      this.showConfirmModal = true;
+     
+    },
+    async confirmPayment() {
       try {
         const res = await paymentConfirmation(
           this.selectedPlan,
@@ -154,11 +178,15 @@ export default {
 
         localStorage.setItem("userInfo", JSON.stringify(res.data.user))
 
+        sessionStorage.setItem("subscriptionSuccess", true);
         alert("✅ Subscription activated!")
         this.$router.push("/")
       } catch (err) {
         alert(err.response?.data?.message || "❌ Payment failed")
       }
+    },
+    closeConfirmModal() {
+      this.showConfirmModal = false;
     }
   }
 }

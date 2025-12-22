@@ -1,4 +1,5 @@
 <template>
+  <SuccessToast v-if="showSuccess" message="🎉 Property Created"></SuccessToast>
   <div>
     <h4 class="mb-3">🏠 Properties</h4>
     <RouterLink to="/dashboard/properties/add" class="btn btn-primary mb-4">+ Add Property</RouterLink>
@@ -6,13 +7,14 @@
     <div class="row">
       <div class="col-md-6 col-lg-4 mb-4" v-for="property in properties" :key="property.id">
         <div class="card h-100 shadow-sm">
+          <img :src="property.image_url" @error="$event.target.src = placeholderImg" class="card-img-top" alt="Property">
           <div class="card-body d-flex flex-column">
             <h5 class="card-title">{{ property.title }}</h5>
             <p class="card-text">
               📍 <strong>Location:</strong> {{ property.provDesc ?? 'N/A' }}, {{ property.regDesc || "" }}<br>
               🔖 <strong>Status:</strong>
-              <span :class="property.is_available ? 'badge bg-success' : 'badge bg-danger ms-1' ">
-                {{ property.is_available ? 'Active' : 'Inactive' }}
+              <span :class="property.status == 'active' ? 'badge bg-success' : 'badge bg-danger ms-1' " class="ms-1">
+                {{ property.status == 'active' ? 'Active' : 'Inactive' }}
               </span>
             </p>
             <div class="mt-auto d-flex justify-content-between">
@@ -32,13 +34,20 @@
 
 <script>
 import { getOwnerProperties } from '@/api/property';
+import SuccessToast from '@/components/successToast.vue';
+import placeholderImg from '@/assets/Placeholder/thumbnail_placeholder.jpg'; 
+
 
 export default {
   data() {
     return {
       properties: [],
       message: "",
+      showSuccess: false,
     };
+  },
+  components: {
+    SuccessToast
   },
   methods: {
     deleteProperty(id) {
@@ -58,6 +67,12 @@ export default {
   },
   mounted() {
     this.getProperties();
+    const success = sessionStorage.getItem("propertyCreated");
+
+    if(success){
+      this.showSuccess = true;
+      sessionStorage.removeItem("propertyCreated")
+    }
   }
 };
 </script>

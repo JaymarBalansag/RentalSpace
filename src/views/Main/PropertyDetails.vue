@@ -1,4 +1,5 @@
 <template>
+  <Header></Header>
 
   <div class="container py-5" v-if="property">
     <!-- Back Button -->
@@ -63,26 +64,30 @@
 
 
         <div class="mt-4 d-flex gap-2">
-          <!-- <button class="btn btn-primary px-4" @click="submitBookingRequest(property.id)">
-            <i class="bi bi-calendar-check"></i> Book Now
-          </button> -->
-
-          <button :disabled="property.owner_id === this.authId || !isLoggedIn"  type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userAgreementModal">
+        
+          <button 
+            :disabled="property.owner_id === authId || !isLoggedIn || isOwner == 'owner'" 
+            type="button" 
+            class="btn btn-primary"
+            @click="openAgreementModal"
+            data-bs-toggle="tooltip"
+            :title="property.owner_id === authId 
+                    ? 'You cannot book your own property' 
+                    : !isLoggedIn 
+                      ? 'You are in guest mode, please log in' 
+                      : ''"
+          >
             <i class="bi bi-calendar-check"></i> Book Now
           </button>
 
           <!-- Modal -->
+          <div v-if="showUserAgreementModal" class="modal-backdrop-custom">
+            <div class="modal-custom">
+              <h5 class="fw-bold mb-2">User Agreement</h5>
+              <p class="text-muted">Please fill the booking info and agree to terms.</p>
 
-          <!-- Modal -->
-          <div class="modal fade" id="userAgreementModal" tabindex="-1" aria-labelledby="userAgreementModal" aria-hidden="true">
-            <div class="modal-dialog">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h1 class="modal-title fs-5" id="userAgreementModalLabel">User Agreement</h1>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                  <!-- Boarding House -->
+              <!-- Form fields here, bound to `agreement` -->
+               <!-- Boarding House -->
                   <div v-if="property_type === 'Boarding House'">
                     <label>How long do you plan to stay?</label>
                     <select v-model="agreement.stay_months" class="form-select">
@@ -104,7 +109,7 @@
 
                     <div class="form-check mt-2">
                       <input type="checkbox" v-model="agreement.agreement" class="form-check-input" id="boardingAgree">
-                      <label class="form-check-label" for="boardingAgree">
+                      <label class="form-check-label" for="boardingAgree" required>
                         I agree to the house rules and terms set by the owner.
                       </label>
                     </div>
@@ -129,7 +134,7 @@
 
                     <div class="form-check mt-2">
                       <input type="checkbox" v-model="agreement.agreement" class="form-check-input" id="residentialAgree">
-                      <label class="form-check-label" for="residentialAgree">
+                      <label class="form-check-label" for="residentialAgree" required>
                         I agree to the terms and rules set by the owner.
                       </label>
                     </div>
@@ -151,7 +156,7 @@
 
                     <div class="form-check mt-2">
                       <input type="checkbox" v-model="agreement.agreement" class="form-check-input" id="commercialAgree">
-                      <label class="form-check-label" for="commercialAgree">
+                      <label class="form-check-label" for="commercialAgree" required>
                         I agree to the commercial space terms and conditions.
                       </label>
                     </div>
@@ -161,22 +166,16 @@
                   <div v-else>
                     <p>Unknown rental type. Please contact support.</p>
                   </div>
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                  <button type="button" class="btn btn-primary" @click="agreementSubmit">Submit Bookings</button>
-                </div>
+
+              <div class="d-flex justify-content-end gap-2 mt-4">
+                <button class="btn btn-outline-secondary" @click="closeAgreementModal">Close</button>
+                <button class="btn btn-primary" @click="validateAgreement">Book</button>
               </div>
             </div>
           </div>
           
 
-          <button
-            class="btn btn-outline-secondary px-4"
-            :disabled="property.owner_id === this.authId || !isLoggedIn"
-            @click="contactOwner(property.owner_id, property.id)"
-            :title="property.owner_id === authId ? 'You cannot contact yourself' : ''"
-          >
+          <button class="btn btn-outline-secondary px-4" :disabled="property.owner_id === this.authId || !isLoggedIn || isOwner == 'owner'" @click="contactOwner(property.owner_id, property.id)" :title="property.owner_id === authId ? 'You cannot contact yourself' : ''" >
             <i class="bi bi-chat-dots"></i> Contact Owner
           </button>
         </div>
@@ -309,9 +308,19 @@
     </div>
     <!-- Ratings & Comments -->
 
-
+    <!-- Confirm Modal -->
+    <confirmModal
+      :show="showConfirmModal"
+      title="Confirm Booking"
+      message="Are you sure all the information you entered is correct?"
+      confirm-text="Yes, I'm Sure"
+      @confirm="submitAgreement"
+      @cancel="closeConfirmModal"
+    />
 
   </div>
+
+  
 
   <!-- Loader / Fallback -->
   <div v-else class="text-center py-5">
@@ -330,13 +339,17 @@ import { submitAgreement } from "@/api/Owner/bookings.js";
 import { initiateConversation } from "@/api/messages";
 import { getAuthUserId } from "@/api/user";
 import { useUserInfo } from '@/store/userInfo';
+import confirmModal from "@/components/confirmModal.vue";
+import Header from "@/components/Header.vue";
 
 
 export default {
   name: "PropertyDetails",
-  components: { RouterLink, BookingRequestModal },
+  components: { RouterLink, BookingRequestModal, confirmModal, Header },
   data() {
     return {
+      showConfirmModal: false,
+      showUserAgreementModal: false,
       isLoggedIn: null,
       property: null,
       relatedProperties: [],
@@ -401,22 +414,156 @@ export default {
         console.error("Booking Request Error:", error);
       }
     },
-    async agreementSubmit() {
+    openAgreementModal() {
+      // Reset modal data each time it opens if needed
+      this.agreement = {
+        stay_months: null,
+        custom_months: null,
+        move_in_date: null,
+        notes: "",
+        agreement: false,
+        lease_duration: null,
+        occupant_num: null,
+        room_preference: ""
+      };
+      this.showUserAgreementModal = true;
+    },
+    closeAgreementModal() {
+      this.showUserAgreementModal = false;
+    },
+    async validateAgreement() {
       try {
-        
-        const response = await submitAgreement(this.agreement, this.property.id);
-        // console.log("Agreement Submit Responsesssssss:", response);
-        if(response.status == 201) {
-          alert("Booking request submitted successfully!");
-        }
-        if(response.status == 400){
-          alert("Booking Already Exists for this property.");
-        }
-        
 
+        const info = useUserInfo();
+
+        if(info.role == "owner"){
+          alert("You are a owner")
+          return
+        }
+
+        // Check agreement checkbox
+        if (!this.agreement.agreement) {
+          alert("Please check the agreement");
+          return;
+        }
+
+        // Boarding House
+        if (this.property_type === "Boarding House") {
+          if (!this.agreement.stay_months) {
+            alert("Please select stay duration");
+            return;
+          }
+          if (this.agreement.stay_months === "custom") {
+            if (!this.agreement.custom_months) {
+              alert("Please enter custom months");
+              return;
+            }
+            if (this.agreement.custom_months <= 0) {
+              alert("Custom months must be greater than 0");
+              return;
+            }
+          }
+          if (!this.agreement.move_in_date) {
+            alert("Please select move-in date");
+            return;
+          }
+          if (new Date(this.agreement.move_in_date) < new Date()) {
+            alert("Move-in date cannot be in the past");
+            return;
+          }
+        }
+
+        // Apartment / Condo / House
+        if (["Apartment", "Condo", "House"].includes(this.property_type)) {
+          if (!this.agreement.lease_duration) {
+            alert("Please enter lease duration");
+            return;
+          }
+          if (this.agreement.lease_duration <= 0) {
+            alert("Lease duration must be greater than 0");
+            return;
+          }
+          if (!this.agreement.move_in_date) {
+            alert("Please select move-in date");
+            return;
+          }
+          if (new Date(this.agreement.move_in_date) < new Date()) {
+            alert("Move-in date cannot be in the past");
+            return;
+          }
+          if (!this.agreement.occupant_num || this.agreement.occupant_num <= 0) {
+            alert("Please enter a valid number of occupants");
+            return;
+          }
+        }
+
+        // Commercial Space
+        if (this.property_type === "Commercial Space") {
+          if (!this.agreement.lease_duration) {
+            alert("Please enter lease duration");
+            return;
+          }
+          if (this.agreement.lease_duration <= 0) {
+            alert("Lease duration must be greater than 0");
+            return;
+          }
+          if (!this.agreement.move_in_date) {
+            alert("Please select move-in date");
+            return;
+          }
+          if (new Date(this.agreement.move_in_date) < new Date()) {
+            alert("Move-in date cannot be in the past");
+            return;
+          }
+          if (!this.agreement.occupant_num || this.agreement.occupant_num <= 0) {
+            alert("Please enter a valid area needed (sqm)");
+            return;
+          }
+        }
+
+        // ✅ Only reach here if validation passes
+        this.showUserAgreementModal = false;
+        this.showConfirmModal = true;
 
       } catch (error) {
         console.error("Agreement Submit Error:", error);
+        alert("Something went wrong submitting the agreement.");
+      }
+    },
+    closeConfirmModal() {
+      this.showConfirmModal = false;
+    },
+    async submitAgreement() {
+      try {
+        const response = await submitAgreement(this.agreement, this.property.id);
+
+        if (response.status === 201) {
+          alert("Booking request submitted successfully!");
+          this.showConfirmModal = false;
+        } 
+        else if (response.status === 400) {
+          alert("Booking already exists for this property.");
+          this.showConfirmModal = false;
+        } 
+        else if (response.status === 403) {
+          alert("Owners cannot book properties.");
+          this.showConfirmModal = false;
+        } 
+        else if (response.status === 404) {
+          alert("Property not found.");
+          this.showConfirmModal = false;
+        } 
+        else if (response.status === 422) {
+          // Laravel validation error
+          alert(response.data.error || "Validation failed. Please check your inputs.");
+        } 
+        else {
+          alert(response.data.error || "Unexpected error occurred.");
+        }
+
+      } catch (error) {
+        console.error("Agreement Submit Error:", error);
+        alert("Something went wrong submitting the agreement.");
       }
     },
     async getAuthId() {
@@ -453,6 +600,12 @@ export default {
       this.getAuthId();
     } else {
       // console.log("User is not logged in.");
+    }
+  },
+  computed: {
+    isOwner() {
+      const info = useUserInfo();
+      return info.role;
     }
   },
   watch: {

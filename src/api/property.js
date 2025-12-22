@@ -128,11 +128,11 @@ export async function getFilteredProperties(amenities, facilities, min_price, ma
   }
 
   if (selectedType) {
-    params.property_type = selectedType;
+    params.selectedType = selectedType;
   }
 
   if (selectedAgreement) {
-    params.agreement_type = selectedAgreement;
+    params.selectedAgreement = selectedAgreement;
   }
 
   const res = await api.get("/properties/filters", {
@@ -143,6 +143,24 @@ export async function getFilteredProperties(amenities, facilities, min_price, ma
   return res;
 }
 
+export async function getFilterPropertyByType(selectedType, selectedAgreement) {
+  try {
+    const params = {};
+
+    if (selectedType) {
+      params.selectedType = selectedType;   // ✅ must match backend
+    }
+
+    if (selectedAgreement) {
+      params.selectedAgreement = selectedAgreement;  // ✅ must match backend
+    }
+
+    const response = await api.get("/properties/filters/type", { params });
+    return response.data; // ✅ return the data
+  } catch (error) {
+    return error;
+  }
+}
 
 export async function submitBookingRequest(id) {
   try {

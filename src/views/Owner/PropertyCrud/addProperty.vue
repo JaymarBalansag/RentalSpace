@@ -12,9 +12,6 @@
       <button class="btn btn-outline-dark me-2" @click="prevStep" :disabled="step === 1">
         <i class="bi bi-arrow-left"></i> Previous
       </button>
-      <button class="btn btn-outline-dark" @click="nextStep" :disabled="step === maxStep">
-        Next <i class="bi bi-arrow-right"></i>
-      </button>
     </div>
 
     <!-- Step 1: Basic Info -->
@@ -48,10 +45,9 @@
     </div>
 
     <!-- Step 2: Property Details -->
-  <div v-if="step === 2" class="card p-3 shadow-sm">
+    <div v-if="step === 2" class="card p-3 shadow-sm">
 
       <div class="row">
-
         <!-- Agreement Type -->
         <div class="col-6">
           <label class="form-label">Agreement Type <span class="text-danger">*</span></label>
@@ -79,12 +75,12 @@
          </div>
       </div>
 
-      <!-- Utilities Included -->
+      <!-- Utilities/ Amenities/ Facilities Included -->
       <div class="row mb-3 mt-3">
 
         <!-- Utilities -->
-        <div class="col-6">
-          <div class="card shadow-sm">
+        <div class="col-6 ">
+          <div class="card shadow-sm mb-3">
             <div class="card-header bg-light">
               <label for="" class="form-label fs-5 mb-0">Utilities</label>
             </div>
@@ -115,72 +111,10 @@
               </div>
             </div>
           </div>
-        </div>
+          <!-- Utilities End -->
 
-        <div class="col-6">
-          <div class="mb-3">
-            <label class="form-label">Furnishing</label>
-            <select v-model="form.furnishing" class="form-select">
-              <option value="fully-furnished">Furnished</option>
-              <option value="semi-furnished">Semi-Furnished</option>
-              <option value="unfurnished">Unfurnished</option>
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Parking</label>
-            <select v-model="form.parking" class="form-select">
-              <option :value="true">Yes</option>
-              <option :value="false">No</option>
-            </select>
-          </div>
-        </div>
-
-      </div>
-
-      
-      <!-- End of lease details -->
-
-      <!-- This is for rental details  -->
-
-
-      <!-- End of rental details -->
-
-      <div class="row">
-        <div class="col mb-3" v-if="showBedrooms">
-            <label class="form-label">Bedrooms</label>
-            <input v-model="form.bedrooms" type="number" class="form-control" required />
-        </div>
-        <div class="col mb-3" v-if="showBathrooms"  >
-            <label class="form-label">Bathrooms</label>
-            <input v-model="form.bathrooms" type="number" class="form-control" required />
-        </div>
-        <div class="col mb-3" v-if="showBedSpace">
-            <label class="form-label">Bed Space</label>
-            <input v-model="form.bed_space" type="number" class="form-control" required />
-        </div>
-      </div>
-      <div class="row">
-        <div class="col mb-3" v-if="showSizeFiels">
-          <label class="form-label">Floor Area</label>
-          <input v-model="form.floor_area" type="number" class="form-control" required />
-        </div>
-        <div class="col mb-3" v-if="showSizeFiels">
-          <label class="form-label">Lot Area</label>
-          <input v-model="form.lot_area" type="number" class="form-control" required />
-        </div>
-        <div class="col mb-3" v-if="showSizeFiels">
-          <label class="form-label">Max Size</label>
-          <input v-model="form.max_size" type="number" class="form-control" required />
-        </div>
-      </div>
-
-      <!-- Amenities and Facilities -->
-      <div class="row mt-4">
-
-        <!-- Amenities -->
-        <div class="col-md-6 mb-3">
-          <div class="card shadow-sm">
+          <!-- Amenities -->
+          <div class="card shadow-sm mb-3">
             <div class="card-header bg-light">
               <label class="form-label fs-5 mb-0">Amenities</label>
             </div>
@@ -207,11 +141,10 @@
               </div>
             </div>
           </div>
-        </div>
+          <!-- Amenities End -->
 
-        <!-- Facilities -->
-        <div class="col-md-6 mb-3">
-          <div class="card shadow-sm">
+           <!-- Facilities -->
+          <div class="card shadow-sm mb-3">
             <div class="card-header bg-light">
               <label class="form-label fs-5 mb-0">Facilities</label>
             </div>
@@ -238,34 +171,81 @@
               </div>
             </div>
           </div>
+          <!-- FAcilities end -->
         </div>
 
-      </div>
+        <!-- Right Fields -->
+        <div class="col-6">
+          <div class="mb-3">
+            <label class="form-label">Furnishing</label>
+            <select v-model="form.furnishing" class="form-select">
+              <option value="fully-furnished">Furnished</option>
+              <option value="semi-furnished">Semi-Furnished</option>
+              <option value="unfurnished">Unfurnished</option>
+            </select>
+          </div>
 
-      
+          <div class="mb-3">
+            <label class="form-label">Parking</label>
+            <select v-model="form.parking" class="form-select">
+              <option :value="true">Yes</option>
+              <option :value="false">No</option>
+            </select>
+          </div>
+          <div class="col mb-3" v-if="showBedrooms">
+              <label class="form-label">Bedrooms</label>
+              <input v-model="form.bedrooms" type="number" class="form-control" required />
+          </div>
+          <div class="col mb-3" v-if="showBathrooms"  >
+              <label class="form-label">Bathrooms</label>
+              <input v-model="form.bathrooms" type="number" class="form-control" required />
+          </div>
+          <div class="col mb-3" v-if="showBedSpace">
+              <label class="form-label">Bed Space</label>
+              <input v-model="form.bed_space" type="number" class="form-control" required />
+          </div>
 
-      <h5 class="mb-3">Others</h5>
-      <div class="row">
-        <div class="col mb-3">
-            <label class="form-label">Rules</label>
-            <textarea v-model="form.rules" class="form-control" required></textarea>
-        </div>
-      </div>
+          <div class="col mb-3" v-if="showSizeFiels">
+            <label class="form-label">Floor Area</label>
+            <input v-model="form.floor_area" type="number" class="form-control" required />
+          </div>
+          <div class="col mb-3" v-if="showSizeFiels">
+            <label class="form-label">Lot Area</label>
+            <input v-model="form.lot_area" type="number" class="form-control" required />
+          </div>
+          <div class="col mb-3" v-if="showSizeFiels">
+            <label class="form-label">Max Size</label>
+            <input v-model="form.max_size" type="number" class="form-control" required />
+          </div>
+          <h5 class="mb-3">Others</h5>
+          <div class="col mb-3">
+              <label class="form-label">Rules</label>
+              <textarea v-model="form.rules" class="form-control" required></textarea>
+          </div>
+          <div class="col mb-3">       
+            <label class="form-label">Is there a curfew?</label>
+            <select v-model="form.has_curfew" class="form-select">
+              <option :value="false">No</option>
+              <option :value="true">Yes</option>
+            </select> 
 
-      <div class="row">
-        <div class="col mb-3">       
-          <label class="form-label">Is there a curfew?</label>
-          <select v-model="form.has_curfew" class="form-select">
-            <option :value="false">No</option>
-            <option :value="true">Yes</option>
-          </select> 
-
-          <!-- Show time input only if curfew is Yes -->
-          <div v-if="form.has_curfew" class="mt-3">
-            <label class="form-label">Curfew Time</label>
-            <input type="time" v-model="form.curfew_time" class="form-control" />
+            <!-- Show time input only if curfew is Yes -->
+            <div v-if="form.has_curfew" class="mt-3">
+              <label class="form-label">Curfew Time</label>
+              <input type="time" v-model="form.curfew_time" class="form-control" />
+            </div>
           </div>
         </div>
+        <!-- End of right -->
+      </div>
+
+
+      <div class="row">
+        
+      </div>
+
+      <div class="row">
+        
       </div>
 
 
@@ -274,18 +254,6 @@
     <!-- Step 3: Price -->
     <div v-if="step === 3" class="card p-3 shadow-sm">
 
-      <div class="mb-3" >
-        <label class="form-label">Price <span class="text-danger">*</span></label>
-        <input v-model="form.price" type="number" class="form-control" required />
-      </div>
-      <div class="mb-3" v-if="form.agreement_type === 'rental'">
-        <label class="form-label">Advance Payment (Months)</label>
-        <input v-model="form.advance_payment_months" type="number" class="form-control" />
-      </div>
-      <div class="mb-3" v-if="form.agreement_type === 'rental'">
-        <label class="form-label">Deposit Required</label>
-        <input v-model="form.deposit_required" type="number" class="form-control" />
-      </div>
       <div class="mb-3" v-if="form.agreement_type === 'rental'">
         <label class="form-label">Payment Frequency</label>
         <select v-model="form.payment_frequency" class="form-select">
@@ -294,6 +262,19 @@
           <option value="yearly">Yearly</option>
         </select>
       </div>
+      <div class="mb-3" >
+        <label class="form-label">Price <span class="text-danger">*</span></label>
+        <input v-model="form.price" type="number" class="form-control" required />
+      </div>
+      <div class="mb-3" v-if="form.agreement_type === 'rental'">
+        <label class="form-label">Advance Payment ({{ this.frequecyText }})</label>
+        <input v-model="form.advance_payment_months" type="number" class="form-control" />
+      </div>
+      <div class="mb-3" v-if="form.agreement_type === 'rental'">
+        <label class="form-label">Deposit Required</label>
+        <input v-model="form.deposit_required" type="number" class="form-control" />
+      </div>
+      
 
       <!-- This is for lease details -->
       <div class="mb-3" v-if="form.agreement_type === 'lease'">
@@ -312,10 +293,7 @@
         <label class="form-label">Notice Period (Days)</label>
         <input v-model="form.notice_period" type="number" class="form-control" />
       </div>
-
-      
-
-      
+    
     </div>
 
 
@@ -586,21 +564,41 @@
       </div>
 
       <div class="text-end">
-        <button class="btn btn-success px-4" @click="submitForm">
+        <button class="btn btn-success px-4" @click="validateForm">
           <i class="bi bi-check-circle"></i> Submit Property
         </button>
       </div>
     </div>
+
+    <!-- Step Navigation -->
+    <div class="mt-3 d-flex justify-content-end">
+      <button class="btn btn-outline-dark just" @click="nextStep" :disabled="step === maxStep">
+        Next <i class="bi bi-arrow-right"></i>
+      </button>
+    </div>
+
+    <!-- Confirm Modal -->
+    <confirmModal
+      :show="showConfirmModal"
+      title="Confirm Property Info"
+      message="Are you sure all the information you entered is correct?"
+      confirm-text="Yes, I'm Sure"
+      @confirm="submitForm"
+      @cancel="closeConfirmModal"
+    />
   </div>
+  
 </template>
 
 <script>
 import axios from "axios";
 import { createProperty, getRegion, getProvinces, getBarangays, getMunCities, getAmenities, getFacilities, getPropertyTypes } from "@/api/property";
-
+import confirmModal from "@/components/confirmModal.vue";
 export default {
   data() {
     return {
+      showConfirmModal: false,
+      frequecyText: null,
       map: null,
       marker: null,
       step: 1,
@@ -662,6 +660,9 @@ export default {
       previewPropertyImages: [],
     };
   },
+  components: {
+    confirmModal
+  },
   methods: {
     // Handle thumbnail upload
     handleThumbnail(event) {
@@ -685,6 +686,92 @@ export default {
     },
     prevStep() {
       if (this.step > 1) this.step--;
+    },
+
+    async validateForm() {
+      try {
+        // Title & Description
+        if (!this.form.title || this.form.title.trim() === "") {
+          alert("Title is required");
+          return;
+        }
+        if (!this.form.description || this.form.description.trim() === "") {
+          alert("Description is required");
+          return;
+        }
+
+        // Agreement Type
+        if (!this.form.agreement_type) {
+          alert("Agreement type is required");
+          return;
+        }
+
+        // Property Type
+        if (!this.form.property_type_id) {
+          alert("Property type is required");
+          return;
+        }
+
+        // Price
+        if (!this.form.price || this.form.price <= 0) {
+          alert("Price must be greater than 0");
+          return;
+        }
+
+        // Rental-specific validations
+        if (this.form.agreement_type === "rental") {
+          if (this.form.advance_payment_months < 0) {
+            alert("Advance payment months cannot be negative");
+            return;
+          }
+          if (this.form.deposit_required < 0) {
+            alert("Deposit required cannot be negative");
+            return;
+          }
+          if (!this.form.payment_frequency) {
+            alert("Payment frequency is required for rentals");
+            return;
+          }
+        }
+
+        // Lease-specific validations
+        if (this.form.agreement_type === "lease") {
+          if (!this.form.lease_term_months || this.form.lease_term_months <= 0) {
+            alert("Lease term must be greater than 0");
+            return;
+          }
+          if (!this.form.renewal_option) {
+            alert("Renewal option is required");
+            return;
+          }
+          if (this.form.notice_period < 0) {
+            alert("Notice period cannot be negative");
+            return;
+          }
+        }
+
+        // Location
+        if (!this.form.region_id || !this.form.province_id || !this.form.muncity_id || !this.form.barangay_id) {
+          alert("Complete location details are required");
+          return;
+        }
+        if (!this.form.latitude || !this.form.longitude) {
+          alert("Coordinates are required");
+          return;
+        }
+
+        // ✅ If all validations pass, proceed to submit
+
+        this.showConfirmModal = true;
+        // await this.submitForm();
+
+      } catch (error) {
+        console.error("Validation Error:", error);
+        alert("Something went wrong during validation.");
+      }
+    },
+    closeConfirmModal(){
+      this.showConfirmModal = false;
     },
 
     // Submit form
@@ -721,9 +808,11 @@ export default {
       }
 
       try {
+        this.showConfirmModal = false;
         const response = await createProperty(fd);
-        console.log("Property added successfully:", response);
-        alert("Property created successfully!");
+        // console.log("Property added successfully:", response);
+        sessionStorage.setItem("propertyCreated", true);
+        // alert("Property created successfully!");
         this.$router.push("/properties")
       } catch (error) {
         if (error.response && error.response.status === 422) {
@@ -949,7 +1038,8 @@ export default {
       if (!this.selectedPropertyName) return false;
       const includedTypes = ['apartment', 'condo', 'commercial space', 'hotel'];
       return includedTypes.includes(this.selectedPropertyName.toLowerCase());
-    }
+    },
+    
     
 
   },
@@ -961,6 +1051,65 @@ export default {
         });
       }
     },
+    'form.bedrooms'(newVal) {
+      if (newVal < 0) {
+        this.form.bedrooms = 0
+      }
+    },
+    'form.bathrooms'(newVal) {
+      if (newVal < 0) {
+        this.form.bathrooms = 0
+      }
+    },
+    'form.bed_space'(newVal) {
+      if (newVal < 0) {
+        this.form.bed_space = 0
+      }
+    },
+    'form.floor_area'(newVal) {
+      if (newVal < 0) {
+        this.form.floor_area = 0
+      }
+    },
+    'form.lot_area'(newVal) {
+      if (newVal < 0) {
+        this.form.lot_area = 0
+      }
+    },
+    'form.max_size'(newVal) {
+      if (newVal < 0) {
+        this.form.max_size = 0
+      }
+    },
+    'form.price'(newVal) {
+      if (newVal < 0) {
+        this.form.price = 0
+      }
+    },
+    'form.advance_payment_months'(newVal) {
+      if (newVal < 0) {
+        this.form.advance_payment_months = 0
+      }
+    },
+    'form.deposit_required'(newVal) {
+      if (newVal < 0) {
+        this.form.deposit_required = 0
+      }
+    },
+
+
+    // For functionality
+    'form.payment_frequency'(newVal){
+      if(newVal === "quarterly"){
+        this.frequecyText = "Quarterly"
+      }
+      if(newVal === "yearly"){
+        this.frequecyText = "Yearly"
+      }
+      if(newVal === "monthly"){
+        this.frequecyText = "Monthly"
+      }
+    }
   },
 };
 </script>

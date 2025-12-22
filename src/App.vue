@@ -18,7 +18,7 @@ RouterView
 
 <template>
 
-  <Header></Header>
+  
 
   <RouterView></RouterView>
   

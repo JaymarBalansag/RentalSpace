@@ -1,8 +1,9 @@
 <template>
-  <!-- <Header /> -->
+  <Header />
 
   <!-- Success Toast -->
   <successToast v-if="showSuccess" message="🎉 Login successful, Welcome!" ></successToast>
+  <successToast v-if="subSuccess" message="🎉 You are a owner now! " ></successToast>
 
   <!-- Search Filter -->
   <div class="container-fluid bg-light py-5">
@@ -13,6 +14,7 @@
         <!-- Property Type -->
         <div class="col-md-3">
           <select class="form-select shadow-sm" v-model="selectedType">
+            <option value="">Property Type</option>
             <option v-for="(type, index) in property_types" :key="index" :value="type.id" >{{ type.type_name }}</option>
           </select>
         </div>
@@ -20,9 +22,9 @@
         <!-- Agreement Type -->
         <div class="col-md-3">
           <select class="form-select shadow-sm" v-model="selectedAgreement">
-            <option disabled value="">Agreement Type</option>
-            <option value="Rental">Rental</option>
-            <option value="Lease">Lease</option>
+            <option value="">Agreement Type</option>
+            <option value="rental">Rental</option>
+            <option value="lease">Lease</option>
           </select>
         </div>
 
@@ -132,19 +134,21 @@
 <script>
 import { RouterLink } from 'vue-router';
 import placeholderImg from '@/assets/Placeholder/thumbnail_placeholder.jpg'; 
-import { getProperties, getPropertyTypes, getAmenities, getFacilities, getFilteredProperties } from '@/api/property';
+import { getProperties, getPropertyTypes, getAmenities, getFacilities, getFilteredProperties, getFilterPropertyByType } from '@/api/property';
 import successToast from '@/components/successToast.vue';
-
+import Header from '@/components/Header.vue';
 
 export default {
   name: 'Home',
   components: {
     RouterLink,
-    successToast
+    successToast,
+    Header
   },
   data() {
     return {
       showSuccess: false,
+      subSuccess: false,
       amenities: [],
       facilities: [],
       property_types: [],
@@ -202,27 +206,22 @@ export default {
       try {
         // alert("filter: " + this.selectedAmenities + " " + this.selectedFacilities)
         const response = await getFilteredProperties(this.selectedAmenities, this.selectedFacilities, this.min_price, this.max_price, this.selectedType, this.selectedAgreement);
+        
         this.properties = response.data.properties;
         this.message = response.data.message;
       } catch (error) {
         console.log("Filtered Properties Error: " + error)
       }
     },
-    checkToast() {
-      const toastEl = this.$refs.successToast;
-
-      // show the toast
-      toastEl.classList.add('show');
-
-      // hide it again after 4 seconds (4000 ms)
-      setTimeout(() => {
-        toastEl.classList.remove('show');
-      }, 4000);
-
-
-      sessionStorage.removeItem("loginSuccess")
-    }
-
+    async getFilterPropertyByType() {
+      try {
+        // alert("filter: " + this.selectedAmenities + " " + this.selectedFacilities)
+        const response = await getFilterPropertyByType(this.selectedType, this.selectedAgreement);
+        this.properties = response.properties;
+      } catch (error) {
+        console.log("Filtered Properties Error: " + error)
+      }
+    },
   },
   mounted() {
     this.getAmenities()
@@ -231,11 +230,18 @@ export default {
     this.getProperties()
 
     const success = sessionStorage.getItem("loginSuccess");
+    const subSuccess = sessionStorage.getItem("subscriptionSuccess");
 
     if(success){
       this.showSuccess = true;
       sessionStorage.removeItem("loginSuccess")
     }
+    if(subSuccess){
+      this.subSuccess = true;
+      sessionStorage.removeItem("subscriptionSuccess")
+    }
+
+    
     
   },
   watch: {

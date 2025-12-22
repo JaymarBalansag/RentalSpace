@@ -49,7 +49,7 @@
             </RouterLink>
 
             <!-- LOGGED IN -->
-            <HeaderDropDown v-show="isLoggedIn === true"/>
+            <HeaderDropDown v-show="isLoggedIn === true "/>
 
         </nav>
     </div>
@@ -100,7 +100,7 @@ export default {
     isLoggedIn() {
       const info = useUserInfo();
       return info.isLoggedIn;
-    }
+    },
   },
 
 };

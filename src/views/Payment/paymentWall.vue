@@ -65,10 +65,11 @@
 </template>
 
 <script>
+  import Header from '@/components/Header.vue';
 
 export default {
   name: "PaymentWall",
-  components: {  },
+  components: { Header },
   data() {
     return {}
   },

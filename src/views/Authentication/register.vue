@@ -1,4 +1,6 @@
 <template>
+  <Header></Header>
+
   <div class="auth-container d-flex align-items-center justify-content-center vh-100">
     <div class="card shadow-lg border-0 rounded-4 auth-card">
       <!-- Logo -->
@@ -69,7 +71,9 @@
 
 <script>
 import { register } from '@/api/auth';
+import Header from '@/components/Header.vue';
 import { useUserInfo } from '@/store/userInfo';
+
 
 export default {
   name: "Register",
@@ -82,6 +86,9 @@ export default {
         password: ''
       }
     };
+  },
+  components: {
+    Header
   },
   methods: {
     async handleRegister() {

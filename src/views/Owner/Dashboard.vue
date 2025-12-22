@@ -1,36 +1,43 @@
 <template>
+  <!-- <Header></Header> -->
+
   <div class="d-flex" style="min-height: 100vh;">
     <!-- Sidebar -->
     <div
       class="sidebar bg-dark text-white d-flex flex-column"
-      :class="{ collapsed: isCollapsed }"
-      @mouseenter="isCollapsed = false"
-      @mouseleave="isCollapsed = true"
-    >
+      :class="{ collapsed: isCollapsed, mobileOpen: isMobileOpen }"
+    > 
       <!-- Header -->
-      <div class="text-center py-3 mb-3 border-bottom border-secondary">
+      <div class="sidebar-header d-flex justify-content-between align-items-center px-3 py-3 border-bottom border-secondary">
         <h5 v-if="!isCollapsed" class="fw-bold mb-0">Owner Panel</h5>
         <i v-else class="bi bi-house-door fs-3"></i>
+
+        <!-- Toggle Button -->
+        <button class="toggle-btn" @click="toggleSidebar">
+          <i :class="isCollapsed ? 'bi bi-list' : 'bi bi-x-lg'"></i>
+        </button>
       </div>
 
       <!-- Navigation -->
-      <ul class="nav flex-column flex-grow-1">
-        <li
-          v-for="item in navItems"
-          :key="item.name"
-          class="nav-item mb-2"
-        >
+      <ul class="nav flex-column flex-grow-1 mt-3">
+        <li v-for="item in navItems" :key="item.name" class="nav-item">
           <RouterLink
             :to="item.route"
-            class="nav-link text-white d-flex align-items-center py-2 px-3 rounded"
+            class="nav-link d-flex align-items-center px-3 py-2"
             :class="{ active: $route.path === item.route }"
+            @click="closeOnMobile"
           >
             <i :class="item.icon + ' fs-5'"></i>
-            <span v-if="!isCollapsed" class="ms-3">{{ item.name }}</span>
+            <transition name="fade">
+              <span v-if="!isCollapsed" class="ms-3">{{ item.name }}</span>
+            </transition>
           </RouterLink>
         </li>
       </ul>
     </div>
+
+    <!-- Overlay for mobile -->
+    <div v-if="isMobileOpen" class="overlay" @click="closeOnMobile"></div>
 
     <!-- Main Content -->
     <div class="flex-grow-1 p-4">
@@ -81,13 +88,15 @@
 import { RouterLink } from 'vue-router'
 import { logout } from '@/api/auth'
 import { useUserInfo } from '@/store/userInfo'
+import Header from '@/components/Header.vue';
 
 export default {
   name: 'OwnerDashboard',
-  components: { RouterLink },
+  components: { RouterLink, Header },
   data() {
     return {
       isCollapsed: true,
+      isMobileOpen: false,
       navItems: [
         { name: 'Overview', route: '/overview', icon: 'bi bi-speedometer2' },
         { name: 'Properties', route: '/properties', icon: 'bi bi-building' },
@@ -99,6 +108,18 @@ export default {
     }
   },
   methods: {
+    toggleSidebar() {
+      if (window.innerWidth <= 768) {
+        this.isMobileOpen = !this.isMobileOpen
+      } else {
+        this.isCollapsed = !this.isCollapsed
+      }
+    },
+    closeOnMobile() {
+      if (window.innerWidth <= 768) {
+        this.isMobileOpen = false
+      }
+    },
     async handleLogout() {
       try {
         await logout()
@@ -117,15 +138,57 @@ export default {
 <style scoped>
 .sidebar {
   width: 260px;
-  transition: all 0.3s ease;
+  transition: width 0.3s ease, transform 0.3s ease;
   overflow: hidden;
 }
 .sidebar.collapsed {
-  width: 100px;
+  width: 80px;
+}
+
+/* Mobile drawer */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    transform: translateX(-100%);
+    z-index: 1050;
+  }
+  .sidebar.mobileOpen {
+    transform: translateX(0);
+  }
+}
+
+/* Overlay for mobile */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  z-index: 1040;
+}
+
+.sidebar-header {
+  position: relative;
+}
+
+.toggle-btn {
+  border: none;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+.toggle-btn:hover {
+  transform: scale(1.1);
 }
 
 .nav-link {
   color: #cfcfcf;
+  border-radius: 6px;
   transition: all 0.25s ease;
 }
 .nav-link:hover {
@@ -142,7 +205,13 @@ export default {
   text-align: center;
 }
 
-.dropdown-toggle {
-  transition: all 0.3s;
+/* Smooth fade for labels */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

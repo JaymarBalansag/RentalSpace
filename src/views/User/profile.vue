@@ -1,4 +1,6 @@
 <template>
+  <Header></Header>
+
   <div class="container py-4">
     <!-- Back Button -->
     <RouterLink class="btn btn-outline-secondary fw-semibold mb-3" to="/">
@@ -173,10 +175,12 @@ import { RouterLink } from "vue-router";
 import { getUserPreferences, getUserProfile } from "@/api/user";
 import L from "leaflet";
 import { useUserInfo } from "@/store/userInfo";
+import Header from "@/components/Header.vue";
+
 
 export default {
   name: "Profile",
-  components: { RouterLink },
+  components: { RouterLink, Header },
   data() {
     return {
       user: {

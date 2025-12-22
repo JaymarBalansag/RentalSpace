@@ -1,4 +1,6 @@
 <template>
+  <Header></Header>
+
   <div class="container py-4" style="max-width: 700px;">
     <!-- Back Button -->
     <RouterLink to="/" class="btn btn-outline-secondary mb-3">
@@ -31,10 +33,11 @@
 
 <script>
 import { RouterLink } from "vue-router";
+import Header from "@/components/Header.vue";
 
 export default {
   name: "SettingsPage",
-  components: { RouterLink },
+  components: { RouterLink, Header },
   data() {
     return {
       enableNotifications: true,

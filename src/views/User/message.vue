@@ -1,4 +1,6 @@
 <template>
+  <Header></Header>
+
   <div class="container-fluid py-4" style="height: 100vh;">
     <div class="row h-100">
 
@@ -104,6 +106,7 @@
 <script>
 import { fetchConversation, fetchMessages, sendMessage } from '@/api/messages';
 import { getAuthUserId } from '@/api/user';
+import Header from '@/components/Header.vue';
 
 export default {
   data() {
@@ -114,6 +117,9 @@ export default {
       messages: [],
       newMessage: ""
     };
+  },
+  components: {
+    Header
   },
   methods: {
     async selectChat(chat, user_id, profile_photo) {

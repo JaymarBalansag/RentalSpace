@@ -1,20 +1,20 @@
 <template>
-  <Header></Header>
+  <Header />
 
-  <div class="container-fluid py-4" style="height: 100vh;">
+  <!-- ROOT -->
+  <div class="container-fluid chat-root">
     <div class="row h-100">
 
       <!-- Chat Heads -->
-      <div class="col-md-4 border-end">
-        <div class="d-flex justify-content-center align-content-center mb-3">
-          <h5>Messages</h5>
+      <div class="col-md-4 border-end d-flex flex-column">
+        <div class="d-flex align-items-center mb-3 px-2">
+          <h5 class="mb-0">Messages</h5>
           <router-link to="/" class="btn btn-light btn-sm ms-auto">
-                <i class="bi bi-arrow-left"></i>
-                Back
-            </router-link>
+            <i class="bi bi-arrow-left"></i> Back
+          </router-link>
         </div>
 
-        <ul class="list-group me-2">
+        <ul class="list-group flex-grow-1 overflow-auto">
           <li
             v-for="chat in chats"
             :key="chat.user_id"
@@ -23,17 +23,13 @@
             @click="selectChat(chat, chat.user_id, chat.profile_photo)"
             style="cursor: pointer;"
           >
-            <div class="profile-circle me-3">
-              <!-- <i class="bi bi-person text-secondary"></i> -->
-               <img
-                  :src="chat.profile_photo"
-                  class="rounded-circle"
-                  width="40"
-                  height="40"
-                  alt="user profile"
-                />
-            </div>
-
+            <img
+              :src="chat.profile_photo"
+              class="rounded-circle me-3"
+              width="40"
+              height="40"
+              alt="profile"
+            />
             <div>
               <h6 class="mb-0">{{ chat.name }}</h6>
               <small class="text-muted">{{ chat.lastMessage }}</small>
@@ -43,42 +39,45 @@
       </div>
 
       <!-- Chat Window -->
-      <div class="col-md-8 d-flex flex-column">
+      <div class="col-md-8 d-flex flex-column chat-window">
+
         <div v-if="selectedChat" class="d-flex flex-column h-100">
 
-          <!-- Header -->
+          <!-- Chat Header -->
           <div class="border-bottom py-2 px-3 d-flex align-items-center">
-            <div class="profile-circle me-2">
-              <!-- <i class="bi bi-person text-secondary"></i> -->
-               <img
-                  :src="profile_photo"
-                  class="rounded-circle"
-                  width="40"
-                  height="40"
-                  alt="user profile"
-                />
-            </div>
+            <img
+              :src="profile_photo"
+              class="rounded-circle me-2"
+              width="40"
+              height="40"
+              alt="profile"
+            />
             <h6 class="mb-0">{{ selectedChat.name }}</h6>
           </div>
 
-          <!-- Messages -->
-          <div class="messages-container">
+          <!-- Messages (ONLY SCROLLABLE) -->
+          <div
+            class="messages-box flex-grow-1 overflow-auto px-3 py-2"
+            ref="messagesBox"
+          >
             <div
               v-for="(msg, index) in messages"
               :key="index"
-              class="my-3"
+              class="mb-2"
               :class="{ 'text-end': msg.sender_id === authId }"
             >
               <span
-                class="px-3 py-2 rounded-pill"
-                :class="msg.sender_id === authId ? 'bg-primary text-white' : 'bg-light text-dark'"
+                class="px-3 py-2 rounded-pill d-inline-block message-bubble"
+                :class="msg.sender_id === authId
+                  ? 'bg-primary text-white'
+                  : 'bg-light text-dark'"
               >
                 {{ msg.message }}
               </span>
             </div>
           </div>
 
-          <!-- Input -->
+          <!-- Input (FIXED) -->
           <div class="border-top p-3">
             <div class="input-group">
               <input
@@ -93,11 +92,17 @@
               </button>
             </div>
           </div>
+
         </div>
 
-        <div v-else class="d-flex justify-content-center align-items-center flex-grow-1">
+        <!-- Empty State -->
+        <div
+          v-else
+          class="d-flex justify-content-center align-items-center flex-grow-1"
+        >
           <p class="text-muted">Select a chat to start messaging</p>
         </div>
+
       </div>
     </div>
   </div>
@@ -109,132 +114,105 @@ import { getAuthUserId } from '@/api/user';
 import Header from '@/components/Header.vue';
 
 export default {
+  components: { Header },
+
   data() {
     return {
-      authId: null, // your id
+      authId: null,
       chats: [],
       selectedChat: null,
       messages: [],
-      newMessage: ""
+      newMessage: '',
+      profile_photo: null
     };
   },
-  components: {
-    Header
-  },
+
   methods: {
     async selectChat(chat, user_id, profile_photo) {
-      try {
-        this.selectedChat = chat;
-        this.profile_photo = profile_photo || null;
-        
-        const response = await fetchConversation(user_id);
-        this.messages = response.data.messages;
+      this.selectedChat = chat;
+      this.profile_photo = profile_photo;
 
-      } catch (error) {
-        console.info("Error selecting chat:", error);
-      }
-      // For testing, we keep the starter messages
-      // In real scenario, fetch messages from backend
+      const res = await fetchConversation(user_id);
+      this.messages = res.data.messages;
+
+      this.scrollToBottom();
     },
-    async sendMessage() {
-      if (!this.newMessage.trim() || !this.selectedChat) return;
 
-      const messageText = this.newMessage;
+    async sendMessage() {
+      if (!this.newMessage.trim()) return;
+
+      const text = this.newMessage;
       const receiverId = this.selectedChat.user_id;
 
-      // Temporarily show the message (optimistic UI)
       this.messages.push({
         sender_id: this.authId,
         receiver_id: receiverId,
-        message: messageText
+        message: text
       });
 
-      this.newMessage = "";
+      this.newMessage = '';
+      this.scrollToBottom();
 
       try {
-        const response = await sendMessage(receiverId, messageText);
-
-        // Update local data with actual server response (includes DB id + timestamp)
-        this.messages[this.messages.length - 1] = response.data.message;
-
-        // Update chat preview on left sidebar
-        this.selectedChat.lastMessage = messageText;
-
-      } catch (error) {
-        console.error("Error sending message:", error);
+        const res = await sendMessage(receiverId, text);
+        this.messages[this.messages.length - 1] = res.data.message;
+      } catch (e) {
+        console.error(e);
       }
     },
+
     async getMessages() {
-      try {
-        // console.info("Fetching messages...");
-        const response = await fetchMessages();
-        // console.info("Fetched? or not...");
-        this.chats = response.data.chats;
-
-        // this.chats = response.data.chatWithUserInfos
-
-      } catch (error) {
-        console.error("Error fetching messages:", error);
-      }
+      const res = await fetchMessages();
+      this.chats = res.data.chats;
     },
+
     async getAuthId() {
-      try {
-        const response = await getAuthUserId();
-        this.authId = response.data.userid;
-      } catch (error) {
-        console.error("Error fetching auth ID:", error);
-      }
+      const res = await getAuthUserId();
+      this.authId = res.data.userid;
+    },
+
+    scrollToBottom() {
+      this.$nextTick(() => {
+        const el = this.$refs.messagesBox;
+        if (el) el.scrollTop = el.scrollHeight;
+      });
     }
   },
+
   async mounted() {
     await this.getAuthId();
     await this.getMessages();
 
-    // Check query param
-    const userIdFromQuery = this.$route.query.user;
-    if(userIdFromQuery) {
-      const chatToSelect = this.chats.find(c => c.user_id == userIdFromQuery);
-      if(chatToSelect) {
-        this.selectChat(chatToSelect, chatToSelect.user_id);
-      }
-    }
-
-    // console.log('AUTH ID READY:', this.authId);
-
     window.Echo.private(`chat.${this.authId}`)
       .listen('MessageSent', (e) => {
-        console.log('RT MESSAGE RECEIVED:', e);
-
         if (
           this.selectedChat &&
           (e.sender_id === this.selectedChat.user_id ||
-          e.receiver_id === this.selectedChat.user_id)
+           e.receiver_id === this.selectedChat.user_id)
         ) {
           this.messages.push(e);
+          this.scrollToBottom();
         }
       });
-  },
-  watch: {
-    messages() {
-      this.$nextTick(() => {
-        const container = this.$el.querySelector('.messages-container');
-        container.scrollTop = container.scrollHeight;
-      });
-    }
   }
-
-
 };
 </script>
 
 <style scoped>
-.profile-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #f0f0f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.chat-root {
+  height: calc(100vh - 64px); /* header height */
+}
+
+.chat-window {
+  height: 100%;
+}
+
+.messages-box {
+  background-color: #f8f9fa;
+}
+
+.message-bubble {
+  max-width: 75%;
+  word-wrap: break-word;
 }
 </style>

@@ -99,13 +99,11 @@ const routes = [
       path: '/about',
       name: 'about',
       component: About,
-      meta: { requiresAuth:true },
     },
     {
       path: '/contactus',
       name: 'contactus',
       component: Contactus,
-      meta: { requiresAuth:true },
     },
     // On development and testing ( Payment )
     {

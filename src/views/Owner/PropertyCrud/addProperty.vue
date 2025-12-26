@@ -300,69 +300,12 @@
 
       <!-- Step 4: Location Details -->
     <div v-if="step === 4" class="card p-3 shadow-sm">
-      <h5>Location Details</h5>
-      <div class="row mb-3">
-        <div class="col">
-          <label class="form-label">Region</label>
-          <select v-model="form.region_id" class="form-select" @change="getProvinces">
-            <option value="" disabled>Select Region</option>
-            <option 
-              v-for="region in regions" 
-              :key="region.id" 
-              :value="region.id"
-              :data-code="region.regCode"
-            >
-              {{ region.regDesc }}
-            </option>
-          </select>
+      <div class="d-flex gap-3">
+        <h5>Location Details</h5>
+        <div v-if="this.loading" class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
         </div>
-
-        <div class="col">
-          <label class="form-label">Province</label>
-          <select v-model="form.province_id" class="form-select" @change="getMuncities">
-            <option value="" disabled>Select Province</option>
-            <option 
-              v-for="province in provinces" 
-              :key="province.id" 
-              :value="province.id"
-              :data-code="province.provCode"
-            >
-              {{ province.provDesc }}
-            </option>
-          </select>
-        </div>
-
-        <div class="col">
-          <label class="form-label">Municipal and Cities</label>
-          <select v-model="form.muncity_id" class="form-select" @change="getBarangays">
-            <option value="" disabled>Select Municipal / City</option>
-            <option 
-              v-for="muncity in muncities" 
-              :key="muncity.id" 
-              :value="muncity.id"
-              :data-code="muncity.muncityCode"
-            >
-              {{ muncity.muncityDesc }}
-            </option>
-          </select>
-        </div>
-
-        <div class="col">
-          <label class="form-label">Barangays</label>
-          <select v-model="form.barangay_id" class="form-select">
-            <option value="" disabled>Select Barangays</option>
-            <option 
-              v-for="brgy in barangays" 
-              :key="brgy.id" 
-              :value="brgy.id"
-            >
-              {{ brgy.brgyDesc }}
-            </option>
-          </select>
-        </div>
-
       </div>
-      
       <div class="row mb-3">
         <div class="col-9 align-self-center">
           <div class="rounded" ref="propertyMap" style="height:80vh"></div>
@@ -377,68 +320,25 @@
             <label class="form-label">Longitude</label>
             <input type="number" v-model="form.longitude" class="form-control" step="0.000001" />
           </div>
-          <!-- Region, Province, Municipality, Barangay -->
-          <!-- <div class="mb-3">
-              <label class="form-label">Region</label>
-                <select v-model="form.region_id" class="form-select" @change="getProvinces">
-                  <option value="" disabled>Select Region</option>
-                  <option 
-                    v-for="region in regions" 
-                    :key="region.id" 
-                    :value="region.id"
-                    :data-code="region.regCode"
-                  >
-                    {{ region.regDesc }}
-                  </option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Province</label>
-                <select v-model="form.province_id" class="form-select" @change="getMuncities">
-                  <option value="" disabled>Select Province</option>
-                  <option 
-                    v-for="province in provinces" 
-                    :key="province.id" 
-                    :value="province.id"
-                    :data-code="province.provCode"
-                  >
-                    {{ province.provDesc }}
-                  </option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Municipal and Cities</label>
-                <select v-model="form.muncity_id" class="form-select" @change="getBarangays">
-                  <option value="" disabled>Select Municipal / City</option>
-                  <option 
-                    v-for="muncity in muncities" 
-                    :key="muncity.id" 
-                    :value="muncity.id"
-                    :data-code="muncity.muncityCode"
-                  >
-                    {{ muncity.muncityDesc }}
-                  </option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Barangays</label>
-                <select v-model="form.barangay_id" class="form-select">
-                  <option value="" disabled>Select Barangays</option>
-                  <option 
-                    v-for="brgy in barangays" 
-                    :key="brgy.id" 
-                    :value="brgy.id"
-                  >
-                    {{ brgy.brgyDesc }}
-                  </option>
-                </select>
-            </div> -->
+          <div class="mb-3">
+            <label class="form-label">Region</label>
+            <input type="text" v-model="form.region_name" class="form-control" disabled />
           </div>
-      </div>
+          <div class="mb-3">
+            <label class="form-label">State</label>
+            <input type="text" v-model="form.state_name" class="form-control" disabled />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Town</label>
+            <input type="text" v-model="form.town_name" class="form-control" disabled />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Village</label>
+            <input type="text" v-model="form.village_name" class="form-control" disabled />
+          </div>
+        </div>
     </div>
+  </div>
 
       <!-- Final Step: Review and Submit -->
     <div v-if="step === 5" class="card p-3 shadow-sm">
@@ -542,10 +442,10 @@
             <tr>
               <th>Location</th>
               <td>
-                {{ regions.find(r => r.id === form.region_id)?.regDesc }},
-                {{ provinces.find(p => p.id === form.province_id)?.provDesc }},
-                {{ muncities.find(m => m.id === form.muncity_id)?.muncityDesc }},
-                {{ barangays.find(b => b.id === form.barangay_id)?.brgyDesc }}
+                {{ this.form.region_name }},
+                {{ this.form.state_name }},
+                {{ this.form.town_name }},
+                {{ this.form.village_name }}
               </td>
             </tr>
             <tr>
@@ -604,10 +504,6 @@ export default {
       step: 1,
       maxStep: 5,
       location: null,
-      regions: [],
-      provinces: [],
-      muncities:[],
-      barangays: [],
       amenities: [],
       facilities: [],
       property_types: [],
@@ -640,10 +536,15 @@ export default {
         max_size: 0,
         latitude: null,
         longitude: null,
+
         region_id: "",
         province_id: "",
         muncity_id: "",
         barangay_id: "",
+        region_name: "",
+        state_name: "",
+        town_name: "",
+        village_name: "",
 
         // Adds not on migrations
         has_curfew: null,
@@ -658,6 +559,9 @@ export default {
       },
       previewThumbnail: null,
       previewPropertyImages: [],
+      timeoutId: null,
+      loading: false,
+
     };
   },
   components: {
@@ -751,7 +655,7 @@ export default {
         }
 
         // Location
-        if (!this.form.region_id || !this.form.province_id || !this.form.muncity_id || !this.form.barangay_id) {
+        if (!this.form.region_name || !this.form.state_name || !this.form.town_name || !this.form.village_name) {
           alert("Complete location details are required");
           return;
         }
@@ -828,6 +732,27 @@ export default {
           alert("Something went wrong. Check console.");
         }
       }
+    },
+
+    async setAddressFields() {
+      if (this.timeoutId) clearTimeout(this.timeoutId);
+      this.loading = true;
+
+      this.timeoutId = setTimeout(async () => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${this.form.latitude}&lon=${this.form.longitude}&format=jsonv2`
+          );
+          const data = await res.json();
+
+          this.form.region_name = data.address.region || "";
+          this.form.state_name = data.address.state || "";
+          this.form.town_name = data.address.city || data.address.town || "";
+          this.form.village_name = data.address.village || data.address.suburb || "";
+        } finally {
+          this.loading = false;
+        }
+      }, 1000);
     },
 
     // Location Details
@@ -909,48 +834,6 @@ export default {
       }
     },
 
-    // Code for getting psgc adresses
-    async getRegions() {
-      try {
-        const res = await getRegion();
-        this.regions = res; // make sure your API returns list
-      } catch (error) {
-        console.error(`Region Error: ${error}`)
-      }
-      
-    },
-
-    async getProvinces(event) {
-      const regCode = event.target.options[event.target.selectedIndex].dataset.code;
-      const res = await getProvinces(regCode);
-      this.provinces = res;
-      this.muncities = [];
-      this.barangays = [];
-      this.form.province_id = "";
-      this.form.muncity_id = "";
-      this.form.barangay_id = "";
-
-    },
-
-    async getMuncities(event) {
-      const provCode = event.target.options[event.target.selectedIndex].dataset.code;
-      const res = await getMunCities(provCode);
-      this.muncities = res;
-      this.barangays = [];
-      this.form.muncity_id = "";
-      this.form.barangay_id = "";
-
-    },
-
-    async getBarangays(event) {
-      const muncityCode = event.target.options[event.target.selectedIndex].dataset.code;
-      const res = await getBarangays(muncityCode);
-      this.barangays = res;
-      this.form.barangay_id = "";
-
-
-    },
-
     // Code for Property Details
     async getAmenities(){
       try {
@@ -981,7 +864,6 @@ export default {
   },
   mounted() {
         // Run these regardless of geolocation
-      this.getRegions();
       this.getAmenities();
       this.getFacilities();
       this.getPropertyTypes();
@@ -1049,7 +931,14 @@ export default {
         this.$nextTick(() => {
           this.setMap(this.form.latitude || this.location.lat, this.form.longitude || this.location.lng);
         });
+        this.setAddressFields()
       }
+    },
+    "form.latitude"() {
+      this.setAddressFields();
+    },
+    "form.longitude"() {
+      this.setAddressFields();
     },
     'form.bedrooms'(newVal) {
       if (newVal < 0) {

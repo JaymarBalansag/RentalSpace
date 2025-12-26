@@ -11,7 +11,7 @@
           <div class="card-body d-flex flex-column">
             <h5 class="card-title">{{ property.title }}</h5>
             <p class="card-text">
-              📍 <strong>Location:</strong> {{ property.provDesc ?? 'N/A' }}, {{ property.regDesc || "" }}<br>
+              📍 <strong>Location:</strong> {{ property.state_name ?? 'N/A' }}, {{ property.region_name || "" }}<br>
               🔖 <strong>Status:</strong>
               <span :class="property.status == 'active' ? 'badge bg-success' : 'badge bg-danger ms-1' " class="ms-1">
                 {{ property.status == 'active' ? 'Active' : 'Inactive' }}

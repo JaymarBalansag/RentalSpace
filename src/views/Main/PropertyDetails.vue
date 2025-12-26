@@ -187,13 +187,14 @@
       <div class="col-md-6">
         <div class="p-4 border rounded shadow-sm bg-white h-100">
           <h5 class="fw-bold mb-3">Amenities</h5>
-          <ul class="list-unstyled mb-0 row row-cols-2 g-2">
+          <hr>
+          <ul class="list-unstyled row gap-3">
             <li
               v-for="(amenity, index) in property.amenities"
               :key="index"
-              class="col"
+              class="col-auto p-0"
             >
-              ✅ {{ amenity }}
+              <span class="badge rounded-pill text-bg-secondary m-0">{{ amenity }}</span>
             </li>
           </ul>
         </div>
@@ -202,18 +203,39 @@
       <div class="col-md-6">
         <div class="p-4 border rounded shadow-sm bg-white h-100">
           <h5 class="fw-bold mb-3">Facilities</h5>
-          <ul class="list-unstyled mb-0 row row-cols-2 g-2">
+          <hr>
+          <ul class="list-unstyled mb-0 row gap-3">
             <li
               v-for="(facility, index) in property.facilities"
               :key="index"
-              class="col"
+              class="col-auto p-0"
             >
-              🏠 {{ facility }}
+              <span class="badge rounded-pill text-bg-secondary m-0">{{ facility }}</span>
             </li>
           </ul>
         </div>
       </div>
     </div>
+
+    <!-- Property Images Carousel -->
+      <div class="my-4">
+        <h5 class="fw-bold h3 mb-2">Property Images</h5>
+        <hr>
+        <div id="propertyImagesCarousel" class="carousel slide" data-bs-ride="carousel">
+          <div class="carousel-inner">
+            <div v-for="(img, index) in propertyImages" :key="index" 
+                :class="['carousel-item', { active: index === 0 }]">
+              <img :src="img" class="d-block w-100" style="height: 300px; object-fit: cover;" />
+            </div>
+          </div>
+          <button class="carousel-control-prev" type="button" data-bs-target="#propertyImagesCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#propertyImagesCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+          </button>
+        </div>
+      </div>
 
     <!-- Related Properties -->
     <div class="mt-5">
@@ -286,24 +308,7 @@
         </div>
       </div>
 
-      <!-- Property Images Carousel -->
-      <div class="mb-4">
-        <h5 class="fw-bold mb-2">Property Images</h5>
-        <div id="propertyImagesCarousel" class="carousel slide" data-bs-ride="carousel">
-          <div class="carousel-inner">
-            <div v-for="(img, index) in propertyImages" :key="index" 
-                :class="['carousel-item', { active: index === 0 }]">
-              <img :src="img" class="d-block w-100" style="height: 300px; object-fit: cover;" />
-            </div>
-          </div>
-          <button class="carousel-control-prev" type="button" data-bs-target="#propertyImagesCarousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon"></span>
-          </button>
-          <button class="carousel-control-next" type="button" data-bs-target="#propertyImagesCarousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon"></span>
-          </button>
-        </div>
-      </div>
+      
 
     </div>
     <!-- Ratings & Comments -->

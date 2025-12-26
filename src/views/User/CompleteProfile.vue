@@ -4,16 +4,15 @@
       <div class="card-body p-4">
         <RouterLink to="/profile" class="btn btn-secondary mb-3">Back</RouterLink>
 
-        <!-- Progress Bar -->
+        <!-- Progress -->
         <div class="mb-4">
           <div class="progress" style="height: 8px;">
             <div
               class="progress-bar bg-primary"
-              role="progressbar"
               :style="{ width: progress + '%' }"
             ></div>
           </div>
-          <p class="text-muted small mt-2">Step {{ step }} of 5</p>
+          <p class="text-muted small mt-2">Step {{ step }} of 4</p>
         </div>
 
         <!-- STEP 1: Basic Info -->
@@ -54,65 +53,37 @@
           </div>
         </div>
 
-        <!-- STEP 3: Address -->
-        <div v-if="step === 3">
-          <h4 class="fw-bold mb-3">Address Details</h4>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <input class="form-control form-control-lg" placeholder="Street" v-model="form.streets" />
-            </div>
-
-            <div class="col-md-6">
-              <select class="form-select form-select-lg" v-model="form.region_id" @change="getProvinces">
-                <option disabled value="">Select Region</option>
-                <option v-for="r in regions" :key="r.id" :value="r.id" :data-code="r.regCode">
-                  {{ r.regDesc }}
-                </option>
-              </select>
-            </div>
-
-            <div class="col-md-6">
-              <select class="form-select form-select-lg" v-model="form.province_id" @change="getMuncities">
-                <option disabled value="">Select Province</option>
-                <option v-for="p in provinces" :key="p.id" :value="p.id" :data-code="p.provCode">
-                  {{ p.provDesc }}
-                </option>
-              </select>
-            </div>
-
-            <div class="col-md-6">
-              <select class="form-select form-select-lg" v-model="form.muncity_id" @change="getBarangays">
-                <option disabled value="">Select Municipality</option>
-                <option v-for="m in muncities" :key="m.id" :value="m.id" :data-code="m.muncityCode">
-                  {{ m.muncityDesc }}
-                </option>
-              </select>
-            </div>
-
-            <div class="col-md-12">
-              <select class="form-select form-select-lg" v-model="form.barangay_id">
-                <option disabled value="">Select Barangay</option>
-                <option v-for="b in barangays" :key="b.id" :value="b.id">
-                  {{ b.brgyDesc }}
-                </option>
-              </select>
-            </div>
+        <!-- STEP 3: Map -->
+        <div v-show="step === 3">
+          <div class="d-flex align-items-center gap-3 mb-2">
+            <h4 class="fw-bold mb-0">Your Location</h4>
+            <div v-if="loading" class="spinner-border spinner-border-sm text-primary"></div>
           </div>
-        </div>
 
-        <!-- STEP 4: Map -->
-        <div v-show="step === 4">
-          <h4 class="fw-bold mb-3">Your Location</h4>
           <div id="map" style="height:40vh" class="rounded shadow"></div>
-          <div class="small mt-2 text-muted">
-            Lat: {{ form.latitude }} | Lng: {{ form.longitude }}
+
+          <div class="row mt-3 g-2">
+            <div class="col">
+              <input class="form-control" v-model="form.region_name" disabled placeholder="Region">
+            </div>
+            <div class="col">
+              <input class="form-control" v-model="form.state_name" disabled placeholder="Province">
+            </div>
+            <div class="col">
+              <input class="form-control" v-model="form.town_name" disabled placeholder="City / Municipality">
+            </div>
+            <div class="col">
+              <input class="form-control" v-model="form.village_name" disabled placeholder="Barangay">
+            </div>
+            <div class="col">
+              <input class="form-control" v-model="form.streets" placeholder="Street">
+            </div>
           </div>
         </div>
 
-        <!-- STEP 5: SUMMARY -->
-        <div v-if="step === 5">
+        <!-- STEP 4: Summary -->
+        <div v-if="step === 4">
           <h4 class="fw-bold mb-3">Summary</h4>
-
           <table class="table table-bordered">
             <tbody>
               <tr><th>First Name</th><td>{{ form.first_name }}</td></tr>
@@ -120,52 +91,48 @@
               <tr><th>Email</th><td>{{ form.email }}</td></tr>
               <tr><th>Phone</th><td>{{ form.phone_number }}</td></tr>
               <tr><th>Street</th><td>{{ form.streets }}</td></tr>
-              <tr><th>Region ID</th><td>{{ form.region_id }}</td></tr>
-              <tr><th>Province ID</th><td>{{ form.province_id }}</td></tr>
-              <tr><th>Municipality ID</th><td>{{ form.muncity_id }}</td></tr>
-              <tr><th>Barangay ID</th><td>{{ form.barangay_id }}</td></tr>
+              <tr><th>Region</th><td>{{ form.region_name }}</td></tr>
+              <tr><th>Province</th><td>{{ form.state_name }}</td></tr>
+              <tr><th>City</th><td>{{ form.town_name }}</td></tr>
+              <tr><th>Barangay</th><td>{{ form.village_name }}</td></tr>
               <tr><th>Latitude</th><td>{{ form.latitude }}</td></tr>
               <tr><th>Longitude</th><td>{{ form.longitude }}</td></tr>
             </tbody>
           </table>
         </div>
 
-        <!-- NAVIGATION -->
+        <!-- NAV -->
         <div class="d-flex justify-content-between mt-4">
           <button v-if="step > 1" class="btn btn-outline-secondary" @click="prevStep">
             Previous
           </button>
 
-          <button v-if="step < 5" class="btn btn-primary ms-auto" @click="nextStep">
+          <button v-if="step < 4" class="btn btn-primary ms-auto" @click="nextStep">
             Next
           </button>
 
-          <button v-if="step === 5" class="btn btn-success ms-auto" @click="validateSubmitProfile">
+          <button v-if="step === 4" class="btn btn-success ms-auto" @click="validateSubmitProfile">
             Finish
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Confirm Modal -->
     <confirmModal
       :show="showConfirmModal"
       title="Confirm Profile Completion"
-      message="Are you sure all the information you entered is correct?"
+      message="Are you sure all information you entered is correct?"
       confirm-text="Yes, Submit"
       @confirm="submitProfile"
       @cancel="closeConfirmModal"
     />
-
-
-
   </div>
 </template>
+
 
 <script>
 import L from "leaflet";
 import { RouterLink } from "vue-router";
-import { getRegion, getProvinces, getMunCities, getBarangays } from "@/api/property";
 import { completeProfile } from "@/api/user";
 import { useUserInfo } from "@/store/userInfo";
 import confirmModal from "@/components/confirmModal.vue";
@@ -180,7 +147,8 @@ export default {
       marker: null,
       previewImg: null,
       showConfirmModal: false,
-      isSubmitting: false,
+      loading: false,
+      timeoutId: null,
 
       form: {
         first_name: "",
@@ -189,24 +157,19 @@ export default {
         phone_number: "",
         user_img: null,
         streets: "",
-        region_id: "",
-        province_id: "",
-        muncity_id: "",
-        barangay_id: "",
+        region_name: "",
+        state_name: "",
+        town_name: "",
+        village_name: "",
         latitude: null,
         longitude: null,
       },
-
-      regions: [],
-      provinces: [],
-      muncities: [],
-      barangays: [],
     };
   },
 
   computed: {
     progress() {
-      return (this.step / 5) * 100;
+      return (this.step / 4) * 100;
     },
     userInfo() {
       return useUserInfo();
@@ -214,28 +177,31 @@ export default {
   },
 
   mounted() {
-    this.getRegions();
-
     navigator.geolocation.getCurrentPosition(
       pos => {
         this.form.latitude = pos.coords.latitude;
         this.form.longitude = pos.coords.longitude;
       },
-      () => {
-        this.form.latitude = 12.8797;
-        this.form.longitude = 121.774;
-      }
+      () => alert("Unable to get your location."),
+      { enableHighAccuracy: true }
     );
   },
 
   watch: {
     step(val) {
-      if (val === 4) {
+      if (val === 3) {
         this.$nextTick(() => {
           if (!this.map) this.initMap();
-          else this.map.invalidateSize();
+          this.setAddressFields();
         });
       }
+    },
+
+    "form.latitude"() {
+      this.setAddressFields();
+    },
+    "form.longitude"() {
+      this.setAddressFields();
     },
 
     userInfo: {
@@ -250,8 +216,30 @@ export default {
   },
 
   methods: {
+    async setAddressFields() {
+      if (this.timeoutId) clearTimeout(this.timeoutId);
+      this.loading = true;
+
+      this.timeoutId = setTimeout(async () => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${this.form.latitude}&lon=${this.form.longitude}&format=jsonv2`
+          );
+          const data = await res.json();
+
+          this.form.region_name = data.address.region || "";
+          this.form.state_name = data.address.state || "";
+          this.form.town_name = data.address.city || data.address.town || "";
+          this.form.village_name = data.address.village || data.address.suburb || "";
+        } finally {
+          this.loading = false;
+        }
+      }, 1000);
+    },
+
     initMap() {
-      this.map = L.map("map").setView([this.form.latitude, this.form.longitude], 15);
+      this.map = L.map("map").setView([this.form.latitude, this.form.longitude], 16);
+
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(this.map);
 
       this.marker = L.marker([this.form.latitude, this.form.longitude], { draggable: true }).addTo(this.map);
@@ -275,79 +263,43 @@ export default {
       this.previewImg = URL.createObjectURL(file);
     },
 
-    async getRegions() { this.regions = await getRegion(); },
-    async getProvinces(e) { this.provinces = await getProvinces(e.target.selectedOptions[0].dataset.code); },
-    async getMuncities(e) { this.muncities = await getMunCities(e.target.selectedOptions[0].dataset.code); },
-    async getBarangays(e) { this.barangays = await getBarangays(e.target.selectedOptions[0].dataset.code); },
-
     nextStep() { this.step++; },
     prevStep() { this.step--; },
 
-    async submitProfile() {
-      try {
-        this.showConfirmModal = false;
-        this.isSubmitting = true;
-
-        const fd = new FormData();
-        Object.entries(this.form).forEach(([k, v]) => {
-          if (v) fd.append(k, v);
-        });
-
-        const res = await completeProfile(fd);
-
-
-        // Update Pinia store
-        const userStore = useUserInfo();
-        userStore.profile_photo = res.data.userImage;
-
-        // this.showSuccessToast("Profile completed successfully!");
-        alert("Profile completed successfully!");
-        setTimeout(() => {
-          this.$router.push("/profile");
-        }, 1500);
-
-      } catch (err) {
-        alert("Something went wrong. Please try again.");
-      } finally {
-        this.isSubmitting = false;
-      }
-    },
-
     validateSubmitProfile() {
-      const requiredFields = [
+      const required = [
         "phone_number",
         "streets",
-        "region_id",
-        "province_id",
-        "muncity_id",
-        "barangay_id",
         "latitude",
         "longitude",
       ];
 
-      for (const field of requiredFields) {
-        if (!this.form[field]) {
-          // this.showErrorToast("Please complete all required fields.");
+      for (const f of required) {
+        if (!this.form[f]) {
           alert("Please complete all required fields.");
           return;
         }
       }
 
-      // Passed validation → show modal
       this.showConfirmModal = true;
     },
+
     closeConfirmModal() {
       this.showConfirmModal = false;
     },
 
-    async confirmSubmit() {
+    async submitProfile() {
       this.showConfirmModal = false;
-      await this.submitProfile();
+      const fd = new FormData();
+      Object.entries(this.form).forEach(([k, v]) => v && fd.append(k, v));
+      await completeProfile(fd);
+      alert("Profile completed successfully!");
+      this.$router.push("/profile");
     },
-
   },
 };
 </script>
+
 
 <style>
 

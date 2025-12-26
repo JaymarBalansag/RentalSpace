@@ -79,11 +79,11 @@
                     </div>
                     <div class="list-group-item">
                       <i class="bi bi-building me-2"></i>
-                      {{ user.muncity || 'Not provided' }}
+                      {{ user.town_name || 'Not provided' }}
                     </div>
                     <div class="list-group-item">
                       <i class="bi bi-geo-alt me-2"></i>
-                      {{ user.province || 'Not provided' }}
+                      {{ user.state_name || 'Not provided' }}
                     </div>
                   </div>
                 </div>
@@ -185,8 +185,8 @@ export default {
     return {
       user: {
         streets: null,
-        province: null,
-        muncity: null,
+        state_name: null,
+        town_name: null,
         phone_number: null,
         latitude: null,
         longitude: null,
@@ -225,9 +225,9 @@ export default {
 
       Object.assign(this.user, {
         phone_number: data.phone_number,
-        province: data.provDesc,
+        state_name: data.state_name,
         streets: data.streets,
-        muncity: data.muncityDesc,
+        town_name: data.town_name,
         latitude: data.latitude,
         longitude: data.longitude,
         user_img_url: data.user_img_url,

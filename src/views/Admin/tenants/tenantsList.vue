@@ -69,11 +69,11 @@
               </td>
               <td class="fw-semibold">{{ user.first_name }} {{ user.last_name }}</td>
               <td>{{ user.email ? user.email : 'N/A' }}</td>
-              <td>{{ user.regDesc ? user.regDesc : 'N/A' }}</td>
-              <td>{{ user.provDesc ? user.provDesc : 'N/A' }}</td>
-              <td>{{ user.muncityDesc ? user.muncityDesc : 'N/A' }}</td>
-              <td>{{ user.brgyDesc ? user.brgyDesc : 'N/A' }}</td>
-              <td>{{ user.street ? user.street : 'N/A' }}</td>
+              <td>{{ user.region_name ? user.region_name : 'N/A' }}</td>
+              <td>{{ user.state_name ? user.state_name : 'N/A' }}</td>
+              <td>{{ user.town_name ? user.town_name : 'N/A' }}</td>
+              <td>{{ user.village_name ? user.village_name : 'N/A' }}</td>
+              <td>{{ user.streets ? user.streets : 'N/A' }}</td>
               <td>{{ user.created_at }}</td>
               <td>
                 <div class="btn-group">

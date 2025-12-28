@@ -51,8 +51,8 @@ export async function getPropertyTypes(){
   return res.data.types;
 }
 
-export async function getProperties() {
-  const res = await api.get("/properties");
+export async function getProperties(page = 1) {
+  const res = await api.get(`/properties?page=${page}`);
   return res;
 }
 
@@ -169,5 +169,16 @@ export async function submitBookingRequest(id) {
     return res;
   } catch (error) {
     return error
+  }
+}
+
+export async function searchProperties(query, page = 1) {
+  try {
+    // console.log(query, "Search Query", "page", page);
+    const response = await api.get(`/property/search/${query}/page/${page}`);
+    return response;
+  } catch (error) {
+    // console.error("Error searching properties:", error);
+    return error;
   }
 }

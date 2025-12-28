@@ -32,17 +32,17 @@
         <!-- Search -->
         <div class="col-md-4">
           <div class="input-group shadow-sm">
-            <input type="text" class="form-control" placeholder="Search by location or name">
-            <button class="btn btn-outline-primary">
+            <input type="text" class="form-control" v-model="searchQuery" placeholder="Search by location or name">
+            <button class="btn btn-outline-primary" @click="searchByQuery(1)">
               <i class="bi bi-search"></i>
             </button>
           </div>
         </div>
 
         <!-- Search Button -->
-        <div class="col-md-2 d-grid">
+        <!-- <div class="col-md-2 d-grid">
           <button class="btn btn-primary shadow-sm">Search</button>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
@@ -55,24 +55,63 @@
         <!-- Amenities -->
         <div class="p-3 border rounded shadow-sm mb-4 bg-white">
           <h5 class="fw-bold mb-3">Amenities</h5>
-          <div class="form-check" v-for="(amenity, index) in amenities" :key="index">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              :id="'amenity-' + index"
-              :value="amenity.id"
-              v-model="selectedAmenities"
-            />
-            <label class="form-check-label" :for="'amenity-' + index">
-              {{ amenity.amenity_name }}
-            </label>
+
+          <!-- Skeleton -->
+          <div v-if="loadingAmenities">
+            <div
+              v-for="n in 5"
+              :key="'amenity-skel-' + n"
+              class="d-flex align-items-center mb-2 placeholder-glow"
+            >
+              <span class="placeholder rounded me-2" style="width:16px;height:16px;"></span>
+              <span class="placeholder col-6"></span>
+            </div>
+          </div>
+
+          <!-- Actual -->
+          <div v-else>
+            <div
+              class="form-check"
+              v-for="(amenity, index) in amenities"
+              :key="index"
+            >
+              <input
+                class="form-check-input"
+                type="checkbox"
+                :id="'amenity-' + index"
+                :value="amenity.id"
+                v-model="selectedAmenities"
+              />
+              <label class="form-check-label" :for="'amenity-' + index">
+                {{ amenity.amenity_name }}
+              </label>
+            </div>
           </div>
         </div>
 
         <!-- Facilities -->
         <div class="p-3 border rounded shadow-sm bg-white mb-4">
-          <h5 class="fw-bold mb-3">Facilities</h5>
-          <div class="form-check" v-for="(facility, index) in facilities" :key="index">
+        <h5 class="fw-bold mb-3">Facilities</h5>
+
+        <!-- Skeleton -->
+        <div v-if="loadingFacilities">
+          <div
+            v-for="n in 5"
+            :key="'facility-skel-' + n"
+            class="d-flex align-items-center mb-2 placeholder-glow"
+          >
+            <span class="placeholder rounded me-2" style="width:16px;height:16px;"></span>
+            <span class="placeholder col-6"></span>
+          </div>
+        </div>
+
+        <!-- Actual -->
+        <div v-else>
+          <div
+            class="form-check"
+            v-for="(facility, index) in facilities"
+            :key="index"
+          >
             <input
               class="form-check-input"
               type="checkbox"
@@ -85,6 +124,7 @@
             </label>
           </div>
         </div>
+      </div>
 
         <!-- Price Range -->
         <div class="p-3 border rounded shadow-sm bg-white mb-4">
@@ -129,8 +169,15 @@
             >
               <div class="accordion-body">
                 <!-- Your filter inputs here -->
-                 <h5 class="fw-bold mb-3">Amenities</h5>
-                <div class="form-check" v-for="(amenity, index) in amenities" :key="index">
+                <h5 class="fw-bold mb-3">Amenities</h5>
+
+                <div v-if="loadingAmenities">
+                  <div v-for="n in 4" :key="n" class="placeholder-glow mb-2">
+                    <span class="placeholder col-7"></span>
+                  </div>
+                </div>
+
+                <div v-else class="form-check" v-for="(amenity, index) in amenities" :key="index">
                   <input
                     class="form-check-input"
                     type="checkbox"
@@ -204,7 +251,14 @@
             >
               <div class="accordion-body">
                 <!-- Facilities checkboxes -->
-                 <div class="form-check" v-for="(facility, index) in facilities" :key="index">
+                
+                <div v-if="loadingAmenities">
+                  <div v-for="n in 4" :key="n" class="placeholder-glow mb-2">
+                    <span class="placeholder col-7"></span>
+                  </div>
+                </div>
+
+                <div v-else class="form-check" v-for="(facility, index) in facilities" :key="index">
                   <input
                     class="form-check-input"
                     type="checkbox"
@@ -221,10 +275,7 @@
           </div>
 
         </div>
-      </aside>
-
-
-      
+      </aside>    
 
       <!-- Property Listings -->
       <div class="col-lg-9">
@@ -265,6 +316,8 @@
                 <RouterLink :to="`/property/${property.id}`" class="btn btn-outline-primary btn-sm">View Details</RouterLink>
               </div>
             </div>
+
+            
           </div>
 
           <!-- Empty state -->
@@ -273,10 +326,46 @@
               No properties match your filters. Try adjusting your selections.
             </div>
           </div>
+          
+
         </div>
       </div>
+      <hr>
+      <!-- Pagination -->
+      <nav v-if="lastPage >= 1" class="mt-4">
+        <ul class="pagination justify-content-center">
+
+          <!-- Prev -->
+          <li class="page-item" :class="{ disabled: currentPage === 1 }">
+            <button class="page-link" @click="changePage(currentPage - 1)">
+              Previous
+            </button>
+          </li>
+
+          <!-- Pages -->
+          <li
+            v-for="page in lastPage"
+            :key="page"
+            class="page-item"
+            :class="{ active: page === currentPage }"
+          >
+            <button class="page-link" @click="changePage(page)">
+              {{ page }}
+            </button>
+          </li>
+
+          <!-- Next -->
+          <li class="page-item" :class="{ disabled: currentPage === lastPage }">
+            <button class="page-link" @click="changePage(currentPage + 1)">
+              Next
+            </button>
+          </li>
+
+        </ul>
+      </nav>
     </div>
-  </div>
+
+  </div>  
 </template>
 
 <script>
@@ -288,7 +377,8 @@ import {
   getAmenities,
   getFacilities,
   getFilteredProperties,
-  getFilterPropertyByType
+  getFilterPropertyByType,
+  searchProperties
 } from '@/api/property';
 import successToast from '@/components/successToast.vue';
 import Header from '@/components/Header.vue';
@@ -319,37 +409,74 @@ export default {
       selectedAgreement: null,
       min_price: 0,            // ensure these exist
       max_price: 0,
-      loading: true            // controls placeholders
+      loading: true,          // controls placeholders
+      loadingAmenities: true,
+      loadingFacilities: true,
+      currentPage: 1,
+      lastPage: 1,
+      total: 0,
+      searchQuery: '',
     };
   },
   methods: {
-    async getProperties() {
+    changePage(page) {
+      if (page < 1 || page > this.lastPage) return;
+
+      this.currentPage = page;
+
+      if (
+        this.selectedAmenities.length ||
+        this.selectedFacilities.length ||
+        this.selectedType ||
+        this.selectedAgreement ||
+        this.selectedPriceRange
+      ) {
+        this.getFilteredProperties(page);
+      } else {
+        this.getProperties(page);
+      }
+    },
+    async getProperties(page = 1) {
       this.loading = true;
       try {
-        const response = await getProperties();
-        this.properties = response.data.properties;
-        this.message = response.data.message;
+        const response = await getProperties(page);
+
+        const paginated = response.data.properties;
+        // console.log(response, "Response");
+        // console.log(paginated, "Paginated Data");
+
+        this.properties = paginated.data;
+        this.currentPage = paginated.current_page;
+        this.lastPage = paginated.last_page;
+        this.total = paginated.total;
+
       } catch (error) {
-        console.log('Properties Error: ' + error);
+        console.log(error);
         this.properties = [];
       } finally {
         this.loading = false;
       }
     },
     async getAmenities() {
+      this.loadingAmenities = true;
       try {
         const response = await getAmenities();
         this.amenities = response;
       } catch (error) {
-        console.log('Amenities Error: ' + error);
+        console.log('Amenities Error:', error);
+      } finally {
+        this.loadingAmenities = false;
       }
     },
     async getFacilities() {
+      this.loadingFacilities = true;
       try {
         const response = await getFacilities();
         this.facilities = response;
       } catch (error) {
-        console.log('Facilities Error: ' + error);
+        console.log('Facilities Error:', error);
+      } finally {
+        this.loadingFacilities = false;
       }
     },
     async getPropertyTypes() {
@@ -360,8 +487,8 @@ export default {
         console.log('Property Types Error: ' + error);
       }
     },
-    async getFilteredProperties() {
-      this.loading = true; // show placeholders during filter fetch
+    async getFilteredProperties(page = 1) {
+      this.loading = true;
       try {
         const response = await getFilteredProperties(
           this.selectedAmenities,
@@ -369,12 +496,19 @@ export default {
           this.min_price,
           this.max_price,
           this.selectedType,
-          this.selectedAgreement
+          this.selectedAgreement,
+          page
         );
-        this.properties = response.data.properties;
-        this.message = response.data.message;
+
+        const paginated = response.data.properties;
+
+        this.properties = paginated.data;
+        this.currentPage = paginated.current_page;
+        this.lastPage = paginated.last_page;
+        this.total = paginated.total;
+
       } catch (error) {
-        console.log('Filtered Properties Error: ' + error);
+        console.log(error);
         this.properties = [];
       } finally {
         this.loading = false;
@@ -391,7 +525,32 @@ export default {
       } finally {
         this.loading = false;
       }
-    }
+    },
+    async searchByQuery(page = 1) {
+      if (!this.searchQuery.trim()) return; // ignore empty searches
+
+      this.loading = true;
+      this.currentPage = page;
+
+      try {
+      // console.log('Searching for:', this.searchQuery);
+        const response = await searchProperties(this.searchQuery, page);
+        console.log(response, "Search Response");
+
+        const paginated = response.data.properties;
+
+        this.properties = paginated.data;
+        this.currentPage = paginated.current_page;
+        this.lastPage = paginated.last_page;
+        this.total = paginated.total;
+
+      } catch (error) {
+        // console.log('Search Error: ', error);
+        this.properties = [];
+      } finally {
+        this.loading = false;
+      }
+    },
   },
   mounted() {
     this.getAmenities();
@@ -413,32 +572,37 @@ export default {
   },
   watch: {
     selectedType() {
-      this.getFilteredProperties();
+      this.currentPage = 1;
+      this.getFilteredProperties(1);
     },
     selectedAgreement() {
-      this.getFilteredProperties();
+      this.currentPage = 1;
+      this.getFilteredProperties(1);
     },
     selectedAmenities: {
       handler() {
-        this.getFilteredProperties();
+        this.currentPage = 1;
+        this.getFilteredProperties(1);
       },
       deep: true
     },
     selectedFacilities: {
       handler() {
-        this.getFilteredProperties();
+        this.currentPage = 1;
+        this.getFilteredProperties(1);
       },
       deep: true
     },
-    selectedPriceRange(newVal) {
-      if (newVal) {
-        this.min_price = newVal.min;
-        this.max_price = newVal.max;
+    selectedPriceRange(val) {
+      if (val) {
+        this.min_price = val.min;
+        this.max_price = val.max;
       } else {
         this.min_price = 0;
         this.max_price = 0;
       }
-      this.getFilteredProperties();
+      this.currentPage = 1;
+      this.getFilteredProperties(1);
     }
   }
 };

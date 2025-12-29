@@ -39,14 +39,22 @@
             required
           >
         </div>
-        <div class="mb-3">
-          <input 
-            type="password" 
-            class="form-control form-control-lg rounded-3" 
-            placeholder="Password" 
-            v-model="form.password" 
-            required
+        <div class="position-relative mb-3">
+          <input
+            :type="showPassword ? 'text' : 'password'"
+            v-model="form.password"
+            class="form-control form-control-lg rounded-3 pe-5"
+            placeholder="Password"
+          />
+
+          <button
+            v-if="form.password"
+            type="button"
+            class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2"
+            @click="showPassword = !showPassword"
           >
+            <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+          </button>
         </div>
         <button type="submit" class="btn btn-primary w-100 rounded-3 py-2 fw-bold">
           Create Account
@@ -84,7 +92,8 @@ export default {
         last_name: '',
         email: '',
         password: ''
-      }
+      },
+      showPassword: false 
     };
   },
   components: {

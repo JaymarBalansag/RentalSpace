@@ -24,6 +24,7 @@ window.Echo = new Echo({
   forceTLS: true,
   encrypted: true,
   authEndpoint: "http://localhost:8000/broadcasting/auth",
+  // authEndpoint: "https://api.rentahub.space/broadcasting/auth",
   auth: {
     headers: {
       Authorization: `Bearer ${localStorage.getItem('access_token')}`,

@@ -217,30 +217,49 @@
       </div>
     </div>
 
-    <!-- Property Images Carousel -->
-      <div class="my-4">
-        <h5 class="fw-bold h3 mb-2">Property Images</h5>
-        <hr>
-        <div id="propertyImagesCarousel" class="carousel slide" data-bs-ride="carousel">
-          <div class="carousel-inner">
-            <div v-for="(img, index) in propertyImages" :key="index" 
-                :class="['carousel-item', { active: index === 0 }]">
-              <img :src="img" class="d-block w-100" style="height: 300px; object-fit: cover;" />
+    <div class="row my-4">
+      <div class="col-12 col-md-6 ">
+        <!-- Property Images Carousel -->
+        <div class="my-4">
+          <h5 class="fw-bold h3 mb-2">Property Images</h5>
+          <hr>
+          <div id="propertyImagesCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+              <div v-for="(img, index) in propertyImages" :key="index" 
+                  :class="['carousel-item', { active: index === 0 }]">
+                <img :src="img" class="d-block w-100" style="height: 300px; object-fit: cover;" />
+              </div>
             </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#propertyImagesCarousel" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#propertyImagesCarousel" data-bs-slide="next">
+              <span class="carousel-control-next-icon"></span>
+            </button>
           </div>
-          <button class="carousel-control-prev" type="button" data-bs-target="#propertyImagesCarousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon"></span>
-          </button>
-          <button class="carousel-control-next" type="button" data-bs-target="#propertyImagesCarousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon"></span>
-          </button>
         </div>
       </div>
+      <div class="col-12 col-md-6 ">
+        <!-- Location Map -->
+        <div class="my-4">
+          <h5 class="fw-bold h3 mb-2">Location</h5>
+          <hr>
+          <PropertyMap
+            v-if="this.property.latitude && this.property.longitude"
+            :lat="Number(this.property.latitude)"
+            :lng="Number(this.property.longitude)"
+            :title="this.property.title"
+          />
+          </div>
+      </div>
+    </div>
+
+    
 
     <!-- Related Properties -->
     <div class="mt-5">
       <h4 class="fw-bold mb-3 text-primary">Related Properties</h4>
-      <div class="row g-4">
+      <div v-if="this.relatedProperties.length > 0" class="row g-4">
         <div
           v-for="(related, i) in relatedProperties"
           :key="i"
@@ -269,7 +288,18 @@
             </div>
           </div>
         </div>
+
       </div>
+      <div v-else class="row g-4">
+        <div  class="text-center py-5 text-muted">
+          <i class="bi bi-house-slash fs-1 mb-3"></i>
+          <p class="mb-2">No related properties found</p>
+          <RouterLink to="/" class="btn btn-outline-primary btn-sm">
+            Browse all listings
+          </RouterLink>
+        </div>
+      </div>
+      
     </div>
     <!-- Related Properties -->
 
@@ -346,11 +376,12 @@ import { getAuthUserId } from "@/api/user";
 import { useUserInfo } from '@/store/userInfo';
 import confirmModal from "@/components/confirmModal.vue";
 import Header from "@/components/Header.vue";
+import PropertyMap from "@/components/propertyMap.vue";
 
 
 export default {
   name: "PropertyDetails",
-  components: { RouterLink, BookingRequestModal, confirmModal, Header },
+  components: { RouterLink, BookingRequestModal, confirmModal, Header, PropertyMap },
   data() {
     return {
       showConfirmModal: false,
@@ -390,6 +421,7 @@ export default {
         const id = this.$route.params.id;
         const response = await getPropertyById(id);
         this.property = response.data.property;
+        console.log("Property Details Response:", response);
         this.property_type = response.data.property.type_name
         this.property_type_id = response.data.property.type_id
         this.propertyImages = response.data.property.images;
@@ -585,8 +617,7 @@ export default {
         //   alert("You cannot contact yourself.");
         //   return;
         // }
-        // alert(receiver_id);
-        // alert(property_id);
+
         const response = await initiateConversation(receiver_id, property_id);
         
         console.log("Initiate Conversation Response:", response);

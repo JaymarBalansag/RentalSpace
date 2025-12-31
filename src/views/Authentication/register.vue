@@ -6,7 +6,7 @@
       <!-- Logo -->
       <div class="text-center mb-4">
         <img src="@/assets/logo.jpg" alt="RentaSpace Logo" class="img-fluid mb-2" style="max-width: 80px;">
-        <h3 class="fw-bold text-primary">RentaSpace</h3>
+        <h3 class="fw-bold text-primary">Renta Hub</h3>
         <p class="text-muted small">Join and start finding your ideal space</p>
       </div>
 

@@ -9,7 +9,7 @@
         class="navbar-brand fw-bold text-light brand-text"
         to="/"
       >
-        SpaceSeeker
+        RentaHub
       </RouterLink>
 
       <!-- Desktop Nav -->

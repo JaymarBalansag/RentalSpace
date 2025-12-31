@@ -30,7 +30,7 @@
         </div>
 
         <!-- Search -->
-        <div class="col-md-4">
+        <div class="col-md-3">
           <div class="input-group shadow-sm">
             <input type="text" class="form-control" v-model="searchQuery" placeholder="Search by location or name">
             <button class="btn btn-outline-primary" @click="searchByQuery(1)">
@@ -39,13 +39,28 @@
           </div>
         </div>
 
-        <!-- Search Button -->
-        <!-- <div class="col-md-2 d-grid">
-          <button class="btn btn-primary shadow-sm">Search</button>
-        </div> -->
+        <!-- Map Toggle -->
+        <div class="col-3">
+          <button
+            class="btn btn-outline-primary shadow-sm"
+            @click="showMap = !showMap"
+            v-if="properties.length"
+          >
+            <i class="bi bi-map"></i>
+            {{ showMap ? 'Hide Map' : 'View Map' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
+
+  
+
+  <!-- Map Section -->
+  <div v-if="showMap" class="container-md container-sm px-0 mb-4">
+    <MapSection :properties="properties" />
+  </div>
+
 
   <!-- Main Content -->
   <div class="container my-5">
@@ -382,12 +397,14 @@ import {
 } from '@/api/property';
 import successToast from '@/components/successToast.vue';
 import Header from '@/components/Header.vue';
+import MapSection from '@/components/MapSection.vue';
 
 export default {
   name: 'Home',
-  components: { RouterLink, successToast, Header },
+  components: { RouterLink, successToast, Header, MapSection },
   data() {
     return {
+      showMap: false,
       showSuccess: false,
       subSuccess: false,
       amenities: [],
@@ -551,6 +568,7 @@ export default {
         this.loading = false;
       }
     },
+    
   },
   mounted() {
     this.getAmenities();
@@ -569,8 +587,14 @@ export default {
       this.subSuccess = true;
       sessionStorage.removeItem('subscriptionSuccess');
     }
+
+    
+
   },
   watch: {
+    properties() {
+      this.showMap = false;
+    },
     selectedType() {
       this.currentPage = 1;
       this.getFilteredProperties(1);

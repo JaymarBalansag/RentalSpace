@@ -17,7 +17,7 @@
         <li class="nav-item">
           <RouterLink class="nav-link text-light" to="/">Home</RouterLink>
         </li>
-        <li class="nav-item">
+        <li v-if="isLoggedIn" class="nav-item">
           <RouterLink class="nav-link text-light" to="/experience">Experience</RouterLink>
         </li>
         <li class="nav-item">

@@ -18,13 +18,12 @@ import Pusher from "pusher-js";
 window.Pusher = Pusher;
 
 window.Echo = new Echo({
-  broadcaster: 'pusher',
-  key: 'e059a322550442df18c2',
-  cluster: 'ap1',
+  broadcaster: import.meta.env.VITE_PUSHER_BROADCASTER,
+  key: import.meta.env.VITE_PUSHER_APP_KEY,
+  cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
   forceTLS: true,
   encrypted: true,
-  authEndpoint: "http://localhost:8000/broadcasting/auth",
-  // authEndpoint: "https://api.rentahub.space/broadcasting/auth",
+  authEndpoint: import.meta.env.VITE_API_BROADCAST_URL,
   auth: {
     headers: {
       Authorization: `Bearer ${localStorage.getItem('access_token')}`,

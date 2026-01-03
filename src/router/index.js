@@ -48,6 +48,7 @@ const routes = [
       path: '/experience',
       name: 'experience',
       component: Experience,
+      meta: { requiresAuth:true }
     },
     {
       path: '/Home',

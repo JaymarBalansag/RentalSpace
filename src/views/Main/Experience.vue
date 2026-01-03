@@ -5,7 +5,7 @@
     <div class="row">
 
       <!-- Left Component -->
-      <div class="col-lg-8">
+      <div class="col-lg-7">
 
         <!-- Recommended -->
         <section class="mb-5">
@@ -17,33 +17,77 @@
 
           <!-- Filters -->
           <div class="d-flex gap-2 mb-4">
-            <button class="btn btn-outline-primary btn-sm rounded-pill">Near You</button>
-            <button class="btn btn-outline-primary btn-sm rounded-pill">Preferences</button>
+            <button class="btn btn-outline-primary btn-sm rounded-pill" @click="getNearProperties()">Near You</button>
+            <button class="btn btn-outline-primary btn-sm rounded-pill" @click="getPrefferedAmenities()">Amenities</button>
+            <button class="btn btn-outline-primary btn-sm rounded-pill" @click="getPrefferedTypes()">Property Types</button>
           </div>
 
           <!-- Horizontal scroll cards -->
-          <div class="d-flex gap-3 overflow-auto pb-2">
+
+          <!-- Loading placeholders -->
+          <div v-if="loading" class="d-flex gap-3 overflow-auto pb-2 mt-3" v-for="n in 6" :key="'ph-' + n">
             <div
-              v-for="i in 4"
-              :key="i"
-              class="card shadow-sm"
-              style="min-width: 250px;"
+              class="d-flex justify-content-center align-items-center"
+              style="min-width: 250px; max-width: 250px; "
             >
-              <img src="../../assets/rental.jpg" class="card-img-top" alt="Rental Property">
+              <div class="card h-100 shadow-sm property-card">
+                <svg class="bd-placeholder-img card-img-top" width="100%" height="180" role="img" aria-label="Image placeholder">
+                  <rect width="100%" height="100%" fill="#e9ecef"></rect>
+                </svg>
+                <div class="card-body">
+                  <h5 class="card-title placeholder-glow">
+                    <span class="placeholder col-6"></span>
+                  </h5>
+                  <p class="card-text placeholder-glow">
+                    <span class="placeholder col-7"></span>
+                    <span class="placeholder col-4"></span>
+                    <span class="placeholder col-5"></span>
+                  </p>
+                  <p class="fw-bold text-primary mb-2 placeholder-glow">
+                    <span class="placeholder col-4"></span>
+                  </p>
+                  <div class="d-grid">
+                    <span class="btn btn-outline-primary btn-sm disabled placeholder col-6"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Recommended Properties -->
+          <div v-else class="d-flex gap-3 overflow-auto pb-2">
+            <div
+              v-for="property in recommendedProperties"
+              :key="property.id"
+              class="card shadow-sm"
+              style="min-width: 240px; max-width: 250px;"
+            >
+              <img :src="property.image_url || placeholderImage" class="card-img-top" alt="Rental Property">
               <div class="card-body">
-                <h6 class="card-title fw-bold">Sample Property</h6>
-                <p class="card-text small text-muted">Fully furnished • Near city center</p>
-                <p class="fw-bold text-primary mb-2">$250 / month</p>
+                <h6 class="card-title fw-bold">{{ property.title }}</h6>
+                <p class="card-text small text-muted">{{ property.description }} • {{ property.town_name }}</p>
+                <p class="fw-bold text-primary mb-2">{{ property.price }}</p>
                 <a href="#" class="btn btn-sm btn-outline-primary">View More</a>
               </div>
             </div>
           </div>
+
+          <!-- Empty state -->
+          <div v-if="!loading && recommendedProperties.length === 0" class="d-flex justify-content-center align-content-center">
+            <div class="alert alert-light border text-muted">
+              {{ message || 'No recommended properties available at the moment.' }}
+            </div>
+          </div>
+
+          
+
         </section>
 
         <!-- Popular Posts -->
         <section>
           <div class="d-flex align-items-center mb-3">
-            <h2 class="fw-bold mb-0">Popular Posts</h2>
+            <h2 class="fw-bold mb-0">Most Viewed Posts</h2>
             <button class="btn btn-link ms-auto">See All</button>
           </div>
           <div class="list-group">
@@ -70,7 +114,7 @@
       </div>
 
       <!-- Right Sidebar -->
-      <aside class="col-lg-4">
+      <aside class="col-lg-5">
 
         <!-- Recent Posts -->
         <div class="card border-0 bg-white shadow-sm mb-4">
@@ -78,26 +122,30 @@
             <h5 class="fw-bold text-center mb-0">Recent Posts</h5>
           </div>
           <ul class="list-group list-group-flush">
-            <li v-for="i in 3" :key="i" class="list-group-item d-flex align-items-center">
-              <img src="../../assets/hotel.jpg" alt="thumb" class="rounded me-3" style="width:60px; height:60px; object-fit:cover;">
+            <li v-for="property in recentProperties" :key="property.id" class="list-group-item d-flex align-items-center">
+              <img :src="property.image_url || placeholderImage" alt="thumb" class="rounded me-3" style="width:60px; height:60px; object-fit:cover;">
               <div>
-                <h6 class="mb-1">Post Title</h6>
-                <small class="text-muted">2 mins ago</small>
+                <h6 class="mb-1">{{ property.title }}</h6>
+                <small class="text-muted">{{ formatAgo(property.created_at) }}</small>
               </div>
             </li>
           </ul>
         </div>
 
-        <!-- Trending Tags -->
+        <!-- Poopular Property Types -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-white border-0 text-center">
-            <h5 class="fw-bold mb-0">Trending Tags</h5>
+            <h5 class="fw-bold mb-0">Popular Property Types</h5>
           </div>
-          <div class="card-body d-flex flex-wrap gap-2">
-            <span class="badge rounded-pill bg-primary">Boarding House</span>
-            <span class="badge rounded-pill bg-success">Apartment</span>
-            <span class="badge rounded-pill bg-warning text-dark">Near School</span>
-            <span class="badge rounded-pill bg-info">Cheap Rent</span>
+          <div class="card-body d-flex flex-wrap gap-2 justify-content-center">
+            <span
+              v-for="(type, index) in this.popularTypes.filter(t => t.total > 0)"
+              :key="type.id"
+              class="badge rounded-pill"
+              :class="badgeColors[index % badgeColors.length]"
+            >
+              {{ type.type_name }}
+            </span>
           </div>
         </div>
 
@@ -123,9 +171,124 @@
 </template>
 
 <script>
-  import Header from '@/components/Header.vue';
+import { getDefaultRecommendation, getRecentProperties, getNearProperties, getPrefferedAmenities, getPrefferedTypes, getPopularTypes } from '@/api/experienceScript';
+import Header from '@/components/Header.vue';
+import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
+
 export default {
   name: "Experience",
-  components: { Header }
+  components: { Header },
+  data() {
+    return {
+      message: '',
+      recommendedProperties: [],
+      recentProperties: [],
+      nearProperties: [],
+      popularTypes: [],
+      placeholderImage: placeholderImg,
+      loading: false,
+      badgeColors: [
+        'bg-primary',
+        'bg-success',
+        'bg-warning text-dark',
+        'bg-info'
+      ]
+    }
+  },
+  methods: {
+    formatAgo(date) {
+      return dayjs(date).fromNow();
+    },
+    async fetchProperty() {
+      this.loading = true;
+      try {
+        const response = await getDefaultRecommendation();
+        
+        this.recommendedProperties = response.data.data;
+
+      } catch (error) {
+        console.error("Error fetching properties:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async fetchRecentProperties() {
+      this.loading = true;
+      try {
+        const response = await getRecentProperties();
+        
+        this.recentProperties = response.data.data;
+
+      } catch (error) {
+        console.error("Error fetching properties:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async getNearProperties() {
+      this.loading = true;
+      try {
+        this.recommendedProperties = [];
+        const response = await getNearProperties();
+        this.recommendedProperties = response.data.data;
+      } catch (error) {
+        console.error("Error fetching near properties:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async getPrefferedAmenities(){
+      this.loading = true;
+      try {
+        const response = await getPrefferedAmenities();
+        this.message = response.data.message;
+        this.recommendedProperties = response.data.data;
+      } catch (error) {
+        console.error("Error fetching preferred amenities:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async getPrefferedTypes(){
+      this.loading = true;
+      try {
+        const response = await getPrefferedTypes();
+        this.message = response.data.message;
+        this.recommendedProperties = response.data.data;
+      } catch (error) {
+        console.error("Error fetching preferred types:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    async getPopularTypes(){
+      this.loading = true;
+      try {
+        const response = await getPopularTypes();
+        this.message = response.data.message;
+        this.popularTypes = response.data.data;
+      } catch (error) {
+        console.error("Error fetching popular types:", error);
+      } finally {
+        this.loading = false;
+      }
+    }
+  },
+  mounted() {
+    this.fetchProperty();
+    this.fetchRecentProperties();
+    this.getPopularTypes();
+  }
 }
 </script>
+
+<style scoped>
+.property-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+</style>

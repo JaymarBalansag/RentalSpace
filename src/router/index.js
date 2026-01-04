@@ -18,7 +18,6 @@ import Reports from '@/views/Owner/Reports.vue'
 import Billing from '@/views/Owner/Billing.vue'
 import EditProperty from '@/views/Owner/PropertyCrud/editProperty.vue'
 import AddProperty from '@/views/Owner/PropertyCrud/addProperty.vue'
-import PropertyWizard from '@/components/PropertyWizard/PropertyWizard.vue'
 import Message from '@/views/User/message.vue'
 import Notification from '@/views/User/notification.vue'
 import Setting from '@/views/User/setting.vue'
@@ -33,6 +32,8 @@ import AdminProperty from '@/views/Admin/property/AdminProperty.vue'
 import TestMessage from '@/views/User/TestMessage.vue'
 import Bookings from '@/views/Owner/Bookings.vue'
 import EditPreference from '@/views/User/editPreference.vue'
+import ChangePassword from '@/views/User/ChangePassword.vue'
+import EditProfile from '@/views/User/EditProfile.vue'
 const routes = [
   {
       path: '/',
@@ -79,6 +80,12 @@ const routes = [
       meta: {requiresAuth:true},
     },
     {
+      path: '/profile/edit',
+      name: 'edit_profile',
+      component: EditProfile,
+      meta: { requiresAuth:true },
+    },
+    {
       path: '/messages',
       name: 'messages',
       component: Message,
@@ -94,6 +101,12 @@ const routes = [
       path: '/settings',
       name: 'settings',
       component: Setting,
+      meta: { requiresAuth:true },
+    },
+    {
+      path: '/change-pass',
+      name: 'changePassword',
+      component: ChangePassword,
       meta: { requiresAuth:true },
     },
     {

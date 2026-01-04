@@ -12,7 +12,7 @@
     <ul class="list-group shadow-sm">
       <li class="list-group-item d-flex justify-content-between align-items-center">
         <span><i class="bi bi-person me-2"></i> Profile</span>
-        <button class="btn btn-sm btn-outline-primary">Edit</button>
+        <button class="btn btn-sm btn-outline-primary" @click="$router.push('/profile')">Edit</button>
       </li>
       <li class="list-group-item d-flex justify-content-between align-items-center">
         <span><i class="bi bi-bell me-2"></i> Notifications</span>
@@ -22,7 +22,7 @@
       </li>
       <li class="list-group-item d-flex justify-content-between align-items-center">
         <span><i class="bi bi-lock me-2"></i> Change Password</span>
-        <button class="btn btn-sm btn-outline-primary">Update</button>
+        <button class="btn btn-sm btn-outline-primary" @click="$router.push('/change-pass')">Update</button>
       </li>
       <li class="list-group-item d-flex justify-content-between align-items-center text-danger" style="cursor: pointer;" @click="logout">
         <i class="bi bi-box-arrow-right me-2"></i> Logout

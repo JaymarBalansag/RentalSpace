@@ -1,3 +1,4 @@
+import { completeProfile } from "@/api/user";
 import { defineStore } from "pinia";
 
 export const useUserInfo = defineStore("info", {
@@ -19,6 +20,18 @@ export const useUserInfo = defineStore("info", {
       this.profile_photo = profile_photo;
 
       localStorage.setItem("userInfo", JSON.stringify(this.$state));
+    },
+    completeProfileInPage(first_name, last_name, profile_photo) {
+      this.first_name = first_name;
+      this.last_name = last_name;
+      this.profile_photo = profile_photo;
+      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+      if (userInfo) {
+        userInfo.first_name = first_name;
+        userInfo.last_name = last_name;
+        userInfo.profile_photo = profile_photo;
+        localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      }
     },
     setRole(role) {
       this.role = role;

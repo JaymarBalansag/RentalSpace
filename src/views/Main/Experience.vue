@@ -25,34 +25,45 @@
           <!-- Horizontal scroll cards -->
 
           <!-- Loading placeholders -->
-          <div v-if="loading" class="d-flex gap-3 overflow-auto pb-2 mt-3" v-for="n in 6" :key="'ph-' + n">
+          <div v-if="loading" class="d-flex gap-3 overflow-auto pb-2 mt-3">
             <div
+              v-for="n in 6"
+              :key="'ph-' + n"
               class="d-flex justify-content-center align-items-center"
-              style="min-width: 250px; max-width: 250px; "
+              style="min-width: 250px; max-width: 250px;"
             >
               <div class="card h-100 shadow-sm property-card">
-                <svg class="bd-placeholder-img card-img-top" width="100%" height="180" role="img" aria-label="Image placeholder">
+                <svg
+                  class="bd-placeholder-img card-img-top"
+                  width="100%"
+                  height="180"
+                  role="img"
+                  aria-label="Image placeholder"
+                >
                   <rect width="100%" height="100%" fill="#e9ecef"></rect>
                 </svg>
+
                 <div class="card-body">
                   <h5 class="card-title placeholder-glow">
                     <span class="placeholder col-6"></span>
                   </h5>
+
                   <p class="card-text placeholder-glow">
-                    <span class="placeholder col-7"></span>
-                    <span class="placeholder col-4"></span>
+                    <span class="placeholder col-7"></span><br>
+                    <span class="placeholder col-4"></span><br>
                     <span class="placeholder col-5"></span>
                   </p>
+
                   <p class="fw-bold text-primary mb-2 placeholder-glow">
                     <span class="placeholder col-4"></span>
                   </p>
+
                   <div class="d-grid">
                     <span class="btn btn-outline-primary btn-sm disabled placeholder col-6"></span>
                   </div>
                 </div>
               </div>
             </div>
-
           </div>
 
           <!-- Recommended Properties -->
@@ -63,10 +74,10 @@
               class="card shadow-sm"
               style="min-width: 240px; max-width: 250px;"
             >
-              <img :src="property.image_url || placeholderImage" class="card-img-top" alt="Rental Property">
+              <img :src="property.image_url || placeholderImage" class="card-img-top property-img" alt="Rental Property">
               <div class="card-body">
                 <h6 class="card-title fw-bold">{{ property.title }}</h6>
-                <p class="card-text small text-muted">{{ property.description }} • {{ property.town_name }}</p>
+                <p class="card-text small text-muted clamp-text">{{ property.description }} • {{ property.town_name }}</p>
                 <p class="fw-bold text-primary mb-2">{{ property.price }}</p>
                 <a href="#" class="btn btn-sm btn-outline-primary">View More</a>
               </div>
@@ -84,7 +95,7 @@
 
         </section>
 
-        <!-- Popular Posts -->
+        <!-- Most Viewed Posts -->
         <section>
           <div class="d-flex align-items-center mb-3">
             <h2 class="fw-bold mb-0">Most Viewed Posts</h2>
@@ -121,31 +132,92 @@
           <div class="card-header bg-white border-0">
             <h5 class="fw-bold text-center mb-0">Recent Posts</h5>
           </div>
-          <ul class="list-group list-group-flush">
-            <li v-for="property in recentProperties" :key="property.id" class="list-group-item d-flex align-items-center">
-              <img :src="property.image_url || placeholderImage" alt="thumb" class="rounded me-3" style="width:60px; height:60px; object-fit:cover;">
+
+          <!-- 🔄 Loading Placeholder -->
+          <ul v-if="loading" class="list-group list-group-flush">
+            <li
+              v-for="n in 3"
+              :key="'recent-skel-' + n"
+              class="list-group-item d-flex align-items-center placeholder-glow"
+            >
+              <div
+                class="rounded me-3 placeholder"
+                style="width:60px; height:60px;"
+              ></div>
+
+              <div class="flex-grow-1">
+                <div class="placeholder col-6 mb-2"></div>
+              </div>
+            </li>
+          </ul>
+
+          <!-- ✅ Real Data -->
+          <ul v-else-if="recentProperties.length" class="list-group list-group-flush">
+            <li
+              v-for="property in recentProperties"
+              :key="property.id"
+              class="list-group-item d-flex align-items-center"
+            >
+              <img
+                :src="property.image_url || placeholderImage"
+                class="rounded me-3"
+                style="width:60px; height:60px; object-fit:cover;"
+              />
               <div>
                 <h6 class="mb-1">{{ property.title }}</h6>
-                <small class="text-muted">{{ formatAgo(property.created_at) }}</small>
+                <small class="text-muted">
+                  {{ formatAgo(property.created_at) }}
+                </small>
               </div>
+            </li>
+          </ul>
+
+          <!-- 🚫 Empty State -->
+          <ul v-else class="list-group list-group-flush">
+            <li class="list-group-item text-center text-muted">
+              No recent posts available.
             </li>
           </ul>
         </div>
 
-        <!-- Poopular Property Types -->
+
+        <!-- Popular Property Types -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-white border-0 text-center">
             <h5 class="fw-bold mb-0">Popular Property Types</h5>
           </div>
-          <div class="card-body d-flex flex-wrap gap-2 justify-content-center">
+
+          <!-- 🔄 Loading Skeleton -->
+          <div
+            v-if="loading"
+            class="card-body d-flex flex-wrap gap-2 justify-content-center placeholder-glow"
+          >
             <span
-              v-for="(type, index) in this.popularTypes.filter(t => t.total > 0)"
+              v-for="n in 6"
+              :key="'type-skel-' + n"
+              class="badge rounded-pill placeholder"
+              style="width:90px; height:24px;"
+            ></span>
+          </div>
+
+          <!-- ✅ Real Data -->
+          <div
+            v-else-if="popularTypes.length"
+            class="card-body d-flex flex-wrap gap-2 justify-content-center"
+          >
+            <span
+              v-for="(type, index) in popularTypes.filter(t => t.total > 0)"
               :key="type.id"
               class="badge rounded-pill"
               :class="badgeColors[index % badgeColors.length]"
             >
               {{ type.type_name }}
             </span>
+          </div>
+
+          <!-- 🚫 Empty -->
+          <div v-else class="card-body text-center text-muted">
+            No popular property types yet.
           </div>
         </div>
 
@@ -290,5 +362,18 @@ export default {
 .property-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
+.property-img {
+  height: 200px;          /* choose 180–220px if you want */
+  width: 100%;
+  object-fit: cover;      /* crops instead of stretching */
+}
+.clamp-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;   /* number of lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 
 </style>

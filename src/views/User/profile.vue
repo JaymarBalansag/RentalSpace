@@ -97,7 +97,7 @@
                   <h5 class="fw-semibold mb-3">
                     <i class="bi bi-map me-2"></i> Location
                   </h5>
-                  <div id="map" class="rounded-3" style="height: 320px;"></div>
+                  <div id="map" class="rounded-3" ref="mapEl" style="height: 320px;"></div>
                 </div>
               </div>
             </div>
@@ -176,6 +176,26 @@ import { getUserPreferences, getUserProfile } from "@/api/user";
 import L from "leaflet";
 import { useUserInfo } from "@/store/userInfo";
 import Header from "@/components/Header.vue";
+import 'leaflet/dist/leaflet.css';
+import { nextTick } from "vue";
+
+
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: new URL(
+    'leaflet/dist/images/marker-icon-2x.png',
+    import.meta.url
+  ).href,
+  iconUrl: new URL(
+    'leaflet/dist/images/marker-icon.png',
+    import.meta.url
+  ).href,
+  shadowUrl: new URL(
+    'leaflet/dist/images/marker-shadow.png',
+    import.meta.url
+  ).href,
+});
 
 
 export default {
@@ -211,12 +231,6 @@ export default {
     this.fetchUserProfile();
     this.fetchPreferences();
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        this.initFromBrowserLocation,
-        () => this.initMap()
-      );
-    }
   },
   methods: {
     async fetchUserProfile() {
@@ -234,28 +248,39 @@ export default {
       });
 
       this.isComplete = data.isComplete;
-    },
-    initFromBrowserLocation(pos) {
-      this.initMap(pos.coords.latitude, pos.coords.longitude);
-    },
-    initMap(lat = 14.5995, lng = 120.9842) {
-      const latitude = this.user.latitude || lat;
-      const longitude = this.user.longitude || lng;
 
+      await nextTick(); // 🔑 wait for DOM
+      this.initMap();
+    },
+    initMap() {
       if (this.map) return;
+      if (!this.$refs.mapEl) return;
 
-      this.map = L.map("map", { zoomControl: false }).setView(
-        [latitude, longitude],
-        15
-      );
+      const lat = Number(this.user.latitude);
+      const lng = Number(this.user.longitude);
 
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap contributors",
-      }).addTo(this.map);
+      // 🔐 Validate coordinates
+      const isValid =
+        Number.isFinite(lat) &&
+        Number.isFinite(lng) &&
+        lat !== 0 &&
+        lng !== 0;
+
+      const latitude = isValid ? lat : 14.5995;
+      const longitude = isValid ? lng : 120.9842;
+
+      this.map = L.map(this.$refs.mapEl, {
+        zoomControl: false,
+        attributionControl: false,
+      }).setView([latitude, longitude], isValid ? 15 : 12);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(this.map);
 
       L.marker([latitude, longitude])
         .addTo(this.map)
-        .bindPopup("Registered location");
+        .bindPopup(
+          isValid ? "Registered location" : "Default location (profile incomplete)"
+        );
 
       L.control.zoom({ position: "bottomright" }).addTo(this.map);
     },

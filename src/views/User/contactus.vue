@@ -1,44 +1,75 @@
 <template>
   <Header></Header>
 
-  <div class="container py-4" style="max-width: 700px;">
+  <!-- Hero Section -->
+  <div class="hero-section text-center py-5 bg-light">
+    <h2 class="fw-bold">Contact RentaSpace</h2>
+    <p class="lead text-muted">We’re here to help you with your rental journey</p>
+  </div>
+
+  <div class="container py-5" style="max-width: 900px;">
     <!-- Back Button -->
-    <RouterLink to="/" class="btn btn-outline-secondary mb-3">
+    <RouterLink to="/" class="btn btn-outline-secondary mb-4">
       <i class="bi bi-arrow-left me-1"></i> Back
     </RouterLink>
 
-    <h3 class="fw-bold mb-4">Contact Us</h3>
+    <!-- Intro -->
+    <p class="mb-4">
+      If you have any questions or concerns, feel free to reach out to us. 
+      Our team is ready to assist you.
+    </p>
 
-    <p>If you have any questions or concerns, feel free to reach out to us.</p>
+    <!-- Contact Info Cards -->
+    <div class="row g-4 mb-5">
+      <div class="col-md-4">
+        <div class="card shadow-sm h-100 text-center p-3">
+          <i class="bi bi-envelope text-primary fs-1 mb-2"></i>
+          <h6 class="fw-bold">Email</h6>
+          <p class="text-muted mb-0">support@rentaspace.com</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card shadow-sm h-100 text-center p-3">
+          <i class="bi bi-telephone text-success fs-1 mb-2"></i>
+          <h6 class="fw-bold">Phone</h6>
+          <p class="text-muted mb-0">+63 977 140 5584</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card shadow-sm h-100 text-center p-3">
+          <i class="bi bi-geo-alt text-danger fs-1 mb-2"></i>
+          <h6 class="fw-bold">Location</h6>
+          <p class="text-muted mb-0">Abuyog, Leyte, Philippines</p>
+        </div>
+      </div>
+    </div>
 
-    <ul class="list-group mb-4">
-      <li class="list-group-item">
-        <i class="bi bi-envelope me-2"></i> support@rentaspace.com
-      </li>
-      <li class="list-group-item">
-        <i class="bi bi-telephone me-2"></i> +63 977 140 5584
-      </li>
-      <li class="list-group-item">
-        <i class="bi bi-geo-alt me-2"></i> Abuyog, Leyte, Philippines
-      </li>
-    </ul>
+    <!-- Contact Form -->
+    <div class="card shadow-sm p-4">
+      <h5 class="fw-bold mb-3">Send us a message</h5>
+      <form @submit.prevent="submitForm">
+        <div class="mb-3">
+          <label class="form-label">Name</label>
+          <input type="text" v-model="form.name" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input type="email" v-model="form.email" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Message</label>
+          <textarea v-model="form.message" class="form-control" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Send Message</button>
+      </form>
+    </div>
 
-    <h5>Send us a message</h5>
-    <form @submit.prevent="submitForm">
-      <div class="mb-3">
-        <label class="form-label">Name</label>
-        <input type="text" v-model="form.name" class="form-control" required>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Email</label>
-        <input type="email" v-model="form.email" class="form-control" required>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Message</label>
-        <textarea v-model="form.message" class="form-control" rows="4" required></textarea>
-      </div>
-      <button type="submit" class="btn btn-primary">Send</button>
-    </form>
+    <!-- CTA Footer -->
+    <div class="text-center mt-5">
+      <RouterLink to="/" class="btn btn-outline-primary btn-lg">
+        Explore Properties
+      </RouterLink>
+    </div>
   </div>
 </template>
 
@@ -68,3 +99,12 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.hero-section {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+}
+.card i {
+  display: block;
+}
+</style>

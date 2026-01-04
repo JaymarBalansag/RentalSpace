@@ -136,6 +136,25 @@ import { RouterLink } from "vue-router";
 import { completeProfile } from "@/api/user";
 import { useUserInfo } from "@/store/userInfo";
 import confirmModal from "@/components/confirmModal.vue";
+import 'leaflet/dist/leaflet.css';
+
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: new URL(
+    'leaflet/dist/images/marker-icon-2x.png',
+    import.meta.url
+  ).href,
+  iconUrl: new URL(
+    'leaflet/dist/images/marker-icon.png',
+    import.meta.url
+  ).href,
+  shadowUrl: new URL(
+    'leaflet/dist/images/marker-shadow.png',
+    import.meta.url
+  ).href,
+});
+
 
 export default {
   components: { RouterLink, confirmModal },
@@ -294,6 +313,8 @@ export default {
       Object.entries(this.form).forEach(([k, v]) => v && fd.append(k, v));
       await completeProfile(fd);
       alert("Profile completed successfully!");
+      const info = useUserInfo();
+      await info.completeProfileInPage(this.form.first_name, this.form.last_name, this.previewImg);
       this.$router.push("/profile");
     },
   },

@@ -56,7 +56,7 @@
     <!-- Mobile Dropdown Menu -->
     <div v-if="showMobileMenu" class="mobile-menu d-md-none mt-3 " style="background-color: #4780d9 !important;">
       <RouterLink class="mobile-link" to="/" @click="closeMenu">Home</RouterLink>
-      <RouterLink class="mobile-link" to="/experience" @click="closeMenu">Experience</RouterLink>
+      <RouterLink v-show="isLoggedIn" class="mobile-link" to="/experience" @click="closeMenu">Experience</RouterLink>
       <RouterLink class="mobile-link" to="/about" @click="closeMenu">About</RouterLink>
       <RouterLink class="mobile-link" to="/contactus" @click="closeMenu">Contact</RouterLink>
 

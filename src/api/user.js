@@ -45,3 +45,18 @@ export async function getUserPreferencesForEdit() {
   const response = await api.get("/user/preferences/edit");
   return response;
 }
+
+export async function verifyCurrentPassword(currentPassword) {
+  const response = await api.post("/verify-password", {
+    current_password: currentPassword,
+  });
+  return response;
+}
+
+export async function changeUserPassword(newPassword, confirmPassword) {
+  const response = await api.post("/change-password", {
+    new_password: newPassword,
+    confirm_password: confirmPassword
+  });
+  return response;
+}

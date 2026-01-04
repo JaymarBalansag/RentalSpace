@@ -6,10 +6,10 @@
   <successToast v-if="subSuccess" message="🎉 You are a owner now!" />
 
   <!-- Search Filter -->
-  <div class="container-fluid bg-light pt-5 mb-2">
-    <div class="container">
+  <div class="container-fluid bg-light pt-5 mb-2 pb-3">
+    <div class="container ">
       <h1 class="fw-bold text-primary mb-3">Find Your Perfect Space</h1>
-      <div class="row g-3 align-items-center">
+      <div class="row g-3 align-items-center ">
         <!-- Property Type -->
         <div class="col-md-3">
           <select class="form-select shadow-sm" v-model="selectedType">
@@ -40,9 +40,9 @@
         </div>
 
         <!-- Map Toggle -->
-        <div class="col-3">
+        <div class="col-12 col-md-2">
           <button
-            class="btn btn-outline-primary shadow-sm"
+            class="btn btn-outline-primary shadow-sm d-md-block w-100"
             @click="showMap = !showMap"
             v-if="properties.length"
           >
@@ -331,8 +331,6 @@
                 <RouterLink :to="`/property/${property.id}`" class="btn btn-outline-primary btn-sm">View Details</RouterLink>
               </div>
             </div>
-
-            
           </div>
 
           <!-- Empty state -->
@@ -634,12 +632,28 @@ export default {
 
 <style scoped>
 .property-card {
+  
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+.property-card .card-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;   
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .property-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 20px rgba(0,0,0,0.1);
 }
+
+.property-card .card-img-top {
+  height: 200px;          /* adjust as needed */
+  object-fit: cover;      /* crop to fit without distortion */
+  width: 100%;            /* ensure full card width */
+}
+
 
 /* .placeholder {
   Bootstrap default is #dee2e6; override if needed

@@ -1,7 +1,7 @@
 <template>
   <Header></Header>
 
-  <div class="container py-5" v-if="property">
+  <div class="container py-5" v-if="!loading">
     <!-- Back Button -->
     <RouterLink to="/" class="btn btn-outline-primary mb-4">
       <i class="bi bi-arrow-left"></i> Back to Listings
@@ -23,7 +23,17 @@
       <!-- Details Section -->
       <div class="col-lg-6">
         <h2 class="fw-bold text-primary mb-3">{{ property.title }}</h2>
-        <p class="text-muted mb-4">{{ property.description }}</p>
+        <p class="text-muted mb-2 description" :class="{ 'clamped': !showFullDescription }">
+          {{ property.description }}
+        </p>
+
+        <button
+          v-if="property.description?.length > 250"
+          class="btn btn-link p-0 see-more-btn"
+          @click="showFullDescription = !showFullDescription"
+        >
+          {{ showFullDescription ? 'See less' : 'See more' }}
+        </button>
 
         <p class="fw-bold fs-3 text-success mb-2">
           {{ property.price }} / {{ property.payment_frequency }}
@@ -241,16 +251,19 @@
       </div>
       <div class="col-12 col-md-6 ">
         <!-- Location Map -->
-        <div class="my-4">
+        <div class="container-md container-sm px-0 my-4">
           <h5 class="fw-bold h3 mb-2">Location</h5>
           <hr>
-          <PropertyMap
-            v-if="this.property.latitude && this.property.longitude"
-            :lat="Number(this.property.latitude)"
-            :lng="Number(this.property.longitude)"
-            :title="this.property.title"
-          />
+          <div class="container-md container-sm px-0 mb-4">
+            <PropertyMap 
+            v-if="property.latitude && property.longitude"
+            :lat="parseFloat(this.property.latitude)" 
+            :lng="parseFloat(this.property.longitude)" 
+            :title="this.property.title" 
+            />
+            <div v-else class="text-danger">Map cannot be displayed: invalid coordinates</div>
           </div>
+        </div>
       </div>
     </div>
 
@@ -377,13 +390,18 @@ import { useUserInfo } from '@/store/userInfo';
 import confirmModal from "@/components/confirmModal.vue";
 import Header from "@/components/Header.vue";
 import PropertyMap from "@/components/propertyMap.vue";
-
+import { ref } from 'vue'
+import { nextTick } from "vue";
 
 export default {
   name: "PropertyDetails",
   components: { RouterLink, BookingRequestModal, confirmModal, Header, PropertyMap },
   data() {
     return {
+      loading: false,
+      map: null,
+      marker: null,
+      showFullDescription: ref(false),
       showConfirmModal: false,
       showUserAgreementModal: false,
       isLoggedIn: null,
@@ -417,11 +435,14 @@ export default {
   },
   methods: {
     async fetchProperty() {
+      this.loading = true;
       try {
         const id = this.$route.params.id;
         const response = await getPropertyById(id);
         this.property = response.data.property;
-        console.log("Property Details Response:", response);
+        // console.log("Property Details Response:", response);
+        // console.log("Property Details Data:", this.property);
+        // console.log(this.property.latitude, this.property.longitude);
         this.property_type = response.data.property.type_name
         this.property_type_id = response.data.property.type_id
         this.propertyImages = response.data.property.images;
@@ -432,6 +453,8 @@ export default {
         
       } catch (error) {
         console.error("Property Details Error:", error);
+      } finally {
+        this.loading = false;
       }
     },
     async submitBookingRequest(id) {
@@ -625,18 +648,22 @@ export default {
       } catch (error) {
         console.log("Contact Owner Error:", error);
       }
-    }
+    },
+
   },
   mounted() {
     
-    this.isLoggedIn = localStorage.getItem("access_token") ? true : false;
+    const token = localStorage.getItem("access_token");
 
-    if(this.isLoggedIn){
-      // console.log("User is logged in.");
+    this.isLoggedIn = !!token && token !== "null" && token !== "undefined";
+
+    if (this.isLoggedIn) {
       this.getAuthId();
     } else {
-      // console.log("User is not logged in.");
+      // Guest mode
+      this.authId = null;
     }
+
   },
   computed: {
     isOwner() {
@@ -656,15 +683,28 @@ export default {
 </script>
 
 <style scoped>
-img {
-  max-height: 400px;
-  object-fit: cover;
-}
-.property-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.property-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-}
+  img {
+    max-height: 400px;
+    object-fit: cover;
+  }
+  .property-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .property-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .description.clamped {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;     /* preview lines */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .see-more-btn {
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+
 </style>

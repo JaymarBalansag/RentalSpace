@@ -1,41 +1,45 @@
 <template>
-  <div class="d-flex">
+  <div class="d-flex" style="min-height: 100vh;">
     <!-- Sidebar -->
     <div
-      class="sidebar bg-dark text-white p-3 d-flex flex-column"
-      :class="{ collapsed: isCollapsed || isMobile }"
-      @mouseenter="handleMouseEnter"
-      @mouseleave="handleMouseLeave"
+      class="sidebar bg-dark text-white d-flex flex-column"
+      :class="{ collapsed: isCollapsed, mobileOpen: isMobileOpen }"
     >
-      <!-- Logo / Header -->
-      <div class="text-center mb-4">
-        <h5 v-if="!isCollapsed && !isMobile" class="fw-bold">Admin Panel</h5>
-        <i v-else class="bi bi-speedometer2 fs-4"></i>
+      <!-- Header -->
+      <div class="sidebar-header d-flex justify-content-between align-items-center px-3 py-3 border-bottom border-secondary">
+        <h5 v-if="!isCollapsed" class="fw-bold mb-0">Admin Panel</h5>
+        <i v-else class="bi bi-speedometer2 fs-3" :title="'Admin Panel'"></i>
+
+        <!-- Toggle Button -->
+        <button class="toggle-btn d-md-none" @click="toggleSidebar">
+          <i :class="isMobileOpen ? 'bi bi-x-lg' : 'bi bi-list'"></i>
+        </button>
       </div>
 
       <!-- Navigation -->
-      <ul class="nav flex-column">
-        <li
-          class="nav-item mb-2"
-          v-for="item in navItems"
-          :key="item.label"
-        >
+      <ul class="nav flex-column flex-grow-1 mt-3">
+        <li v-for="item in navItems" :key="item.label" class="nav-item">
           <RouterLink
             :to="item.link"
-            class="nav-link text-white d-flex align-items-center"
+            class="nav-link d-flex align-items-center px-3 py-2"
+            :class="{ active: $route.path === item.link }"
+            @click="closeOnMobile"
             :title="isCollapsed || isMobile ? item.label : ''"
           >
-            <i :class="[item.icon, 'me-2', 'fs-5']"></i>
-            <span v-if="!isCollapsed && !isMobile" class="link-text">{{ item.label }}</span>
+            <i :class="[item.icon, 'fs-5']" :title="item.label"></i>
+            <transition name="fade">
+              <span v-if="!isCollapsed && !isMobile" class="ms-3">{{ item.label }}</span>
+            </transition>
           </RouterLink>
         </li>
       </ul>
 
       <!-- Bottom Logout -->
-      <div class="mt-auto">
+      <div class="p-3 border-top border-secondary">
         <RouterLink
           to="/logout"
-          class="nav-link text-white d-flex align-items-center"
+          class="nav-link d-flex align-items-center text-danger"
+          @click="closeOnMobile"
           :title="isCollapsed || isMobile ? 'Logout' : ''"
         >
           <i class="bi bi-box-arrow-right fs-5 me-2"></i>
@@ -44,69 +48,77 @@
       </div>
     </div>
 
+    <!-- Overlay for mobile -->
+    <div v-if="isMobileOpen" class="overlay" @click="closeOnMobile"></div>
+
     <!-- Main Content -->
-    <div class="flex-grow-1 bg-light p-4" style="min-height: 100vh;">
-      <!-- Topbar -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold text-primary">Admin Dashboard</h4>
-        <div>
-          
-          <!-- <button class="btn btn-primary">
-            <i class="bi bi-person-circle me-2"></i> Admin
-          </button> -->
+    <div class="flex-grow-1 p-4">
+      <!-- Top Bar -->
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <!-- Mobile Hamburger -->
+        <button class="btn btn-outline-primary d-md-none me-3 mb-2" @click="toggleSidebar">
+          <i class="bi bi-list fs-3"></i>
+        </button>
 
+        <h4 class="fw-bold text-primary mb-2">Admin Dashboard</h4>
 
-
-          
-        </div>
-
-        <div class="dropdown d-flex">
-          <button class="btn btn-outline-primary me-2">
+        <!-- Profile Dropdown -->
+        <div class="d-flex align-items-center gap-2">
+          <!-- Notifications -->
+          <button class="btn btn-outline-primary">
             <i class="bi bi-bell"></i>
           </button>
-          <button
-            class="btn btn-outline-primary dropdown-toggle d-flex align-items-center"
-            type="button"
-            id="dropdownMenuButton"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
-            <i class="bi bi-person-circle me-2"></i>
-            Profile
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
-            <li>
-              <RouterLink to="/home" class="dropdown-item">
-                <i class="bi bi-house-door me-2"></i> Go to Home
-              </RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/profile" class="dropdown-item">
-                <i class="bi bi-gear me-2"></i> Account Settings
-              </RouterLink>
-            </li>
-            <li><hr class="dropdown-divider" /></li>
-            <li>
-              <button @click="" class="dropdown-item text-danger">
-                <i class="bi bi-box-arrow-right me-2"></i> Logout
-              </button>
-            </li>
-          </ul>
+
+          <!-- Profile Dropdown -->
+          <div class="dropdown">
+            <button
+              class="btn btn-outline-primary dropdown-toggle d-flex align-items-center"
+              type="button"
+              id="dropdownMenuButton"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <i class="bi bi-person-circle me-2"></i>
+              Profile
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+              <li>
+                <RouterLink to="/home" class="dropdown-item">
+                  <i class="bi bi-house-door me-2"></i> Home
+                </RouterLink>
+              </li>
+              <li>
+                <RouterLink to="/profile" class="dropdown-item">
+                  <i class="bi bi-gear me-2"></i> Settings
+                </RouterLink>
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <button @click="" class="dropdown-item text-danger">
+                  <i class="bi bi-box-arrow-right me-2"></i> Logout
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
-      <!-- Router View -->
+      <!-- Dynamic Content -->
       <router-view />
     </div>
   </div>
 </template>
 
 <script>
+import { RouterLink } from "vue-router";
+
 export default {
   name: "AdminDashboard",
+  components: { RouterLink },
   data() {
     return {
-      isCollapsed: true,
+      isCollapsed: false, // desktop sidebar starts expanded
+      isMobileOpen: false,
       isMobile: false,
       navItems: [
         { label: "Dashboard", link: "/admin/dashboard", icon: "bi bi-speedometer2" },
@@ -129,83 +141,112 @@ export default {
   methods: {
     checkScreen() {
       this.isMobile = window.innerWidth <= 768;
+      if (this.isMobile) this.isCollapsed = true;
+    },
+    toggleSidebar() {
       if (this.isMobile) {
-        this.isCollapsed = true; // always collapsed on small screens
+        this.isMobileOpen = !this.isMobileOpen;
+      } else {
+        this.isCollapsed = !this.isCollapsed;
       }
     },
-    handleMouseEnter() {
-      if (!this.isMobile) this.isCollapsed = false;
-    },
-    handleMouseLeave() {
-      if (!this.isMobile) this.isCollapsed = true;
+    closeOnMobile() {
+      if (this.isMobile) this.isMobileOpen = false;
     },
   },
 };
 </script>
 
 <style scoped>
+/* Sidebar */
 .sidebar {
   width: 250px;
   min-height: 100vh;
-  transition: width 0.25s ease-in-out;
+  transition: width 0.25s ease, transform 0.25s ease;
   overflow-x: hidden;
-  position: fixed;
+  /* position: fixed; */
   top: 0;
   left: 0;
+  z-index: 1050;
 }
-
 .sidebar.collapsed {
   width: 80px;
 }
-
-.sidebar .nav-link {
-  border-radius: 8px;
-  padding: 10px 12px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+.nav-link {
+  border-radius: 6px;
+  transition: all 0.25s ease;
+  color: #cfcfcf;
 }
-
-.sidebar .nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.15);
+.nav-link:hover,
+.nav-link.active {
+  background-color: #0d6efd !important;
+  color: #fff !important;
 }
-
-.sidebar.collapsed .nav-link i {
-  margin-right: 0 !important;
+.sidebar i {
+  min-width: 30px;
   text-align: center;
-  width: 100%;
 }
-
 .link-text {
   white-space: nowrap;
 }
-
 .sidebar.collapsed .link-text {
   display: none;
 }
 
-/* Adjust content when sidebar collapses */
-.d-flex > .flex-grow-1 {
-  margin-left: 250px;
-  transition: margin-left 0.25s ease-in-out;
+/* Toggle button */
+.toggle-btn {
+  border: none;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+.toggle-btn:hover {
+  transform: scale(1.1);
 }
 
-.sidebar.collapsed ~ .flex-grow-1 {
+/* Main content spacing */
+.main-content {
+  margin-left: 250px;
+  transition: margin-left 0.25s ease;
+}
+.sidebar.collapsed ~ .main-content {
   margin-left: 80px;
 }
 
-/* Responsive: Sidebar always collapsed on small screens */
+/* Mobile sidebar */
 @media (max-width: 768px) {
   .sidebar {
-    width: 80px !important;
     position: fixed;
-    z-index: 1050;
+    transform: translateX(-100%);
+    width: 250px;
   }
+  .sidebar.mobileOpen {
+    transform: translateX(0);
+  }
+  .main-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+}
 
-  .sidebar .link-text {
-    display: none !important;
-  }
+/* Overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  z-index: 1040;
+}
 
-  .d-flex > .flex-grow-1 {
-    margin-left: 80px !important;
-  }
+/* Smooth fade */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

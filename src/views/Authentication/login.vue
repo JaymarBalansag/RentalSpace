@@ -42,7 +42,13 @@
             <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
           </button>
         </div>
-        <button type="submit" class="btn btn-primary w-100 rounded-3 py-2 fw-bold">
+        <button
+          type="submit"
+          class="btn btn-primary w-100 rounded-3 py-2 fw-bold"
+          :class="{ disabled: loading }"
+          :disabled="loading"
+        >
+          <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
           Login
         </button>
       </form>
@@ -81,12 +87,14 @@ export default {
     return {
       form: { email: '', password: '' },
       showSuccess: false,
-      showPassword: false
+      showPassword: false,
+      loading: false,
     };
   },
   methods: {
     async handleLogin() {
       const info = useUserInfo();
+      this.loading = true;
       try {
         const res = await login(this.form.email, this.form.password);
         if (res && res.first_name) {
@@ -107,6 +115,8 @@ export default {
         }
       } catch (error) {
         alert(error.response?.data?.message || "Something went wrong");
+      } finally {
+        this.loading = false;
       }
     },
     registerSuccessToast() {

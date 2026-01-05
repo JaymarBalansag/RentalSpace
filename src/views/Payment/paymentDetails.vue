@@ -139,11 +139,11 @@ export default {
       console.log("plan" + plan)
       if (plan === "Annual") {
         this.selectedPlan = "Annual"
-        this.planPrice = 500
+        this.planPrice = 5000
         this.planBilling = "per year"
       } else if (plan === "Monthly") {
         this.selectedPlan = "Monthly"
-        this.planPrice = 50
+        this.planPrice = 500
         this.planBilling = "per month"
       } else {
         this.$router.push({

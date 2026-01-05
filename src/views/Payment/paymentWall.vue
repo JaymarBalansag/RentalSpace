@@ -15,7 +15,7 @@
         <div class="card h-100 shadow-lg border-primary border-2">
           <div class="card-header bg-primary text-white text-center">
             <h4 class="fw-normal mb-1">Monthly Plan</h4>
-            <h2 class="fw-bold">₱50</h2>
+            <h2 class="fw-bold">₱500</h2>
             <small>per month</small>
             <span class="badge bg-warning text-dark ms-2">Most Popular</span>
           </div>
@@ -24,7 +24,7 @@
               Ideal for new landlords or those testing the platform. Billed monthly, cancel anytime.
             </p>
             <ul class="list-unstyled mt-3 mb-4 text-start">
-              <li><i class="bi bi-check2 text-success"></i> Up to 5 property listings</li>
+              <li><i class="bi bi-check2 text-success"></i> Up to 2 property listings</li>
               <li><i class="bi bi-check2 text-success"></i> Full access to reservation system</li>
               <li><i class="bi bi-check2 text-success"></i> Admin verification for all listings</li>
               <li><i class="bi bi-check2 text-success"></i> 24/7 support and updates</li>
@@ -41,7 +41,7 @@
         <div class="card h-100 shadow-sm border-0">
           <div class="card-header bg-white text-center">
             <h4 class="fw-normal mb-1">Annual Plan</h4>
-            <h2 class="fw-bold text-primary">₱500</h2>
+            <h2 class="fw-bold text-primary">₱5000</h2>
             <small class="text-muted">per year</small>
           </div>
           <div class="card-body d-flex flex-column">
@@ -49,7 +49,7 @@
               Best value for long-term property owners who want to save more and focus on growth.
             </p>
             <ul class="list-unstyled mt-3 mb-4 text-start">
-              <li><i class="bi bi-check2 text-success"></i> Up to 15 property listings</li>
+              <li><i class="bi bi-check2 text-success"></i> Up to 5 property listings</li>
               <li><i class="bi bi-check2 text-success"></i> Unlimited tenant bookings</li>
               <li><i class="bi bi-check2 text-success"></i> Priority admin verification</li>
               <li><i class="bi bi-check2 text-success"></i> Save 20% compared to monthly plan</li>

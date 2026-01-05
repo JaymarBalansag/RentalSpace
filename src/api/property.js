@@ -182,3 +182,12 @@ export async function searchProperties(query, page = 1) {
     return error;
   }
 }
+
+export async function getPropertyLimit(){
+  try {
+    const response = await api.get("/listing-limit")
+    return response;
+  } catch (error) {
+    throw error
+  }
+}

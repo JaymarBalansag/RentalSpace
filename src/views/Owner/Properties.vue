@@ -2,12 +2,22 @@
   <SuccessToast v-if="showSuccess" message="🎉 Property Created"></SuccessToast>
   <div>
     <h4 class="mb-3">🏠 Properties</h4>
-    <RouterLink to="/dashboard/properties/add" class="btn btn-primary mb-4">+ Add Property</RouterLink>
-    
+    <button
+      class="btn btn-primary mb-4 "
+      :class="limitReached ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'"
+      :disabled="limitReached"
+      :title="limitReached ? 'Upgrade your subscription to add more properties' : ''"
+      @click="goToAddProperty"
+    >
+      {{ limitReached ? "Limit Reached" : "+ Add Property" }}
+    </button>    
+    <div v-if="limitReached" class="alert alert-warning" role="alert">
+      Upgrade your subscription to add more properties
+    </div>
     <div class="row">
       <div class="col-md-6 col-lg-4 mb-4" v-for="property in properties" :key="property.id">
         <div class="card h-100 shadow-sm">
-          <img :src="property.image_url" @error="$event.target.src = placeholderImg" class="card-img-top" alt="Property">
+          <img :src="property.image_url" @error="$event.target.src = this.placeholderImg" class="card-img-top" alt="Property">
           <div class="card-body d-flex flex-column">
             <h5 class="card-title">{{ property.title }}</h5>
             <p class="card-text">
@@ -33,7 +43,7 @@
 </template>
 
 <script>
-import { getOwnerProperties } from '@/api/property';
+import { getOwnerProperties, getPropertyLimit } from '@/api/property';
 import SuccessToast from '@/components/successToast.vue';
 import placeholderImg from '@/assets/Placeholder/thumbnail_placeholder.jpg'; 
 
@@ -44,6 +54,10 @@ export default {
       properties: [],
       message: "",
       showSuccess: false,
+      limit : null,
+      count: null,
+      limitReached: false,
+      placeholderImg : placeholderImg,
     };
   },
   components: {
@@ -63,10 +77,28 @@ export default {
       } catch (error) {
         console.log("GetProperties: " + error)
       }
-    }
+    },
+    async getPropertyLimit(){
+      try {
+        const response = await getPropertyLimit();
+        this.limit = response.data.listing_limit;
+        this.count = response.data.current_listings;
+        // alert(this.limit)
+        this.limitReached = this.count >= this.limit;
+
+      } catch (error) {
+        alert("Something Went Wrong!");
+      }
+    },
+    goToAddProperty() {
+      if (!this.limitReached) {
+        this.$router.push('/dashboard/properties/add');
+      }
+    },
   },
   mounted() {
     this.getProperties();
+    this.getPropertyLimit()
     const success = sessionStorage.getItem("propertyCreated");
 
     if(success){

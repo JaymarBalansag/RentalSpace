@@ -19,6 +19,21 @@ export async function completeProfile(formData) {
 
 }
 
+export async function updateUserProfile(formData){
+  try {
+    const response = await api.post("/update_profile", formData, {
+      headers: {
+        "Content-Type" : "multipart/form-data"
+      }
+    })
+
+    return response;
+
+  } catch (error) {
+    throw error
+  }
+}
+
 export async function getAuthUserId() {
   try {
     const response = await api.get("/UID");

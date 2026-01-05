@@ -94,9 +94,18 @@
             <div class="col-lg-6">
               <div class="card shadow-sm border-0 h-100">
                 <div class="card-body">
-                  <h5 class="fw-semibold mb-3">
+                  <h5 class="fw-semibold mb-3 d-flex align-items-center">
                     <i class="bi bi-map me-2"></i> Location
+                    <RouterLink
+                      to="/profile"
+                      class="btn btn-sm btn-outline-primary ms-auto"
+                      v-if="this.isComplete"
+                      
+                    >
+                      <i class="bi bi-pencil " ></i> Edit
+                    </RouterLink>
                   </h5>
+                  
                   <div id="map" class="rounded-3" ref="mapEl" style="height: 320px;"></div>
                 </div>
               </div>

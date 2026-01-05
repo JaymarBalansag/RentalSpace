@@ -8,7 +8,8 @@ export const useUserInfo = defineStore("info", {
     email: null,
     role: null,
     isLoggedIn: false,
-    profile_photo: null
+    profile_photo: null,
+
   }),
   actions: {
     setUserInfo(first_name, last_name, role, email, profile_photo) {
@@ -18,6 +19,13 @@ export const useUserInfo = defineStore("info", {
       this.email = email;
       this.isLoggedIn = true;
       this.profile_photo = profile_photo;
+
+      localStorage.setItem("userInfo", JSON.stringify(this.$state));
+    },
+    updateUserProfile(first_name, last_name, user_img_url){
+      this.first_name = first_name;
+      this.last_name = last_name;
+      this.profile_photo = user_img_url;
 
       localStorage.setItem("userInfo", JSON.stringify(this.$state));
     },

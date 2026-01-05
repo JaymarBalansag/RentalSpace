@@ -1,5 +1,5 @@
 <template>
-  <Header></Header>
+  <Header />
 
   <div class="container py-4" style="max-width: 800px;">
     <!-- Back Button -->
@@ -11,28 +11,40 @@
       <div class="card-body p-4">
         <h3 class="fw-bold mb-4">Edit Profile</h3>
 
-        <!-- Basic Info -->
+        <!-- ================= BASIC INFO ================= -->
         <h5 class="fw-bold mb-3">Basic Information</h5>
         <div class="row g-3 mb-4">
           <div class="col-md-6">
             <label class="form-label">First Name</label>
             <input class="form-control" v-model="form.first_name" />
+            <small v-if="errors.first_name" class="text-danger">
+              {{ errors.first_name }}
+            </small>
           </div>
+
           <div class="col-md-6">
             <label class="form-label">Last Name</label>
             <input class="form-control" v-model="form.last_name" />
+            <small v-if="errors.last_name" class="text-danger">
+              {{ errors.last_name }}
+            </small>
           </div>
+
           <div class="col-md-12">
             <label class="form-label">Email</label>
             <input class="form-control" v-model="form.email" disabled />
           </div>
+
           <div class="col-md-12">
             <label class="form-label">Phone Number</label>
             <input class="form-control" v-model="form.phone_number" />
+            <small v-if="errors.phone_number" class="text-danger">
+              {{ errors.phone_number }}
+            </small>
           </div>
         </div>
 
-        <!-- Profile Picture -->
+        <!-- ================= PROFILE PICTURE ================= -->
         <h5 class="fw-bold mb-3">Profile Picture</h5>
         <div class="text-center mb-4">
           <img
@@ -42,37 +54,29 @@
             style="width:120px;height:120px;object-fit:cover"
           />
           <i v-else class="bi bi-person-circle fs-1 text-secondary"></i>
-          <input type="file" class="form-control mt-3" @change="handleImageUpload" />
+
+          <input
+            type="file"
+            class="form-control mt-3"
+            accept="image/png,image/jpeg"
+            @change="handleImageUpload"
+          />
+
+          <small v-if="errors.user_img" class="text-danger d-block mt-2">
+            {{ errors.user_img }}
+          </small>
         </div>
 
-        <!-- Address -->
-        <h5 class="fw-bold mb-3">Address</h5>
-        <div class="row g-3 mb-4">
-          <div class="col-md-6">
-            <label class="form-label">Region</label>
-            <input class="form-control" v-model="form.region_name" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Province</label>
-            <input class="form-control" v-model="form.state_name" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">City / Municipality</label>
-            <input class="form-control" v-model="form.town_name" />
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Barangay</label>
-            <input class="form-control" v-model="form.village_name" />
-          </div>
-          <div class="col-md-12">
-            <label class="form-label">Street</label>
-            <input class="form-control" v-model="form.streets" />
-          </div>
-        </div>
-
-        <!-- Save Button -->
+        <!-- ================= SAVE BUTTON ================= -->
         <div class="text-end">
-          <button class="btn btn-success" @click="updateProfile">Save Changes</button>
+          <button
+            class="btn btn-success"
+            :disabled="loading || !isFormValid || !isFormChanged"
+            @click="updateProfile"
+          >
+            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+            Save Changes
+          </button>
         </div>
       </div>
     </div>
@@ -82,16 +86,22 @@
 <script>
 import { RouterLink } from "vue-router";
 import Header from "@/components/Header.vue";
+import { getUserProfile, updateUserProfile } from "@/api/user";
+import { useUserInfo } from "@/store/userInfo";
 
 export default {
   name: "EditProfilePage",
   components: { RouterLink, Header },
+
   data() {
     return {
+      loading: false,
+      originalForm: null,
+
       form: {
-        first_name: "Juan",
-        last_name: "Dela Cruz",
-        email: "juan@example.com",
+        first_name: "",
+        last_name: "",
+        email: "",
         phone_number: "",
         region_name: "",
         state_name: "",
@@ -99,20 +109,147 @@ export default {
         village_name: "",
         streets: "",
       },
+
       previewImg: null,
+      imageFile: null,
+      errors: {},
     };
   },
+
+  computed: {
+    isFormChanged() {
+      if (!this.originalForm) return false;
+      return (
+        JSON.stringify(this.form) !== JSON.stringify(this.originalForm) ||
+        this.imageFile !== null
+      );
+    },
+
+    isFormValid() {
+      return Object.keys(this.errors).length === 0;
+    },
+  },
+
   methods: {
+    /* ================= IMAGE VALIDATION ================= */
     handleImageUpload(event) {
       const file = event.target.files[0];
-      if (file) {
-        this.previewImg = URL.createObjectURL(file);
+      if (!file) return;
+
+      const allowedTypes = ["image/jpeg", "image/png"];
+      const maxSize = 2 * 1024 * 1024; // 2MB
+
+      if (!allowedTypes.includes(file.type)) {
+        this.errors.user_img = "Only JPG or PNG images are allowed.";
+        return;
+      }
+
+      if (file.size > maxSize) {
+        this.errors.user_img = "Image must be less than 2MB.";
+        return;
+      }
+
+      delete this.errors.user_img;
+
+      this.imageFile = file;
+      this.previewImg = URL.createObjectURL(file);
+    },
+
+    /* ================= FORM VALIDATION ================= */
+    validateForm() {
+      this.errors = {};
+
+      if (!this.form.first_name.trim()) {
+        this.errors.first_name = "First name is required.";
+      }
+
+      if (!this.form.last_name.trim()) {
+        this.errors.last_name = "Last name is required.";
+      }
+
+      if (this.form.phone_number) {
+        const phoneRegex = /^[0-9+\-\s]{7,15}$/;
+        if (!phoneRegex.test(this.form.phone_number)) {
+          this.errors.phone_number = "Invalid phone number format.";
+        }
+      }
+
+      return Object.keys(this.errors).length === 0;
+    },
+
+    /* ================= UPDATE PROFILE ================= */
+    async updateProfile() {
+      if (!this.validateForm()) return;
+      if (!this.isFormChanged) return;
+
+      this.loading = true;
+
+      try {
+        const formData = new FormData();
+
+        Object.keys(this.form).forEach(key => {
+          formData.append(key, this.form[key] ?? "");
+        });
+
+        if (this.imageFile) {
+          formData.append("user_img", this.imageFile);
+        }
+
+        const response = await updateUserProfile(formData);
+
+        alert(response.data.message || "Profile updated successfully!");
+
+        const info = useUserInfo();
+        const first_name = response.data.user.first_name
+        const last_name = response.data.user.last_name
+        const user_img_url = response.data.user.user_img_url
+
+        info.updateUserProfile(first_name, last_name, user_img_url )
+
+        this.originalForm = { ...this.form };
+        this.imageFile = null;
+
+        this.$router.push("/profile")
+
+      } catch (error) {
+        alert(error.response?.data?.message || "Error updating profile.");
+      } finally {
+        this.loading = false;
       }
     },
-    updateProfile() {
-      // Here you’d call your API to save changes
-      alert("Profile updated successfully!");
+
+    /* ================= GET PROFILE ================= */
+    async getUserProfile() {
+      this.loading = true;
+      try {
+        const response = await getUserProfile();
+        const user = response.data.user[0];
+
+        this.form = {
+          first_name: user.first_name || "",
+          last_name: user.last_name || "",
+          email: user.email || "",
+          phone_number: user.phone_number || "",
+          region_name: user.region_name || "",
+          state_name: user.state_name || "",
+          town_name: user.town_name || "",
+          village_name: user.village_name || "",
+          streets: user.streets || "",
+        };
+
+        this.originalForm = { ...this.form };
+        this.previewImg = user.user_img_url || null;
+
+      } catch {
+        alert("Error fetching user profile.");
+      } finally {
+        this.loading = false;
+      }
     },
+  },
+
+  mounted() {
+    this.getUserProfile();
   },
 };
 </script>

@@ -396,6 +396,7 @@ import {
 import successToast from '@/components/successToast.vue';
 import Header from '@/components/Header.vue';
 import MapSection from '@/components/MapSection.vue';
+import { prevRoute } from '@/router';
 
 export default {
   name: 'Home',
@@ -434,6 +435,7 @@ export default {
     };
   },
   methods: {
+    
     changePage(page) {
       if (page < 1 || page > this.lastPage) return;
 

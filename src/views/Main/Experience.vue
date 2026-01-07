@@ -79,7 +79,7 @@
                 <h6 class="card-title fw-bold">{{ property.title }}</h6>
                 <p class="card-text small text-muted clamp-text">{{ property.description }} • {{ property.town_name }}</p>
                 <p class="fw-bold text-primary mb-2">{{ property.price }}</p>
-                <a href="#" class="btn btn-sm btn-outline-primary">View More</a>
+                <RouterLink :to="`/property/${property.id}`" class="btn btn-outline-primary btn-sm">View Details</RouterLink>
               </div>
             </div>
           </div>

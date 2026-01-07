@@ -1,6 +1,6 @@
 <template>
     <div
-        class="toast align-items-center text-bg-success border-0 position-fixed top-0 end-0 m-3"
+        class="toast align-items-center text-bg-success border-0 position-fixed top-0 start-0 m-3"
         role="alert"
         ref="successToast"
     >
@@ -46,7 +46,7 @@ export default {
 
             setTimeout(() => {
                 toastEl.classList.remove("show");
-            }, 3000);
+            }, 2000);
         }
     },
     mounted() {

@@ -43,6 +43,7 @@ api.interceptors.response.use(
         return api.request(originalRequest); // retry original request
       } catch (err) {
         localStorage.removeItem("access_token");
+        localStorage.removeItem("userInfo");
         window.location.href = "/login"; // logout
       }
     }

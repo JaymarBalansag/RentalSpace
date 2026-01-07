@@ -123,12 +123,14 @@ const routes = [
     {
       path: "/payment/wall",
       name: "paymentWall",
-      component: PaymentWall
+      component: PaymentWall,
+      meta: { requiresAuth:true },
     },
     {
       path: '/payment/details',
       name: "paymentDetails",
-      component: PaymentDetails
+      component: PaymentDetails,
+      meta: { requiresAuth:true },
     },
     // Authentication Route
     {
@@ -147,46 +149,55 @@ const routes = [
     name: "OwnerDashboard",
     redirect: "/overview",
     component: Dashboard,
+    meta: { requiresAuth:true },
     children: [
         {
           path: "/overview",
           name: "OwnerOverview",
-          component: Overview
+          component: Overview,
+          meta: { requiresAuth:true },
         },
         {
           path: "/properties",
           name: "OwnerProperties",
-          component: Properties
+          component: Properties,
+          meta: { requiresAuth:true },
         },
         {
           path: "/dashboard/properties/add",
           name: "AddProperty",
-          component: AddProperty
+          component: AddProperty,
+          meta: { requiresAuth:true },
         },
         {
           path: "/dashboard/properties/:id/edit",
           name: "EditProperty",
-          component: EditProperty
+          component: EditProperty,
+          meta: { requiresAuth:true },
         },
         {
           path: "/tenants",
           name: "OwnerTenants",
-          component: Tenants
+          component: Tenants,
+          meta: { requiresAuth:true },
         },
         {
           path: "/bookings",
           name: "OwnerBookings",
-          component: Bookings
+          component: Bookings,
+          meta: { requiresAuth:true },
         },
         {
           path: "/billing",
           name: "OwnerBilling",
-          component: Billing
+          component: Billing,
+          meta: { requiresAuth:true },
         },
         {
           path: "/reports",
           name: "OwnerReports",
-          component: Reports
+          component: Reports,
+          meta: { requiresAuth:true },
         }
       ]
    },
@@ -243,6 +254,7 @@ router.beforeEach(
     }
 
     if(to.meta.requiresAuth && !isLoggedIn){
+      localStorage.removeItem("userInfo");
       return next("/login");
     }
     

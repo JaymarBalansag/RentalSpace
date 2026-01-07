@@ -1,17 +1,32 @@
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
+import Echo from 'laravel-echo'
+import Pusher from 'pusher-js'
 
-window.Pusher = Pusher;
+window.Pusher = Pusher
 
-const echo = new Echo({
-  broadcaster: 'pusher',
-  key: import.meta.env.VITE_PUSHER_APP_KEY,
-  cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
-  wsHost: import.meta.env.VITE_PUSHER_HOST ?? `ws-${import.meta.env.VITE_PUSHER_APP_CLUSTER}.pusher.com`,
-  wsPort: 80,
-  wssPort: 443,
-  forceTLS: false,
-  enabledTransports: ['ws', 'wss'],
-});
+let echo = null
 
-export default echo;
+export function initEcho(token) {
+  if (echo) return echo
+
+  echo = new Echo({
+    broadcaster: import.meta.env.VITE_PUSHER_BROADCASTER,
+    key: import.meta.env.VITE_PUSHER_APP_KEY,
+    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
+    forceTLS: true,
+    authEndpoint: import.meta.env.VITE_API_BROADCAST_URL,
+    auth: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  })
+
+  return echo
+}
+
+export function destroyEcho() {
+  if (echo) {
+    echo.disconnect()
+    echo = null
+  }
+}

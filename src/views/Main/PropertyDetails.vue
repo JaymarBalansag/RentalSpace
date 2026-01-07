@@ -3,9 +3,9 @@
 
   <div class="container py-5" v-if="!loading">
     <!-- Back Button -->
-    <RouterLink to="/" class="btn btn-outline-primary mb-4">
+    <button @click="BackToPrevPage()" class="btn btn-outline-primary mb-4">
       <i class="bi bi-arrow-left"></i> Back to Listings
-    </RouterLink>
+    </button>
 
     <div class="row g-5 align-items-start">
       <!-- Image Section -->
@@ -434,6 +434,14 @@ export default {
     };
   },
   methods: {
+    BackToPrevPage(){
+      if (window.history.length > 1) {
+        this.$router.back();
+      } else {
+        this.$router.push("/home");
+      }
+
+    },
     async fetchProperty() {
       this.loading = true;
       try {

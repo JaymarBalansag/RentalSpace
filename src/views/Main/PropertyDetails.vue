@@ -465,23 +465,6 @@ export default {
         this.loading = false;
       }
     },
-    async submitBookingRequest(id) {
-      try {
-        const response = await submitBookingRequest(id)
-        .then(
-          alert("Booking request submitted successfully!")
-        );
-        console.log("Booking Request Response:", response);
-        if(response.status == 200) {
-          alert("Booking request submitted successfully!");
-
-        } else if(response.status == 403) {
-          alert("You are not allowed to book your own property.");
-        }
-      } catch (error) {
-        console.error("Booking Request Error:", error);
-      }
-    },
     openAgreementModal() {
       // Reset modal data each time it opens if needed
       this.agreement = {
@@ -535,9 +518,16 @@ export default {
             alert("Please select move-in date");
             return;
           }
-          if (new Date(this.agreement.move_in_date) < new Date()) {
-            alert("Move-in date cannot be in the past");
-            return;
+          const moveIn = new Date(this.agreement.move_in_date);
+          const today = new Date();
+
+          // Reset hours, minutes, seconds, and ms to zero for an accurate "day-only" comparison
+          moveIn.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+
+          if (moveIn < today) {
+              alert("Move-in date cannot be in the past");
+              return;
           }
         }
 
@@ -602,38 +592,36 @@ export default {
       this.showConfirmModal = false;
     },
     async submitAgreement() {
-      try {
-        const response = await submitAgreement(this.agreement, this.property.id);
+    try {
+      const response = await submitAgreement(this.agreement, this.property.id);
 
-        if (response.status === 201) {
-          alert("Booking request submitted successfully!");
-          this.showConfirmModal = false;
-        } 
-        else if (response.status === 400) {
-          alert("Booking already exists for this property.");
-          this.showConfirmModal = false;
-        } 
-        else if (response.status === 403) {
-          alert("Owners cannot book properties.");
-          this.showConfirmModal = false;
-        } 
-        else if (response.status === 404) {
-          alert("Property not found.");
-          this.showConfirmModal = false;
-        } 
-        else if (response.status === 422) {
-          // Laravel validation error
-          alert(response.data.error || "Validation failed. Please check your inputs.");
-        } 
-        else {
-          alert(response.data.error || "Unexpected error occurred.");
-        }
+      // If we get here, it's a success (Status 200-299)
+      alert(response.data.message || "Booking request submitted successfully!");
+      this.showConfirmModal = false;
 
-      } catch (error) {
-        console.error("Agreement Submit Error:", error);
-        alert("Something went wrong submitting the agreement.");
+    } catch (error) {
+      // Axios puts the backend response inside 'error.data'
+      const status = error.status;
+      const data = error.data;
+
+      console.error("Submission Error:", error);
+
+      if (status === 422) {
+        alert(data.error || "Validation failed.");
+      } else if (status === 403) {
+        alert(data.error || "Access Denied: " + data.message);
+      } else if (status === 400) {
+        alert(data.message || data.error || "Bad Request.");
+      } else if (status === 404) {
+        alert("Property not found.");
+      } else {
+        alert("Something went wrong. Please try again later.");
       }
-    },
+      
+      // Usually we keep the modal open on error so they can fix it
+      // this.showConfirmModal = false; 
+    }
+  },
     async getAuthId() {
       try {
         const response = await getAuthUserId();

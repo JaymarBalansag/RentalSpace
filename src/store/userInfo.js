@@ -1,5 +1,6 @@
 import { completeProfile } from "@/api/user";
 import { defineStore } from "pinia";
+import api from "@/api/api";
 
 export const useUserInfo = defineStore("info", {
   state: () => ({
@@ -60,6 +61,9 @@ export const useUserInfo = defineStore("info", {
         console.warn("Failed to hydrate userInfo:", e);
         localStorage.removeItem("userInfo");
       }
+    },
+    async hydrateUserInfoFromServer(payload) {
+      this.setUserInfo(payload.first_name, payload.last_name, payload.role, payload.email, payload.profile_photo)
     },
     setLoggedIn(isLoggedIn) {
       this.isLoggedIn = isLoggedIn;

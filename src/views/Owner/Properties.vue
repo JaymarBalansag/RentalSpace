@@ -97,8 +97,11 @@ export default {
     },
   },
   mounted() {
-    this.getProperties();
-    this.getPropertyLimit()
+    this.$nextTick(() => {
+      this.getProperties();
+      this.getPropertyLimit()
+    });
+    
     const success = sessionStorage.getItem("propertyCreated");
 
     if(success){

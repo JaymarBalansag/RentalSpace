@@ -78,39 +78,81 @@
       <!-- Utilities/ Amenities/ Facilities Included -->
       <div class="row mb-3 mt-3">
 
-        <!-- Utilities -->
         <div class="col-6 ">
+          <!-- Utilities -->
           <div class="card shadow-sm mb-3">
-            <div class="card-header bg-light">
-              <label for="" class="form-label fs-5 mb-0">Utilities</label>
-            </div>
+          <div class="card-header bg-light">
+            <label class="form-label fs-5 mb-0">Utilities</label>
+          </div>
 
-            <div class="card-body">
-              <label class="form-label d-block">Utilities Included</label>
+          <div class="card-body">
+            <label class="form-label d-block">Utilities Included</label>
 
-              <div class="row">
-                <div 
-                  v-for="utility in utilitiesList" 
-                  :key="utility.value" 
-                  class="col-md-4 col-sm-6 mb-2"
-                >
-                  <div class="form-check">
-                    <input 
-                      class="form-check-input" 
-                      type="checkbox" 
-                      :id="'utility-' + utility.value" 
-                      :value="utility.value"
-                      v-model="form.utilities"
-                      @change="updateUtilitiesIncluded"
-                    />
-                    <label class="form-check-label" :for="'utility-' + utility.value">
-                      {{ utility.label }}
-                    </label>
-                  </div>
+            <!-- DEFAULT UTILITIES -->
+            <div class="row">
+              <div 
+                v-for="utility in utilitiesList" 
+                :key="utility.value" 
+                class="col-md-4 col-sm-6 mb-2"
+              >
+                <div class="form-check">
+                  <input 
+                    class="form-check-input" 
+                    type="checkbox" 
+                    :id="'utility-' + utility.value" 
+                    :value="utility.value"
+                    v-model="form.utilities"
+                  />
+                  <label class="form-check-label " :for="'utility-' + utility.value">
+                    {{ utility.label }}
+                  </label>
                 </div>
               </div>
             </div>
+
+            <!-- DIVIDER -->
+            <hr class="my-3">
+
+            <!-- CUSTOM UTILITIES -->
+            <label class="form-label d-block">Add Other Utilities</label>
+
+            <div class="d-flex gap-2 mb-3">
+              <input
+                type="text"
+                class="form-control"
+                v-model="customUtility"
+                placeholder="e.g. Solar Backup, Free Drinking Water"
+                @keyup.enter="addCustomUtility"
+              />
+              <button
+                type="button"
+                class="btn btn-outline-primary"
+                @click="addCustomUtility"
+              >
+                Add
+              </button>
+            </div>
+
+            <!-- CUSTOM UTILITIES LIST -->
+            <div v-if="form.custom_utilities.length">
+              <span
+                v-for="(utility, index) in form.custom_utilities"
+                :key="index"
+                class="badge bg-secondary me-2 mb-2"
+              >
+                {{ utility }}
+                <button
+                  type="button"
+                  class="btn-close btn-close-white ms-2"
+                  aria-label="Remove"
+                  @click="removeCustomUtility(index)"
+                ></button>
+              </span>
+            </div>
+
           </div>
+        </div>
+
           <!-- Utilities End -->
 
           <!-- Amenities -->
@@ -118,7 +160,9 @@
             <div class="card-header bg-light">
               <label class="form-label fs-5 mb-0">Amenities</label>
             </div>
+
             <div class="card-body">
+              <!-- DEFAULT AMENITIES -->
               <div class="row">
                 <div
                   v-for="amenity in amenities"
@@ -139,8 +183,49 @@
                   </div>
                 </div>
               </div>
+
+              <!-- DIVIDER -->
+              <hr class="my-3">
+
+              <!-- CUSTOM AMENITIES -->
+              <label class="form-label d-block">Add Other Amenities</label>
+
+              <div class="d-flex gap-2 mb-3">
+                <input
+                  type="text"
+                  class="form-control"
+                  v-model="customAmenity"
+                  placeholder="e.g. Swimming Pool, Study Area"
+                  @keyup.enter="addCustomAmenity"
+                />
+                <button
+                  type="button"
+                  class="btn btn-outline-primary"
+                  @click="addCustomAmenity"
+                >
+                  Add
+                </button>
+              </div>
+
+              <!-- CUSTOM AMENITIES LIST -->
+              <div v-if="form.custom_amenities.length">
+                <span
+                  v-for="(amenity, index) in form.custom_amenities"
+                  :key="index"
+                  class="badge bg-secondary me-2 mb-2"
+                >
+                  {{ amenity }}
+                  <button
+                    type="button"
+                    class="btn-close btn-close-white ms-2"
+                    aria-label="Remove"
+                    @click="removeCustomAmenity(index)"
+                  ></button>
+                </span>
+              </div>
             </div>
           </div>
+
           <!-- Amenities End -->
 
            <!-- Facilities -->
@@ -169,6 +254,48 @@
                   </div>
                 </div>
               </div>
+
+              <!-- DIVIDER -->
+              <hr class="my-3">
+
+              <!-- CUSTOM FACILITIES -->
+              <label class="form-label d-block">Add Other Facilities</label>
+
+              <div class="d-flex gap-2 mb-3">
+                <input
+                  type="text"
+                  class="form-control"
+                  v-model="customFacility"
+                  placeholder="e.g. Swimming Pool, Study Area"
+                  @keyup.enter="addCustomFacility"
+                />
+                <button
+                  type="button"
+                  class="btn btn-outline-primary"
+                  @click="addCustomFacility"
+                >
+                  Add
+                </button>
+              </div>
+
+              <!-- CUSTOM FACILITIES LIST -->
+              <div v-if="form.custom_facilities.length">
+                <span
+                  v-for="(facility, index) in form.custom_facilities"
+                  :key="index"
+                  class="badge bg-secondary me-2 mb-2"
+                >
+                  {{ facility }}
+                  <button
+                    type="button"
+                    class="btn-close btn-close-white ms-2"
+                    aria-label="Remove"
+                    @click="removeCustomFacility(index)"
+                  ></button>
+                </span>
+              </div>
+
+
             </div>
           </div>
           <!-- FAcilities end -->
@@ -185,67 +312,231 @@
             </select>
           </div>
 
-          <div class="mb-3">
-            <label class="form-label">Parking</label>
-            <select v-model="form.parking" class="form-select">
-              <option :value="true">Yes</option>
-              <option :value="false">No</option>
-            </select>
-          </div>
-          <div class="col mb-3" v-if="showBedrooms">
-              <label class="form-label">Bedrooms</label>
-              <input v-model="form.bedrooms" type="number" class="form-control" required />
-          </div>
-          <div class="col mb-3" v-if="showBathrooms"  >
-              <label class="form-label">Bathrooms</label>
-              <input v-model="form.bathrooms" type="number" class="form-control" required />
-          </div>
-          <div class="col mb-3" v-if="showBedSpace">
-              <label class="form-label">Bed Space</label>
-              <input v-model="form.bed_space" type="number" class="form-control" required />
+          <!-- Bedrooms -->
+          <div v-if="showBedrooms" class="card shadow-sm mb-3">
+            <div class="card-header d-flex align-content-center justify-content-center bg-light">
+              <div class="input-group">
+                <label class="input-group-text fs-5 mb-0">Bedrooms</label>
+                <input
+                  type="number"
+                  min="1"
+                  v-model="form.bedrooms"
+                  class="form-control"
+                />
+              </div>
+            </div>
+
+            <div class="card-body">
+              <label class="form-label d-block">Bed Types</label>
+
+              <!-- DEFAULT UTILITIES -->
+              <div class="row">
+                <div 
+                  v-for="bed in bed_types" 
+                  :key="bed" 
+                  class="col-md-4 col-sm-6 mb-2"
+                >
+                  <div class="form-check">
+                    <input 
+                      class="form-check-input" 
+                      type="checkbox" 
+                      :id="'bed-' + bed" 
+                      :value="bed"
+                      v-model="form.bed_type"
+                    />
+                    <label class="form-check-label " :for="'bed-' + bed">
+                      {{ bed }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div v-if="form.bed_type.includes('Single Bed')"  class="col-6">
+                  <label class="form-label">Number of Single Bed</label>
+                  <input
+                    type="number"
+                    min="1"
+                    v-model="form.single_bed"
+                    class="form-control"
+                  />
+                </div>
+                <div v-if="form.bed_type.includes('Double Bed')"  class="col-6">
+                  <label class="form-label">Number of Double Bed</label>
+                  <input
+                    type="number"
+                    min="1"
+                    v-model="form.double_bed"
+                    class="form-control"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div class="col mb-3" v-if="showSizeFiels">
+          <!-- Bathrooms -->
+          <div v-if="showBathrooms" class="card shadow-sm mb-3">
+            <div class="card-header bg-light">
+              <label class="form-label fs-5 mb-0">Bathrooms</label>
+            </div>
+
+            <div class="card-body">
+              <label class="form-label d-block">Bathroom Types</label>
+
+              <!-- DEFAULT UTILITIES -->
+              <div class="row">
+                <div 
+                  v-for="bath in bath_types" 
+                  :key="bath" 
+                  class="col-md-4 col-sm-6 mb-2"
+                >
+                  <div class="form-check">
+                    <input 
+                      class="form-check-input" 
+                      type="checkbox" 
+                      :id="'bath-' + bath" 
+                      :value="bath"
+                      v-model="form.bath_type"
+                    />
+                    <label class="form-check-label " :for="'bath-' + bath">
+                      {{ bath }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div v-if="form.bath_type.includes('Private')"  class="col-6">
+                  <label class="form-label">Number of Private Bathroom</label>
+                  <input
+                    type="number"
+                    min="1"
+                    v-model="form.private_bath"
+                    class="form-control"
+                  />
+                </div>
+                <div v-if="form.bath_type.includes('Public')"  class="col-6">
+                  <label class="form-label">Number of Public Bathroom</label>
+                  <input
+                    type="number"
+                    min="1"
+                    v-model="form.public_bath"
+                    class="form-control"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Max Occupants ( Bed Space ) -->
+          <div v-if="showBedSpace" class="mb-3">
+            <label class="form-label">Maximum Occupants</label>
+            <small class="text-muted">
+              (Bed Space)
+            </small>
+            <input
+              type="number"
+              min="1"
+              v-model="form.bed_space"
+              class="form-control"
+            />
+            <small class="text-muted">
+              Total number of people allowed to stay
+            </small>
+          </div>
+
+          <!-- Floor Area -->
+          <div v-if="showSizeFiels" class="mb-3">
             <label class="form-label">Floor Area</label>
-            <input v-model="form.floor_area" type="number" class="form-control" required />
+            <small class="text-muted">
+              (sqm)
+            </small>
+            <div class="input-group">
+              <input
+                type="number"
+                min="1"
+                v-model="form.floor_area"
+                class="form-control"
+              />
+              <span class="input-group-text">m²</span>
+            </div>
           </div>
-          <div class="col mb-3" v-if="showSizeFiels">
+
+          <!-- Lot Area -->
+          <div v-if="showSizeFiels" class="mb-3">
             <label class="form-label">Lot Area</label>
-            <input v-model="form.lot_area" type="number" class="form-control" required />
+            <small class="text-muted">
+              (sqm)
+            </small>
+            <div class="input-group">
+              <input
+                type="number"
+                min="1"
+                v-model="form.lot_area"
+                class="form-control"
+              />
+              <span class="input-group-text">m²</span>
+            </div>
           </div>
-          <div class="col mb-3" v-if="showSizeFiels">
-            <label class="form-label">Max Size</label>
-            <input v-model="form.max_size" type="number" class="form-control" required />
+
+          <!-- Max Occupants  -->
+          <div class="mb-3" v-if="showSizeFiels">
+            <label class="form-label">Maximum Occupants</label>
+            <input
+              type="number"
+              min="1"
+              v-model="form.max_size"
+              class="form-control"
+            />
+            <small class="text-muted">
+              Total number of people allowed to stay
+            </small>
           </div>
+
           <h5 class="mb-3">Others</h5>
-          <div class="col mb-3">
-              <label class="form-label">Rules</label>
-              <textarea v-model="form.rules" class="form-control" required></textarea>
+
+          <!-- Rules -->
+          <div class="mb-3">
+            <label class="form-label">Rules</label>
+            <textarea
+              v-model="form.rules"
+              class="form-control"
+              rows="3"
+              placeholder="e.g. No smoking, No loud music after 10 PM"
+            ></textarea>
           </div>
-          <div class="col mb-3">       
+
+          <!-- Curfew -->
+          <div class="mb-3">
             <label class="form-label">Is there a curfew?</label>
             <select v-model="form.has_curfew" class="form-select">
               <option :value="false">No</option>
               <option :value="true">Yes</option>
-            </select> 
+            </select>
+          </div>
 
-            <!-- Show time input only if curfew is Yes -->
-            <div v-if="form.has_curfew" class="mt-3">
-              <label class="form-label">Curfew Time</label>
-              <input type="time" v-model="form.curfew_time" class="form-control" />
+          <!-- CURFEW RANGE -->
+          <div v-if="form.has_curfew" class="mb-3">
+            <label class="form-label">Curfew Time</label>
+            <div class="row">
+              <div class="col-6">
+                <label class="form-label text-muted">From</label>
+                <input
+                  type="time"
+                  v-model="form.curfew_from"
+                  class="form-control"
+                />
+              </div>
+              <div class="col-6">
+                <label class="form-label text-muted">To</label>
+                <input
+                  type="time"
+                  v-model="form.curfew_to"
+                  class="form-control"
+                />
+              </div>
             </div>
           </div>
         </div>
         <!-- End of right -->
-      </div>
-
-
-      <div class="row">
-        
-      </div>
-
-      <div class="row">
-        
       </div>
 
 
@@ -254,91 +545,193 @@
     <!-- Step 3: Price -->
     <div v-if="step === 3" class="card p-3 shadow-sm">
 
-      <div class="mb-3" v-if="form.agreement_type === 'rental'">
-        <label class="form-label">Payment Frequency</label>
-        <select v-model="form.payment_frequency" class="form-select">
-          <option value="monthly">Monthly</option>
-          <option value="quarterly">Quarterly</option>
-          <option value="yearly">Yearly</option>
-        </select>
-      </div>
-      <div class="mb-3" >
-        <label class="form-label">Price <span class="text-danger">*</span></label>
-        <input v-model="form.price" type="number" class="form-control" required />
-      </div>
-      <div class="mb-3" v-if="form.agreement_type === 'rental'">
-        <label class="form-label">Advance Payment ({{ this.frequecyText }})</label>
-        <input v-model="form.advance_payment_months" type="number" class="form-control" />
-      </div>
-      <div class="mb-3" v-if="form.agreement_type === 'rental'">
-        <label class="form-label">Deposit Required</label>
-        <input v-model="form.deposit_required" type="number" class="form-control" />
-      </div>
-      
+      <!-- RENTAL PRICING -->
+      <div v-if="form.agreement_type === 'rental'">
 
-      <!-- This is for lease details -->
-      <div class="mb-3" v-if="form.agreement_type === 'lease'">
-        <label class="form-label">Lease Term (Months)</label>
-        <input v-model="form.lease_term_months" type="number" class="form-control" />
+        <h5 class="mb-3">Rental Pricing</h5>
+
+        <!-- PAYMENT FREQUENCY -->
+        <div class="mb-3">
+          <label class="form-label">Payment Frequency</label>
+          <select v-model="form.payment_frequency" class="form-select">
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="yearly">Yearly</option>
+            <option value="per_night">Per Night</option>
+            <option value="per_day">Per Day</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </div>
+
+        <!-- PRICE -->
+        <div class="mb-3">
+          <label class="form-label">
+            Price
+            <small class="text-muted">({{ frequecyText }})</small>
+          </label>
+
+          <div class="input-group">
+            <span class="input-group-text">₱</span>
+            <input
+              v-model="form.price"
+              type="number"
+              min="1"
+              class="form-control"
+              placeholder="0.00"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- ADVANCE PAYMENT -->
+        <div class="mb-3">
+          <label class="form-label">Advance Payment</label>
+          <div class="input-group">
+            <span class="input-group-text">₱</span>
+            <input
+              v-model="form.advance_payment_months"
+              type="number"
+              min="0"
+              class="form-control"
+            />
+
+          </div>
+          <small class="text-muted">
+            Amount of money to pay in advance
+          </small>
+        </div>
+
+        <!-- SECURITY DEPOSIT -->
+        <div class="mb-3">
+          <label class="form-label">Security Deposit</label>
+          <small class="text-muted"> (Deposit)</small>
+          <div class="input-group">
+            <span class="input-group-text">₱</span>
+            <input
+              v-model="form.deposit_required"
+              type="number"
+              min="0"
+              class="form-control"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
       </div>
-      <div class="mb-3" v-if="form.agreement_type === 'lease'">
-        <label class="form-label">Renewal Option</label>
-        <select v-model="form.renewal_option" class="form-select">
-          <option value="none">None</option>
-          <option value="manual">Manual Renewal</option>
-          <option value="auto">Auto Renewal</option>
-        </select>
+
+      <!-- LEASE PRICING -->
+      <div v-if="form.agreement_type === 'lease'">
+
+        <h5 class="mb-3">Lease Details</h5>
+
+        <!-- LEASE TERM -->
+        <div class="mb-3">
+          <label class="form-label">Lease Term</label>
+          <div class="input-group">
+            <input
+              v-model="form.lease_term_months"
+              type="number"
+              min="1"
+              class="form-control"
+            />
+            <span class="input-group-text">months</span>
+          </div>
+        </div>
+
+        <!-- RENEWAL OPTION -->
+        <div class="mb-3">
+          <label class="form-label">Renewal Option</label>
+          <select v-model="form.renewal_option" class="form-select">
+            <option value="none">None</option>
+            <option value="manual">Manual Renewal</option>
+            <option value="auto">Auto Renewal</option>
+          </select>
+        </div>
+
+        <!-- NOTICE PERIOD -->
+        <div class="mb-3">
+          <label class="form-label">Notice Period</label>
+          <div class="input-group">
+            <input
+              v-model="form.notice_period"
+              type="number"
+              min="0"
+              class="form-control"
+            />
+            <span class="input-group-text">days</span>
+          </div>
+        </div>
+
       </div>
-      <div class="mb-3" v-if="form.agreement_type === 'lease'">
-        <label class="form-label">Notice Period (Days)</label>
-        <input v-model="form.notice_period" type="number" class="form-control" />
-      </div>
-    
+
     </div>
 
 
 
-      <!-- Step 4: Location Details -->
+
+    <!-- Step 4: Location Details -->
     <div v-if="step === 4" class="card p-3 shadow-sm">
-      <div class="d-flex gap-3">
-        <h5>Location Details</h5>
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">Location Details 
         <div v-if="this.loading" class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
-      </div>
-      <div class="row mb-3">
-        <div class="col-9 align-self-center">
-          <div class="rounded" ref="propertyMap" style="height:80vh"></div>
-        </div>
-        <div class="col-3">
-          <!-- Location inputs -->
-          <div class="mb-3">
-            <label class="form-label">Latitude</label>
-            <input type="number" v-model="form.latitude" class="form-control" step="0.000001" />
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Longitude</label>
-            <input type="number" v-model="form.longitude" class="form-control" step="0.000001" />
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Region</label>
-            <input type="text" v-model="form.region_name" class="form-control" disabled />
-          </div>
-          <div class="mb-3">
-            <label class="form-label">State</label>
-            <input type="text" v-model="form.state_name" class="form-control" disabled />
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Town</label>
-            <input type="text" v-model="form.town_name" class="form-control" disabled />
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Village</label>
-            <input type="text" v-model="form.village_name" class="form-control" disabled />
-          </div>
-        </div>
+      </h5>
+
+      <button
+        class="btn btn-outline-primary btn-sm"
+        type="button"
+        @click="requestCurrentLocation"
+      >
+        📍 Use My Current Location
+      </button>
     </div>
+
+    <!-- MAP -->
+    <div class="mb-3">
+      <div
+        class="rounded border"
+        ref="propertyMap"
+        style="height: 60vh;"
+      ></div>
+      <small class="text-muted">
+        Drag the marker or click on the map to adjust the exact location.
+      </small>
+    </div>
+
+    <!-- LOCATION DETAILS -->
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Latitude</label>
+        <input type="number" v-model="form.latitude" class="form-control" readonly />
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Longitude</label>
+        <input type="number" v-model="form.longitude" class="form-control" readonly />
+      </div>
+
+      <div class="col-md-3 mb-3">
+        <label class="form-label">Region</label>
+        <input type="text" v-model="form.region_name" class="form-control" readonly />
+      </div>
+      <div class="col-md-3 mb-3">
+        <label class="form-label">State</label>
+        <input type="text" v-model="form.state_name" class="form-control" readonly />
+      </div>
+      <div class="col-md-3 mb-3">
+        <label class="form-label">Town</label>
+        <input type="text" v-model="form.town_name" class="form-control" readonly />
+      </div>
+      <div class="col-md-3 mb-3">
+        <label class="form-label">Village</label>
+        <input type="text" v-model="form.village_name" class="form-control" readonly />
+      </div>
+    </div>
+
   </div>
+
 
       <!-- Final Step: Review and Submit -->
     <div v-if="step === 5" class="card p-3 shadow-sm">
@@ -471,7 +864,7 @@
     </div>
 
     <!-- Step Navigation -->
-    <div class="mt-3 d-flex justify-content-end">
+    <div v-if="step !== maxStep" class="mt-3 d-flex justify-content-end">
       <button class="btn btn-outline-dark just" @click="nextStep" :disabled="step === maxStep">
         Next <i class="bi bi-arrow-right"></i>
       </button>
@@ -513,7 +906,7 @@ export default {
   data() {
     return {
       showConfirmModal: false,
-      frequecyText: null,
+      frequecyText: "Monthly",
       map: null,
       marker: null,
       step: 1,
@@ -522,8 +915,17 @@ export default {
       amenities: [],
       facilities: [],
       property_types: [],
-
+      customUtility: "",
+      customAmenity: "",
+      customFacility: "",
+      bed_types: ["Single Bed", "Double Bed"],
+      bath_types: ["Private", "Public"],
       form: {
+        bath_type: [],
+        bed_type: [],
+        custom_utilities: [],
+        custom_amenities: [],
+        custom_facilities: [],
         title: "",
         description: "",
         agreement_type: "rental",
@@ -543,8 +945,12 @@ export default {
         property_type_id: "",
         furnishing: "unfurnished",
         parking: null,
+        single_bed: 0,
+        double_bed: 0,
         bedrooms: 0,
         bathrooms: 0,
+        private_bath: 0,
+        public_bath: 0,
         bed_space: 0,
         floor_area: 0,
         lot_area: 0,
@@ -563,7 +969,8 @@ export default {
 
         // Adds not on migrations
         has_curfew: null,
-        curfew_time: null,
+        curfew_from: null,
+        curfew_to: null,
         // Adds not on migrations
         
         property_facilities: [],
@@ -583,6 +990,49 @@ export default {
     confirmModal
   },
   methods: {
+    // For Custom Amenity
+    addCustomAmenity() {
+      if (!this.customAmenity.trim()) return;
+
+      const value = this.customAmenity.trim();
+
+      if (this.form.custom_amenities.includes(value)) return;
+
+      this.form.custom_amenities.push(value);
+      this.customAmenity = "";
+    },
+    removeCustomAmenity(index) {
+      this.form.custom_amenities.splice(index, 1);
+    },
+    // For Custom Facilities
+    addCustomFacility() {
+      if (!this.customFacility.trim()) return;
+
+      const value = this.customFacility.trim();
+
+      if (this.form.custom_facilities.includes(value)) return;
+
+      this.form.custom_facilities.push(value);
+      this.customFacility = "";
+    },
+    removeCustomFacility(index) {
+      this.form.custom_facilities.splice(index, 1);
+    },
+    // For Custom Utility
+    addCustomUtility() {
+      if (!this.customUtility.trim()) return;
+
+      const value = this.customUtility.trim();
+
+      // prevent duplicates
+      if (this.form.custom_utilities.includes(value)) return;
+
+      this.form.custom_utilities.push(value);
+      this.customUtility = "";
+    },
+    removeCustomUtility(index) {
+      this.form.custom_utilities.splice(index, 1);
+    },
     // Handle thumbnail upload
     handleThumbnail(event) {
       const file = event.target.files[0];
@@ -601,7 +1051,80 @@ export default {
 
     // Navigation
     nextStep() {
+
+      if(this.step === 1) {
+        // Title & Description
+        if (!this.form.title || this.form.title.trim() === "") {
+          alert("Title is required");
+          return;
+        }
+        if (!this.form.description || this.form.description.trim() === "") {
+          alert("Description is required");
+          return;
+        }
+      }
+      if(this.step === 2) {
+        // Agreement Type
+        if (!this.form.agreement_type) {
+          alert("Agreement type is required");
+          return;
+        }
+
+        // Property Type
+        if (!this.form.property_type_id) {
+          alert("Property type is required");
+          return;
+        }
+
+        if(this.selectedPropertyName !== "Commercial Space"){
+
+          const bath = this.form.bath_type
+          const bed = this.form.bed_type
+          if(bed.length <= 0){
+            alert("Select atleast one bed type")
+            return
+          }
+          if(bath.length <= 0){
+            alert("Select atleast one bath type")
+            return
+          }
+
+          
+          const single_bed = this.form.single_bed
+          const double_bed = this.form.double_bed
+          const pub_bath = this.form.public_bath
+          const priv_bath = this.form.private_bath
+
+          if(single_bed <= 0 && double_bed <= 0){
+            alert("Include atleast 1 bed")
+            return
+          }
+          if(pub_bath <= 0 && priv_bath <= 0){
+            alert("Include atleast 1 bed")
+            return
+          }
+        }
+
+        if(this.selectedPropertyName === "Commercial Space"){
+          if(this.form.floor_area <= 0){
+            alert("Atleast specify floor area greater than 0 for Commercial Spaces")
+          }
+          if(this.form.lot_area <= 0){
+            alert("Atleast specify lot area greater than 0 for Commercial Spaces")
+          }
+        }
+
+      }
+
+      if(this.step === 3){
+        if(this.form.price <= 0){
+          alert("Price must be greater than 0")
+          return
+        }
+      }
+
       if (this.step < this.maxStep) this.step++;
+
     },
     prevStep() {
       if (this.step > 1) this.step--;
@@ -848,6 +1371,26 @@ export default {
         console.error("Geocoding error:", err);
       }
     },
+    requestCurrentLocation() {
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        return;
+      }
+
+      this.loading = true;
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          this.loading = false;
+          this.handleLocationSuccess(position);
+        },
+        () => {
+          this.loading = false;
+          // Silent fallback — no alert needed
+          console.warn("User denied geolocation.");
+        }
+      );
+    },
 
     // Code for Property Details
     async getAmenities(){
@@ -855,7 +1398,7 @@ export default {
         const response = await getAmenities();
         this.amenities = response;
       } catch (error) {
-        console.log(`Amenity Error: ${error}`)
+        console.log(`Amenity Error`)
       }
     },
     async getFacilities(){
@@ -863,43 +1406,35 @@ export default {
         const response = await getFacilities();
         this.facilities = response
       } catch (error) {
-        console.log(`Facilities error: ${error}`);
+        console.log(`Facilities error`);
       }
     },
     async getPropertyTypes(){
       try {
-        console.log("getting tpyes")
+        // console.log("getting tpyes")
         const response = await getPropertyTypes();
-        console.log("got the tpyes")
+        // console.log("got the tpyes")
         this.property_types = response
       } catch (error) {
-        console.log(`Property Type: ${error}`)
+        console.log(`Property Type`)
       }
     }
   },
   mounted() {
-        // Run these regardless of geolocation
-      this.getAmenities();
-      this.getFacilities();
-      this.getPropertyTypes();
+    this.getAmenities();
+    this.getFacilities();
+    this.getPropertyTypes();
 
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            console.log('Geolocation Position:', pos.coords); // Add this log
-            this.location = {
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-            };
-            this.form.latitude = this.location.lat.toFixed(6);
-            this.form.longitude = this.location.lng.toFixed(6);
-            this.$nextTick(() => {
-              this.setMap(this.location.lat, this.location.lng);
-            });
-          },
-          this.handleLocationError
-        );
-      }
+    // Default location: Manila
+    const defaultLat = 14.5995;
+    const defaultLng = 120.9842;
+
+    this.form.latitude = defaultLat.toFixed(6);
+    this.form.longitude = defaultLng.toFixed(6);
+
+    // this.$nextTick(() => {
+    //   this.setMap(defaultLat, defaultLng);
+    // });
   },
   computed: {
     utilitiesList() {
@@ -942,9 +1477,9 @@ export default {
   },
   watch: {
     step(newStep) {
-      if (newStep === 4 && this.location) {
+      if (newStep === 4) {
         this.$nextTick(() => {
-          this.setMap(this.form.latitude || this.location.lat, this.form.longitude || this.location.lng);
+          this.setMap(this.form.latitude, this.form.longitude);
         });
         this.setAddressFields()
       }
@@ -960,9 +1495,29 @@ export default {
         this.form.bedrooms = 0
       }
     },
+    'form.single_bed'(newVal) {
+      if (newVal < 0) {
+        this.form.single_bed = 0
+      }
+    },
+    'form.double_bed'(newVal) {
+      if (newVal < 0) {
+        this.form.double_bed = 0
+      }
+    },
     'form.bathrooms'(newVal) {
       if (newVal < 0) {
         this.form.bathrooms = 0
+      }
+    },
+    'form.private_bath'(newVal) {
+      if (newVal < 0) {
+        this.form.private_bath = 0
+      }
+    },
+    'form.public_bath'(newVal) {
+      if (newVal < 0) {
+        this.form.public_bath = 0
       }
     },
     'form.bed_space'(newVal) {
@@ -1004,6 +1559,7 @@ export default {
 
     // For functionality
     'form.payment_frequency'(newVal){
+      console.log(newVal)
       if(newVal === "quarterly"){
         this.frequecyText = "Quarterly"
       }
@@ -1012,6 +1568,15 @@ export default {
       }
       if(newVal === "monthly"){
         this.frequecyText = "Monthly"
+      }
+      if(newVal === "per_night"){
+        this.frequecyText = "Per_Night"
+      }
+      if(newVal === "per_day"){
+        this.frequecyText = "Per_Day"
+      }
+      if(newVal === "per_week"){
+        this.frequecyText = "Weekly"
       }
     }
   },

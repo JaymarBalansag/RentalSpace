@@ -43,6 +43,11 @@
             <i class="bi bi-speedometer2"></i> Admin Dashboard
           </RouterLink>
         </li>
+        <li v-else-if="roleIs === 'tenants'">
+          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/tenant/dashboard">
+            <i class="bi bi-speedometer2"></i> Tenant Dashboard
+          </RouterLink>
+        </li>
         <li><hr class="dropdown-divider"></li>
         <li>
           <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/messages">

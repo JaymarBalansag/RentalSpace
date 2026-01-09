@@ -18,3 +18,7 @@ export async function getTenantsByProperty(propertyId) {
         return error;
     }
 }
+
+export async function moveIn(tenant_id){
+    return await api.post(`/tenants/${tenant_id}/move-in`);
+}

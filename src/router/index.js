@@ -34,6 +34,8 @@ import Bookings from '@/views/Owner/Bookings.vue'
 import EditPreference from '@/views/User/editPreference.vue'
 import ChangePassword from '@/views/User/ChangePassword.vue'
 import EditProfile from '@/views/User/EditProfile.vue'
+import Payment from '@/views/Owner/Payment.vue'
+import TenantDashboard from '@/views/User/TenantDashboard.vue'
 const routes = [
   {
       path: '/',
@@ -119,6 +121,11 @@ const routes = [
       name: 'contactus',
       component: Contactus,
     },
+    {
+      path: '/tenant/dashboard',
+      name: 'tenantDashboard',
+      component: TenantDashboard,
+    },
     // On development and testing ( Payment )
     {
       path: "/payment/wall",
@@ -149,7 +156,7 @@ const routes = [
     name: "OwnerDashboard",
     redirect: "/overview",
     component: Dashboard,
-    meta: { requiresAuth:true },
+    meta: { requiresAuth:true,  },
     children: [
         {
           path: "/overview",
@@ -191,6 +198,12 @@ const routes = [
           path: "/billing",
           name: "OwnerBilling",
           component: Billing,
+          meta: { requiresAuth:true },
+        },
+        {
+          path: "/ledger",
+          name: "AccountLedger",
+          component: Payment,
           meta: { requiresAuth:true },
         },
         {
@@ -246,11 +259,34 @@ let prevRoute = null;
 router.beforeEach(
   (to, from, next) => {
     const isLoggedIn = !!localStorage.getItem("access_token");
+    // 1. Get the string from storage
+    const userInfoRaw = localStorage.getItem("userInfo"); 
+    
+    // 2. Parse it back into an Object (with a safety check)
+    const userInfo = userInfoRaw ? JSON.parse(userInfoRaw) : null;
+    
+    // 3. Access the property using dot notation
+    const role = userInfo ? userInfo.role : null;
 
     prevRoute = from;
 
     if((to.path === "/login" || to.path === "/register") && isLoggedIn){
       return next("/home");
+    }
+
+    // Example usage for your Role check
+    if (to.meta.roleIsOwner && role !== 'owner') {
+      return next("/unauthorized"); // Or wherever you want to send them
+    }
+    
+    // Example usage for your Role check
+    if (to.meta.roleIsOwner && role !== 'admin') {
+      return next("/unauthorized"); // Or wherever you want to send them
+    }
+
+    // Example usage for your Role check
+    if (to.meta.roleIsOwner && role !== 'tenants') {
+      return next("/unauthorized"); // Or wherever you want to send them
     }
 
     if(to.meta.requiresAuth && !isLoggedIn){

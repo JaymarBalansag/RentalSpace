@@ -36,6 +36,8 @@ import ChangePassword from '@/views/User/ChangePassword.vue'
 import EditProfile from '@/views/User/EditProfile.vue'
 import Payment from '@/views/Owner/Payment.vue'
 import TenantDashboard from '@/views/User/TenantDashboard.vue'
+import { useUserInfo } from '@/store/userInfo'
+import Admin from '@/views/Admin/Admin.vue'
 const routes = [
   {
       path: '/',
@@ -221,6 +223,12 @@ const routes = [
     meta: { requiresAuth:true },
     children: [
       {
+        path: "/admin/admin",
+        name: "AdminOverview",
+        component: Admin,
+        meta: {requiresAuth:true}
+      },
+      {
         path: "/admin/owners",
         name: "AdminOwners",
         component: OwnerList,
@@ -256,17 +264,11 @@ const router = createRouter({
 
 let prevRoute = null;
 
+
 router.beforeEach(
   (to, from, next) => {
     const isLoggedIn = !!localStorage.getItem("access_token");
-    // 1. Get the string from storage
-    const userInfoRaw = localStorage.getItem("userInfo"); 
-    
-    // 2. Parse it back into an Object (with a safety check)
-    const userInfo = userInfoRaw ? JSON.parse(userInfoRaw) : null;
-    
-    // 3. Access the property using dot notation
-    const role = userInfo ? userInfo.role : null;
+
 
     prevRoute = from;
 

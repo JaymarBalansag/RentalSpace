@@ -1,101 +1,70 @@
 <template>
-  <div class="d-flex" style="min-height: 100vh;">
-    <!-- Sidebar -->
-    <div
-      class="sidebar bg-dark text-white d-flex flex-column"
-      :class="{ collapsed: isCollapsed, mobileOpen: isMobileOpen }"
+  <div class="dashboard-wrapper">
+    <aside 
+      class="main-sidebar" 
+      :class="{ 'is-collapsed': isCollapsed, 'is-mobile-open': isMobileOpen }"
     >
-      <!-- Header -->
-      <div
-        class="sidebar-header d-flex justify-content-between align-items-center px-3 py-3 border-bottom border-secondary"
-      >
-        <h5 v-if="!isCollapsed" class="fw-bold mb-0">Owner Panel</h5>
-        <i v-else class="bi bi-house-door fs-3" :title="'Owner Panel'"></i>
-
-        <!-- Toggle Button -->
-        <button class="toggle-btn" @click="toggleSidebar">
-          <i :class="isCollapsed ? 'bi bi-list' : 'bi bi-x-lg'"></i>
-        </button>
-      </div>
-
-      <!-- Navigation -->
-      <ul class="nav flex-column flex-grow-1 mt-3">
-        <li v-for="item in navItems" :key="item.name" class="nav-item">
-          <RouterLink
-            :to="item.route"
-            class="nav-link d-flex align-items-center px-3 py-2"
-            :class="{ active: $route.path === item.route }"
-            @click="closeOnMobile"
-          >
-            <i :class="item.icon + ' fs-5'" :title="item.name"></i>
-            <transition name="fade">
-              <span v-if="!isCollapsed" class="ms-3">{{ item.name }}</span>
-            </transition>
-          </RouterLink>
-        </li>
-      </ul>
-    </div>
-
-    <!-- Overlay for mobile -->
-    <div v-if="isMobileOpen" class="overlay" @click="closeOnMobile"></div>
-
-    <!-- Main Content -->
-    <div class="flex-grow-1 p-4">
-      <!-- Top Bar -->
-      <div
-        class="d-flex justify-content-between align-items-center mb-4 flex-wrap"
-      >
-        <!-- Mobile Hamburger -->
-        <button
-          class="btn btn-outline-primary d-md-none me-3 mb-2"
-          @click="toggleSidebar"
-        >
-          <i class="bi bi-list fs-3"></i>
-        </button>
-
-        <h3 class="fw-bold mb-0">Welcome, Owner</h3>
-
-        <!-- Profile Dropdown -->
-        <div class="dropdown">
-          <button
-            class="btn btn-outline-primary dropdown-toggle d-flex align-items-center"
-            type="button"
-            id="dropdownMenuButton"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
-            <i class="bi bi-person-circle me-2"></i>
-            Profile
-          </button>
-          <ul
-            class="dropdown-menu dropdown-menu-end"
-            aria-labelledby="dropdownMenuButton"
-          >
-            <li>
-              <RouterLink to="/home" class="dropdown-item">
-                <i class="bi bi-house-door me-2"></i> Go to Home
-              </RouterLink>
-            </li>
-            <li>
-              <RouterLink to="/profile" class="dropdown-item">
-                <i class="bi bi-gear me-2"></i> Account Settings
-              </RouterLink>
-            </li>
-            <li>
-              <hr class="dropdown-divider" />
-            </li>
-            <li>
-              <button @click="handleLogout" class="dropdown-item text-danger">
-                <i class="bi bi-box-arrow-right me-2"></i> Logout
-              </button>
-            </li>
-          </ul>
+      <div class="sidebar-brand">
+        <div class="brand-logo bg-primary shadow-sm">
+          <i class="bi bi-house-door-fill text-white"></i>
         </div>
+        <span v-if="!isCollapsed" class="brand-name d-none d-md-block">StayManager</span>
       </div>
 
-      <!-- Dynamic Page Content -->
-      <router-view />
-    </div>
+      <nav class="sidebar-nav">
+        <RouterLink
+          v-for="item in navItems"
+          :key="item.name"
+          :to="item.route"
+          class="nav-item-link"
+          :class="{ active: $route.path === item.route }"
+          @click="closeOnMobile"
+        >
+          <i :class="item.icon" class="nav-icon" :title="item.name"></i>
+          <span v-if="!isCollapsed" class="nav-label d-none d-md-block">{{ item.name }}</span>
+          <div v-if="$route.path === item.route" class="active-indicator"></div>
+        </RouterLink>
+      </nav>
+
+      <div class="sidebar-footer border-top border-secondary border-opacity-10">
+        <button class="collapse-toggle d-none d-md-flex" @click="isCollapsed = !isCollapsed">
+          <i :class="isCollapsed ? 'bi bi-chevron-right' : 'bi bi-chevron-left'"></i>
+        </button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="content-header shadow-sm bg-white px-3">
+        <div class="d-flex align-items-center">
+          <button class="mobile-burger-btn d-md-none me-3" @click="isMobileOpen = !isMobileOpen">
+            <i class="bi bi-list fs-4"></i>
+          </button>
+          <h5 class="header-title mb-0 fw-bold d-none d-sm-block">Owner Portal</h5>
+        </div>
+
+        <div class="header-actions">
+          <div class="dropdown">
+            <button class="profile-pill border" data-bs-toggle="dropdown">
+              <div class="avatar-box bg-primary text-white">OW</div>
+              <span class="ms-2 d-none d-md-inline small fw-bold">Owner account</span>
+              <i class="bi bi-chevron-down ms-2 small opacity-50"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end border-0 shadow mt-2">
+              <li><RouterLink to="/home" class="dropdown-item">Home</RouterLink></li>
+              <li><RouterLink to="/profile" class="dropdown-item">Settings</RouterLink></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><button @click="handleLogout" class="dropdown-item text-danger">Logout</button></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-container p-3 p-md-4">
+        <router-view />
+      </div>
+    </main>
+
+    <div v-if="isMobileOpen" class="sidebar-overlay d-md-none" @click="isMobileOpen = false"></div>
   </div>
 </template>
 
@@ -109,8 +78,8 @@ export default {
   components: { RouterLink },
   data() {
     return {
-      isCollapsed: true,
-      isMobileOpen: false,
+      isCollapsed: false, // Desktop starts expanded
+      isMobileOpen: false, // Mobile starts hidden
       navItems: [
         { name: "Overview", route: "/overview", icon: "bi bi-speedometer2" },
         { name: "Properties", route: "/properties", icon: "bi bi-building" },
@@ -123,13 +92,6 @@ export default {
     };
   },
   methods: {
-    toggleSidebar() {
-      if (window.innerWidth <= 768) {
-        this.isMobileOpen = !this.isMobileOpen;
-      } else {
-        this.isCollapsed = !this.isCollapsed;
-      }
-    },
     closeOnMobile() {
       if (window.innerWidth <= 768) {
         this.isMobileOpen = false;
@@ -142,7 +104,7 @@ export default {
         info.logout();
         this.$router.push("/login");
       } catch (error) {
-        alert(error.response?.data?.message || "Something went wrong!");
+        console.error(error);
         this.$router.push("/login");
       }
     },
@@ -151,94 +113,156 @@ export default {
 </script>
 
 <style scoped>
-/* Sidebar */
-.sidebar {
-  width: 260px;
-  transition: width 0.3s ease, transform 0.3s ease;
+.dashboard-wrapper {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
   overflow: hidden;
-}
-.sidebar.collapsed {
-  width: 80px;
+  background-color: #f4f7f6;
 }
 
-/* Mobile sidebar */
+/* --- SIDEBAR --- */
+.main-sidebar {
+  width: 260px;
+  background: #1e1e2d;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
+  z-index: 2000;
+}
+
+/* Desktop Collapse State */
+.main-sidebar.is-collapsed { width: 80px; }
+
+/* Mobile logic: acts as a floating icon bar */
 @media (max-width: 768px) {
-  .sidebar {
+  .main-sidebar {
     position: fixed;
-    top: 0;
+    height: 100vh;
     left: 0;
-    height: 100%;
-    width: 260px;
+    top: 0;
+    width: 70px; /* Only wide enough for icons */
     transform: translateX(-100%);
-    z-index: 1050;
   }
-  .sidebar.mobileOpen {
+  .main-sidebar.is-mobile-open {
     transform: translateX(0);
   }
+  /* Force labels hidden on mobile regardless of collapse state */
+  .nav-label { display: none !important; }
 }
 
-/* Overlay */
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 1040;
+/* --- BRAND --- */
+.sidebar-brand {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  background: rgba(0,0,0,0.15);
 }
+.brand-logo {
+  width: 35px;
+  height: 35px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.brand-name { margin-left: 12px; font-weight: 700; }
 
-/* Header & toggle */
-.sidebar-header {
+/* --- NAVIGATION --- */
+.sidebar-nav {
+  flex-grow: 1;
+  padding: 15px 10px;
+  overflow-y: auto;
+}
+.nav-item-link {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center icons for mobile/collapsed */
+  padding: 12px;
+  color: #a2a3b7;
+  text-decoration: none;
+  border-radius: 8px;
+  margin-bottom: 5px;
   position: relative;
 }
-.toggle-btn {
-  border: none;
-  background: transparent;
-  color: #fff;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-}
-.toggle-btn:hover {
-  transform: scale(1.1);
-}
-
-/* Navigation links */
-.nav-link {
-  color: #cfcfcf;
-  border-radius: 6px;
-  transition: all 0.25s ease;
-}
-.nav-link:hover,
-.nav-link.active {
-  background: rgba(13, 110, 253, 0.9);
-  color: #fff;
-}
-.sidebar i {
-  min-width: 30px;
-  text-align: center;
-}
-
-/* Smooth fade for collapsed labels */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-/* Main content scroll */
-.flex-grow-1 {
-  overflow-y: auto;
-  min-height: 100vh;
-}
-
-/* Top bar responsive spacing */
-@media (max-width: 768px) {
-  .flex-grow-1 {
-    padding: 1rem !important;
+@media (min-width: 769px) {
+  /* Only align left if desktop and NOT collapsed */
+  .main-sidebar:not(.is-collapsed) .nav-item-link {
+    justify-content: flex-start;
   }
+}
+
+.nav-item-link:hover, .nav-item-link.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.nav-item-link.active {
+  color: #3699ff;
+  background: rgba(54, 153, 255, 0.1);
+}
+
+.nav-icon { font-size: 1.3rem; }
+.nav-label { margin-left: 12px; font-size: 0.9rem; }
+
+/* --- CONTENT AREA --- */
+.main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.content-header {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #ebedef;
+}
+.page-container {
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+/* --- MOBILE HELPERS --- */
+.mobile-burger-btn {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 5px 10px;
+}
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(2px);
+  z-index: 1500;
+}
+
+.profile-pill {
+  background: #fff;
+  padding: 4px 10px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+}
+.avatar-box {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+.sidebar-footer { padding: 10px; text-align: center; }
+.collapse-toggle {
+  background: transparent;
+  border: none;
+  color: #a2a3b7;
+  font-size: 1.2rem;
+  width: 100%;
+  justify-content: center;
 }
 </style>

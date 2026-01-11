@@ -1,32 +1,33 @@
 <template>
-  <div class="p-3">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="p-2 p-md-3">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
       <div>
-        <h4 class="fw-bold mb-0">👥 Tenant Management</h4>
-        <p class="text-muted small">Manage resident status and occupancy details</p>
+        <h4 class="fw-bold mb-0 text-dark">👥 Tenant Management</h4>
+        <p class="text-muted small mb-0">Manage resident status and occupancy details</p>
       </div>
-      <button class="btn btn-outline-primary btn-sm">
+      <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2">
         <i class="bi bi-person-x me-1"></i> Show Inactive Tenants
       </button>
     </div>
 
     <div class="card border-0 shadow-sm mb-4">
-      <div class="card-body">
-        <div class="row g-2">
-          <div class="col-md-4">
-            <label class="small fw-bold text-muted">Property Filter</label>
-            <select class="form-select" v-model="selectedProperty">
+      <div class="card-body p-3">
+        <div class="row g-3">
+          <div class="col-12 col-md-4">
+            <label class="small fw-bold text-muted mb-1 text-uppercase">Property Filter</label>
+            <select class="form-select border-light-subtle shadow-sm" v-model="selectedProperty">
               <option :value="0">All Properties</option>
               <option v-for="property in properties" :key="property.id" :value="property.id">
                 {{ property.title }}
               </option>
             </select>
           </div>
-          <div class="col-md-6">
-            <label class="small fw-bold text-muted">Search</label>
-            <div class="input-group">
-              <input type="text" class="form-control" placeholder="Search by name or email..." v-model="searchQuery" />
-              <button v-if="searchQuery" class="btn btn-outline-secondary" @click="clearSearch">
+          <div class="col-12 col-md-8">
+            <label class="small fw-bold text-muted mb-1 text-uppercase">Search Tenants</label>
+            <div class="input-group shadow-sm">
+              <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" class="form-control border-start-0 ps-0" placeholder="Name or email..." v-model="searchQuery" />
+              <button v-if="searchQuery" class="btn btn-white border border-start-0" @click="clearSearch">
                 <i class="bi bi-x-lg"></i>
               </button>
             </div>
@@ -35,32 +36,33 @@
       </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
+    <div class="d-none d-md-block card border-0 shadow-sm overflow-hidden">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
+          <thead class="bg-light">
             <tr>
-              <th class="ps-3">Name</th>
+              <th class="ps-4 py-3">Tenant Details</th>
               <th>Property</th>
-              <th>Email</th>
               <th>Status</th>
-              <th class="text-center">Action</th>
+              <th class="text-center px-4">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="tenant in filteredTenants" :key="tenant.id">
-              <td class="ps-3 fw-medium">{{ tenant.first_name }} {{ tenant.last_name }}</td>
+              <td class="ps-4">
+                <div class="fw-bold">{{ tenant.first_name }} {{ tenant.last_name }}</div>
+                <div class="text-muted small">{{ tenant.tenant_email }}</div>
+              </td>
               <td>{{ tenant.property_title }}</td>
-              <td class="text-muted small">{{ tenant.tenant_email }}</td>
               <td>
-                <span :class="['badge rounded-pill', statusClass(tenant.status)]">
+                <span :class="['badge rounded-pill px-3 py-2', statusClass(tenant.status)]">
                   {{ tenant.status }}
                 </span>
               </td>
-              <td class="text-center">
+              <td class="text-center px-4">
                 <button 
                   v-if="tenant.status === 'inactive'" 
-                  class="btn btn-sm btn-success px-3 shadow-sm"
+                  class="btn btn-sm btn-success px-3 fw-bold shadow-sm"
                   @click="processMoveIn(tenant)"
                 >
                   <i class="bi bi-door-open-fill me-1"></i> Move In
@@ -68,11 +70,49 @@
                 <span v-else class="text-muted small">-</span>
               </td>
             </tr>
-            <tr v-if="filteredTenants.length === 0">
-              <td colspan="5" class="text-center py-5 text-muted">No tenants found.</td>
-            </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <div class="d-md-none">
+      <div v-if="filteredTenants.length === 0" class="text-center py-5">
+        <p class="text-muted">No tenants found.</p>
+      </div>
+      
+      <div v-for="tenant in filteredTenants" :key="tenant.id" class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="d-flex align-items-center">
+              <div class="avatar-circle me-2 bg-primary-subtle text-primary fw-bold">
+                {{ tenant.first_name[0] }}{{ tenant.last_name[0] }}
+              </div>
+              <div>
+                <h6 class="fw-bold mb-0 text-dark">{{ tenant.first_name }} {{ tenant.last_name }}</h6>
+                <small class="text-muted">{{ tenant.tenant_email }}</small>
+              </div>
+            </div>
+            <span :class="['badge rounded-pill px-2', statusClass(tenant.status)]" style="font-size: 0.7rem;">
+              {{ tenant.status }}
+            </span>
+          </div>
+
+          <div class="bg-light rounded p-2 mb-3">
+            <small class="text-muted d-block extra-small text-uppercase fw-bold">Assigned Property</small>
+            <span class="small fw-medium text-dark"><i class="bi bi-house me-1"></i>{{ tenant.property_title }}</span>
+          </div>
+
+          <button 
+            v-if="tenant.status === 'inactive'" 
+            class="btn btn-success w-100 py-2 fw-bold shadow-sm"
+            @click="processMoveIn(tenant)"
+          >
+            <i class="bi bi-door-open-fill me-2"></i> Process Move-In
+          </button>
+          <button v-else class="btn btn-outline-secondary w-100 disabled py-2 small">
+            Tenant is Active
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -161,3 +201,19 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.avatar-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+.extra-small { font-size: 0.65rem; }
+.form-select, .form-control {
+  padding: 0.6rem 0.8rem;
+}
+</style>

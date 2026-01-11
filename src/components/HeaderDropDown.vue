@@ -1,95 +1,43 @@
 <template>
   <div class="dropdown">
-    <!-- Profile Icon Button -->
     <button 
-      type="button"
-      class="btn fw-lighter text-light dropdown-toggle " 
+      class="btn profile-trigger d-flex align-items-center gap-2 p-1" 
+      type="button" 
       id="profileDropdown" 
       data-bs-toggle="dropdown" 
       aria-expanded="false"
     >
-      <img
-        :src="Profile || placeholderImg"
-        class="rounded-circle"
-        width="50"
-        height="50"
-        alt="User profile picture"
-      />
+      <div class="avatar-container shadow-sm">
+        <img :src="Profile || placeholderImg" class="profile-img" alt="User" />
+      </div>
+      <i class="bi bi-chevron-down text-white small d-none d-md-block"></i>
     </button>
 
-    <!-- Dropdown Menu -->
-    <ul class="dropdown-menu dropdown-menu-end " aria-labelledby="profileDropdown">
-      <!-- If Logged In -->
-      <template v-if="isLoggedIn">
-        <li>
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/profile">
-            <i class="bi bi-person"></i> {{ nameis }}
-          </RouterLink>
-        </li>
-        <li><hr class="dropdown-divider"></li>
-        <!-- Role-based Items -->
-        <li v-if="roleIs === 'user'">
-          <button @click="goToPaymentWall" class="dropdown-item text-primary">
-            <i class="bi bi-house-add"></i> List Your Property
-          </button>
-        </li>
-        <li v-else-if="roleIs === 'owner'">
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/Dashboard">
-            <i class="bi bi-kanban"></i> Dashboard
-          </RouterLink>
-        </li>
-        <li v-else-if="roleIs === 'admin'">
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/admin/dashboard">
-            <i class="bi bi-speedometer2"></i> Admin Dashboard
-          </RouterLink>
-        </li>
-        <li v-else-if="roleIs === 'tenants'">
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/tenant/dashboard">
-            <i class="bi bi-speedometer2"></i> Tenant Dashboard
-          </RouterLink>
-        </li>
-        <li><hr class="dropdown-divider"></li>
-        <li>
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/messages">
-            <i class="bi bi-chat-dots"></i> Messages
-          </RouterLink>
-        </li>
-        <li>
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/notifications">
-            <i class="bi bi-bell"></i> Notifications
-          </RouterLink>
-        </li>
-        <li><hr class="dropdown-divider"></li>
+    <ul class="dropdown-menu dropdown-menu-end profile-dropdown shadow-lg border-0 animate slideIn" aria-labelledby="profileDropdown">
+      <div class="dropdown-header-box px-3 py-2 mb-2">
+        <span class="d-block fw-bold text-dark">{{ nameis }}</span>
+        <span class="small text-muted text-uppercase fw-bold">{{ roleIs }}</span>
+      </div>
 
-        
-
-        <li>
-          <RouterLink class="dropdown-item d-flex gap-2 align-items-center" to="/settings">
-            <i class="bi bi-gear"></i> Settings
-          </RouterLink>
-        </li>
-        
-        <li><hr class="dropdown-divider"></li>
-        <li>
-          <button @click="handleLogout" class="dropdown-item text-danger d-flex gap-2 align-items-center">
-            <i class="bi bi-box-arrow-left"></i> Logout
-          </button>
-        </li>
+      <li><RouterLink class="dropdown-item" to="/profile"><i class="bi bi-person"></i> My Profile</RouterLink></li>
+      
+      <template v-if="roleIs === 'user'">
+        <li><button @click="goToPaymentWall" class="dropdown-item text-primary fw-bold"><i class="bi bi-plus-circle"></i> List Property</button></li>
+      </template>
+      <template v-else-if="roleIs === 'owner'">
+        <li><RouterLink class="dropdown-item" to="/Dashboard"><i class="bi bi-speedometer2"></i> Dashboard</RouterLink></li>
+      </template>
+      <template v-else-if="roleIs === 'admin'">
+        <li><RouterLink class="dropdown-item" to="/admin/admin"><i class="bi bi-shield-lock"></i> Admin Panel</RouterLink></li>
       </template>
 
-      <!-- If NOT Logged In -->
-      <template v-else>
-        <li>
-          <RouterLink to="/login" class="dropdown-item d-flex gap-2 align-items-center">
-            <i class="bi bi-box-arrow-in-right"></i> Sign In
-          </RouterLink>
-        </li>
-        <li>
-          <RouterLink to="/register" class="dropdown-item d-flex gap-2 align-items-center">
-            <i class="bi bi-person-plus"></i> Sign Up
-          </RouterLink>
-        </li>
-      </template>
+      <li><hr class="dropdown-divider"></li>
+      <li><RouterLink class="dropdown-item" to="/messages"><i class="bi bi-chat"></i> Messages</RouterLink></li>
+      <li><RouterLink class="dropdown-item" to="/notifications"><i class="bi bi-bell"></i> Notifications</RouterLink></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><RouterLink class="dropdown-item" to="/settings"><i class="bi bi-gear"></i> Settings</RouterLink></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><button @click="handleLogout" class="dropdown-item text-danger"><i class="bi bi-box-arrow-left"></i> Sign Out</button></li>
     </ul>
   </div>
 </template>
@@ -153,3 +101,71 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.profile-trigger {
+  border-radius: 50px;
+  transition: 0.3s;
+}
+
+.profile-trigger:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.avatar-container {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid white;
+}
+
+.profile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-dropdown {
+  min-width: 240px;
+  border-radius: 12px;
+  padding: 0.5rem;
+  margin-top: 10px !important;
+}
+
+.dropdown-header-box {
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  color: #444;
+}
+
+.dropdown-item i {
+  font-size: 1.1rem;
+}
+
+.dropdown-item:hover {
+  background-color: #f0f4ff;
+  color: #4780d9;
+}
+
+/* Simple Slide Animation */
+.animate.slideIn {
+  animation-duration: 0.3s;
+  animation-fill-mode: both;
+  animation-name: slideIn;
+}
+
+@keyframes slideIn {
+  0% { transform: translateY(1rem); opacity: 0; }
+  100% { transform: translateY(0rem); opacity: 1; }
+}
+</style>

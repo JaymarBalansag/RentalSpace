@@ -1,32 +1,33 @@
 <template>
-
   <div class="p-3 p-md-4">
-    <div class="row mb-4 align-items-center">
-      <div class="col">
+    <div class="row mb-4 align-items-center g-3">
+      <div class="col-12 col-md-6">
         <h4 class="fw-bold mb-0"><i class="bi bi-book me-2"></i>Pending Bookings</h4>
-        <p class="text-muted small">Manage and approve tenant booking requests.</p>
+        <p class="text-muted small mb-0">Manage and approve tenant booking requests.</p>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="d-flex gap-2">
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control border-start-0 ps-0" placeholder="Search Tenant..." v-model="searchQuery" />
+          </div>
+          <button v-if="searchQuery" class="btn btn-outline-secondary" @click="clearSearch">Clear</button>
+        </div>
       </div>
     </div>
 
-    <div class="d-flex justify-content-between mb-3">
-      <div class="d-flex gap-2">
-        <input type="text" class="form-control" placeholder="Search Tenant..." v-model="searchQuery" />
-        <button class="btn btn-outline-secondary" @click="clearSearch">Clear</button>
-      </div>
-    </div>
-
-    <div class="card border-0 shadow-sm overflow-hidden">
+    <div class="d-none d-md-block card border-0 shadow-sm overflow-hidden">
       <table class="table table-hover mb-0">
-        <thead class="bg-light">
+        <thead class="bg-light text-muted small text-uppercase fw-bold">
           <tr>
-            <th class="px-4 py-3 border-0">Name</th>
+            <th class="px-4 py-3 border-0">Tenant Name</th>
             <th class="py-3 border-0">Property</th>
-            <th class="py-3 border-0">Booking Status</th>
+            <th class="py-3 border-0">Status</th>
             <th class="px-4 py-3 border-0 text-end">Action</th>
           </tr>
         </thead>
-        <tbody v-if="bookings.length > 0">
-          <tr v-for="booking in bookings" :key="booking.id" class="align-middle">
+        <tbody v-if="filteredBookings.length > 0">
+          <tr v-for="booking in filteredBookings" :key="booking.id" class="align-middle">
             <td class="px-4 py-3 fw-bold">{{ booking.first_name }} {{ booking.last_name }}</td>
             <td class="py-3">{{ booking.title }}</td>
             <td class="py-3">
@@ -36,10 +37,10 @@
             </td>
             <td class="px-4 py-3 text-end">
               <div class="d-flex gap-2 justify-content-end">
-                <button class="btn btn-light btn-sm border"><i class="bi bi-eye"></i></button>
-                <button class="btn btn-light btn-sm border text-danger"><i class="bi bi-trash"></i></button>
-                <button class="btn btn-primary btn-sm px-3 fw-bold" @click="openApproveModal(booking)">
-                  <i class="bi bi-check-lg me-1"></i> Approve
+                <button class="btn btn-light btn-sm border" title="View"><i class="bi bi-eye"></i></button>
+                <button class="btn btn-light btn-sm border text-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-primary btn-sm px-3 fw-bold shadow-sm" @click="openApproveModal(booking)">
+                  Approve
                 </button>
               </div>
             </td>
@@ -53,68 +54,89 @@
       </table>
     </div>
 
-    <div v-if="showApproveModal" class="modal-backdrop-custom">
-      <div class="modal-custom shadow-lg border-0">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-bold mb-0">Approve Booking</h5>
-          <button class="btn-close" @click="closeApproveModal"></button>
+    <div class="d-md-none">
+      <div v-if="filteredBookings.length > 0" class="row g-3">
+        <div v-for="booking in filteredBookings" :key="booking.id" class="col-12">
+          <div class="card border-0 shadow-sm p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <h6 class="fw-bold mb-0 text-dark">{{ booking.first_name }} {{ booking.last_name }}</h6>
+                <small class="text-muted"><i class="bi bi-house-door me-1"></i>{{ booking.title }}</small>
+              </div>
+              <span class="badge bg-warning-subtle text-warning px-2 py-1 rounded-pill small">
+                {{ booking.status }}
+              </span>
+            </div>
+            <hr class="my-2 opacity-25">
+            <div class="d-flex gap-2 mt-2">
+              <button class="btn btn-light border flex-grow-1"><i class="bi bi-eye"></i> View</button>
+              <button class="btn btn-primary flex-grow-1 fw-bold shadow-sm" @click="openApproveModal(booking)">
+                Approve
+              </button>
+              <button class="btn btn-outline-danger border"><i class="bi bi-trash"></i></button>
+            </div>
+          </div>
         </div>
+      </div>
+      <div v-else class="text-center py-5">
+        <p class="text-muted">No pending bookings found.</p>
+      </div>
+    </div>
 
-        <div class="alert alert-primary py-2 small border-0">
-          <i class="bi bi-info-circle me-2"></i>
-          Set the lease details for <strong>{{ selectedBooking.first_name }}</strong>.
-        </div>
+    <div v-if="showApproveModal" class="modal-backdrop-custom px-3">
+      <div class="modal-custom shadow-lg border-0 my-auto">
+        <div class="modal-scroll-area">
+           <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Approve Booking</h5>
+            <button class="btn-close" @click="closeApproveModal"></button>
+          </div>
+          <div class="alert alert-primary py-2 small border-0 mb-3">
+            <i class="bi bi-info-circle me-2"></i>
+            Set lease for <strong>{{ selectedBooking.first_name }}</strong>.
+          </div>
+          
+          <div class="mb-3">
+             <label class="form-label small fw-bold text-muted">Lease/Stay Details</label>
+             <div v-if="selectedBooking.type_name === 'Boarding House'">
+                <select v-model="selectedBooking.stay_duration" class="form-select mb-2">
+                  <option value="1">1 month</option>
+                  <option value="3">3 months</option>
+                  <option value="6">6 months</option>
+                  <option value="12">1 year</option>
+                  <option value="custom">Custom</option>
+                </select>
+                <input v-if="selectedBooking.stay_duration === 'custom'" type="number" v-model="selectedBooking.custom_months" class="form-control" placeholder="Enter months" />
+             </div>
+             <input v-else type="number" v-model="selectedBooking.lease_duration" class="form-control" placeholder="Months" />
+          </div>
 
-        <div class="mb-3">
-          <div v-if="selectedBooking.type_name === 'Boarding House'">
-            <label class="form-label small fw-bold text-muted">Stay Duration</label>
-            <select v-model="selectedBooking.stay_duration" class="form-select">
-              <option value="1">1 month</option>
-              <option value="3">3 months</option>
-              <option value="6">6 months</option>
-              <option value="12">1 year</option>
-              <option value="custom">Custom</option>
-            </select>
-            <div v-if="selectedBooking.stay_duration === 'custom'" class="mt-2">
-              <input type="number" v-model="selectedBooking.custom_months" min="1" class="form-control" placeholder="Enter months" />
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="small fw-bold text-muted">Move-in</label>
+              <input type="date" v-model="selectedBooking.move_in_date" class="form-control" />
+            </div>
+            <div class="col-6">
+              <label class="small fw-bold text-muted">Occupants</label>
+              <input type="number" v-model="selectedBooking.occupants_num" class="form-control" />
             </div>
           </div>
 
-          <div v-else-if="['Apartment', 'Condo', 'House', 'Commercial Space'].includes(selectedBooking.type_name)">
-            <label class="form-label small fw-bold text-muted">Lease Duration (Months)</label>
-            <input type="number" v-model="selectedBooking.lease_duration" min="1" class="form-control" />
+          <div class="mb-3">
+            <label class="small fw-bold text-muted">Notes</label>
+            <textarea v-model="selectedBooking.notes" class="form-control" rows="2"></textarea>
           </div>
-        </div>
 
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Move-in Date</label>
-            <input type="date" v-model="selectedBooking.move_in_date" class="form-control" />
+          <div class="form-check mb-4">
+            <input type="checkbox" v-model="selectedBooking.agreement" class="form-check-input" id="approveAgree">
+            <label class="form-check-label small" for="approveAgree">Verified all details</label>
           </div>
-          <div v-if="selectedBooking.type_name !== 'Boarding House'" class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Occupants</label>
-            <input type="number" v-model="selectedBooking.occupants_num" min="1" class="form-control" />
+
+          <div class="d-flex flex-column flex-md-row gap-2">
+            <button class="btn btn-primary order-0 order-md-1 flex-grow-1 fw-bold" @click="submitApproval" :disabled="loading">
+              Confirm Approval
+            </button>
+            <button class="btn btn-light order-1 order-md-0 px-4" @click="closeApproveModal">Cancel</button>
           </div>
-        </div>
-
-        <div class="mt-3">
-          <label class="form-label small fw-bold text-muted">Internal Notes</label>
-          <textarea v-model="selectedBooking.notes" class="form-control" rows="2" placeholder="Private notes for reference..."></textarea>
-        </div>
-
-        <div class="form-check mt-3">
-          <input type="checkbox" v-model="selectedBooking.agreement" class="form-check-input" id="approveAgree">
-          <label class="form-check-label small" for="approveAgree">
-            Confirm that all details are verified and agreed upon.
-          </label>
-        </div>
-
-        <div class="d-flex justify-content-end gap-2 mt-4">
-          <button class="btn btn-light px-4" @click="closeApproveModal">Cancel</button>
-          <button class="btn btn-primary px-4 fw-bold" @click="submitApproval" :disabled="loading">
-            <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
-            Confirm Approval
-          </button>
         </div>
       </div>
     </div>

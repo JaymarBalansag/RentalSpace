@@ -108,39 +108,22 @@ export async function getProperty(id) {
     return res.data;
 }
 
-export async function getFilteredProperties(amenities, facilities, min_price, max_price, selectedType, selectedAgreement) {
-  const params = {};
+export async function getFilteredProperties(amenities, facilities, min_price, max_price, selectedType, selectedAgreement, page) {
+  const params = {
+    page,
+    amenities: (amenities && amenities.length) ? amenities : null,
+    facilities: (facilities && facilities.length) ? facilities : null,
+    min_price: min_price || null,
+    max_price: max_price || null,
+    selectedType: selectedType || null,
+    selectedAgreement: selectedAgreement || null
+  };
 
-  if (amenities && amenities.length > 0) {
-    params.amenities = amenities;
-  }
-
-  if (facilities && facilities.length > 0) {
-    params.facilities = facilities;
-  }
-
-  if (min_price && min_price > 0) {
-    params.min_price = min_price;
-  }
-
-  if (max_price && max_price > 0) {
-    params.max_price = max_price;
-  }
-
-  if (selectedType) {
-    params.selectedType = selectedType;
-  }
-
-  if (selectedAgreement) {
-    params.selectedAgreement = selectedAgreement;
-  }
-
-  const res = await api.get("/properties/filters", {
+  return await api.get("/properties/filters", {
     params,
-    paramsSerializer: p => qs.stringify(p, { arrayFormat: "repeat" })
+    // This is crucial for sending arrays to Laravel correctly
+    paramsSerializer: p => qs.stringify(p, { arrayFormat: "repeat", skipNulls: true })
   });
-
-  return res;
 }
 
 export async function getFilterPropertyByType(selectedType, selectedAgreement) {

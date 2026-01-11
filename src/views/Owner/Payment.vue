@@ -1,36 +1,33 @@
 <template>
-  <div class="payment-page p-4">
+  <div class="payment-page p-3 p-md-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
         <h4 class="fw-bold mb-0">💳 Payment Records</h4>
-        <p class="text-muted small">Verify submissions and view transaction history</p>
+        <p class="text-muted small d-none d-md-block">Verify submissions and view transaction history</p>
       </div>
-      <div class="d-flex gap-2">
-        <button class="btn btn-outline-secondary btn-sm" @click="fetchPayments">
-          <i class="bi bi-arrow-clockwise"></i> Refresh
-        </button>
-      </div>
+      <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" @click="fetchPayments">
+        <i class="bi bi-arrow-clockwise"></i> <span class="d-none d-md-inline">Refresh</span>
+      </button>
     </div>
 
     <div class="row mb-4">
-      <div class="col-md-4">
+      <div class="col-12 col-md-4">
         <div class="card border-0 shadow-sm bg-primary text-white">
-          <div class="card-body">
-            <h6 class="small mb-1">Total Verified (This Month)</h6>
+          <div class="card-body p-3">
+            <h6 class="small mb-1 opacity-75">Total Verified (This Month)</h6>
             <h3 class="fw-bold mb-0">₱{{ formatAmount(totalMonthly) }}</h3>
           </div>    
         </div>
       </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
+    <div class="d-none d-md-block card border-0 shadow-sm overflow-hidden">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th class="ps-3">Date Submitted</th>
+              <th class="ps-3 py-3">Date Submitted</th>
               <th>Tenant</th>
-              <th>Billing Period</th>
               <th>Method</th>
               <th>Status</th>
               <th>Amount</th>
@@ -47,27 +44,27 @@
                 <div class="fw-bold text-dark">{{ payment.first_name }} {{ payment.last_name }}</div>
                 <div class="text-muted small">{{ payment.property_title }}</div>
               </td>
-              <td>{{ payment.rent_cycle }}</td>
               <td>
                 <span class="badge bg-light text-dark border">{{ payment.payment_method }}</span>
                 <div class="extra-small text-muted mt-1">{{ payment.payment_reference || 'No Ref#' }}</div>
               </td>
               <td>
-                <span :class="['badge rounded-pill px-3', statusClass(payment.status)]">
+                <span :class="['badge rounded-pill px-3 py-2', statusClass(payment.status)]">
                   {{ payment.status }}
                 </span>
               </td>
               <td class="fw-bold text-dark">₱{{ formatAmount(payment.amount_paid) }}</td>
               <td class="text-end pe-3">
-                <button v-if="payment.status === 'pending'" 
-                  class="btn btn-sm btn-success me-1" 
-                  @click="handleVerify(payment.id)">
-                  Verify
-                </button>
-                
-                <button class="btn btn-sm btn-light border" @click="viewProof(payment)">
-                  <i class="bi bi-eye"></i>
-                </button>
+                <div class="d-flex gap-1 justify-content-end">
+                  <button v-if="payment.status === 'pending'" 
+                    class="btn btn-sm btn-success px-3 fw-bold" 
+                    @click="handleVerify(payment.id)">
+                    Verify
+                  </button>
+                  <button class="btn btn-sm btn-light border" @click="viewProof(payment)">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -75,15 +72,64 @@
       </div>
     </div>
 
-    <div v-if="selectedProof" class="modal-backdrop-custom" @click="selectedProof = null">
-      <div class="modal-custom text-center" @click.stop>
-        <h5 class="mb-3 fw-bold">Payment Proof</h5>
-        <img :src="selectedProof" class="img-fluid rounded shadow" style="max-height: 70vh;">
-        <div class="mt-3">
-          <button class="btn btn-secondary" @click="selectedProof = null">Close</button>
+    <div class="d-md-none">
+      <div v-for="payment in payments" :key="payment.id" class="card border-0 shadow-sm mb-3">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="extra-small text-muted fw-bold text-uppercase">
+              <i class="bi bi-calendar3 me-1"></i> {{ formatDate(payment.created_at) }}
+            </span>
+            <span :class="['badge rounded-pill px-3', statusClass(payment.status)]">
+              {{ payment.status }}
+            </span>
+          </div>
+
+          <div class="mb-3">
+            <h6 class="fw-bold mb-0">{{ payment.first_name }} {{ payment.last_name }}</h6>
+            <small class="text-muted">{{ payment.property_title }}</small>
+          </div>
+
+          <div class="bg-light p-2 rounded mb-3 d-flex justify-content-between align-items-center">
+            <div>
+              <small class="text-muted d-block extra-small">Amount Paid</small>
+              <span class="fw-bold text-dark">₱{{ formatAmount(payment.amount_paid) }}</span>
+            </div>
+            <div class="text-end">
+              <small class="text-muted d-block extra-small">Method</small>
+              <span class="badge bg-white border text-dark">{{ payment.payment_method }}</span>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button class="btn btn-light border flex-grow-1" @click="viewProof(payment)">
+              <i class="bi bi-image me-1"></i> View Proof
+            </button>
+            <button v-if="payment.status === 'pending'" 
+              class="btn btn-success flex-grow-1 fw-bold" 
+              @click="handleVerify(payment.id)">
+              <i class="bi bi-check-circle me-1"></i> Verify
+            </button>
+          </div>
         </div>
       </div>
     </div>
+
+    <transition name="fade">
+      <div v-if="selectedProof" class="modal-backdrop-custom p-3" @click="selectedProof = null">
+        <div class="modal-custom text-center shadow-lg" @click.stop>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0">Payment Proof</h6>
+            <button class="btn-close" @click="selectedProof = null"></button>
+          </div>
+          <div class="proof-container rounded overflow-hidden">
+            <img :src="selectedProof" class="img-fluid" style="max-height: 60vh; object-fit: contain;">
+          </div>
+          <div class="mt-3">
+            <button class="btn btn-secondary w-100" @click="selectedProof = null">Close</button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 

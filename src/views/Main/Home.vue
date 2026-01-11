@@ -13,7 +13,7 @@
         <!-- Property Type -->
         <div class="col-md-3">
           <select class="form-select shadow-sm" v-model="selectedType">
-            <option value="">Property Type</option>
+            
             <option v-for="(type, index) in property_types" :key="index" :value="type.id">
               {{ type.type_name }}
             </option>
@@ -23,7 +23,7 @@
         <!-- Agreement Type -->
         <div class="col-md-3">
           <select class="form-select shadow-sm" v-model="selectedAgreement">
-            <option value="">Agreement Type</option>
+            <option selected value="">Agreement Type</option>
             <option value="rental">Rental</option>
             <option value="lease">Lease</option>
           </select>
@@ -142,21 +142,60 @@
       </div>
 
         <!-- Price Range -->
-        <div class="p-3 border rounded shadow-sm bg-white mb-4">
-          <h5 class="fw-bold mb-3">Price Range</h5>
-          <div class="form-check" v-for="(range, index) in priceRanges" :key="index">
-            <input
-              class="form-check-input"
-              type="radio"
-              :id="'price-' + index"
-              :value="range"
-              v-model="selectedPriceRange"
-            />
-            <label class="form-check-label" :for="'price-' + index">
-              {{ range.label }}
-            </label>
+      <div class="p-3 border rounded shadow-sm bg-white mb-4">
+        <h5 class="fw-bold mb-3" style="font-size: 1rem;">Price Range</h5>
+        
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label small text-muted mb-1">Min Price</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light text-secondary">$</span>
+              <input 
+                type="number" 
+                v-model.number="min_price" 
+                class="form-control" 
+                placeholder="0"
+                @keyup.enter="applyPriceFilter"
+              />
+            </div>
+          </div>
+
+          <div class="col-6">
+            <label class="form-label small text-muted mb-1">Max Price</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light text-secondary">$</span>
+              <input 
+                type="number" 
+                v-model.number="max_price" 
+                class="form-control" 
+                placeholder="Any"
+                @keyup.enter="applyPriceFilter"
+              />
+            </div>
           </div>
         </div>
+
+        <div class="d-flex gap-2">
+          <button 
+            @click="applyPriceFilter" 
+            class="btn btn-primary btn-sm flex-grow-1 fw-bold"
+          >
+            Apply Filter
+          </button>
+          
+          <button 
+            @click="resetPriceFilter" 
+            class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center"
+            style="width: 40px;"
+            title="Reset Price"
+          >
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+      </div>
+
+
+
       </aside>
 
       <!-- Mobile Filters -->
@@ -296,42 +335,118 @@
       <div class="col-lg-9">
         <div class="row g-4">
           <!-- Placeholders while loading -->
-          <div v-if="loading" class="col-md-6 col-lg-4" v-for="n in 6" :key="'ph-' + n">
-            <div class="card h-100 shadow-sm property-card">
-              <svg class="bd-placeholder-img card-img-top" width="100%" height="180" role="img" aria-label="Image placeholder">
-                <rect width="100%" height="100%" fill="#e9ecef"></rect>
-              </svg>
-              <div class="card-body">
-                <h5 class="card-title placeholder-glow">
-                  <span class="placeholder col-6"></span>
-                </h5>
-                <p class="card-text placeholder-glow">
-                  <span class="placeholder col-7"></span>
-                  <span class="placeholder col-4"></span>
-                  <span class="placeholder col-5"></span>
-                </p>
-                <p class="fw-bold text-primary mb-2 placeholder-glow">
-                  <span class="placeholder col-4"></span>
-                </p>
-                <div class="d-grid">
-                  <span class="btn btn-outline-primary btn-sm disabled placeholder col-6"></span>
+          <div
+            v-if="loading"
+            class="col-12 mb-3"
+            v-for="n in 5"
+            :key="'ph-' + n"
+          >
+            <div class="card shadow-sm property-card">
+              <div class="row g-0">
+                <!-- Image placeholder -->
+                <div class="col-md-4">
+                  <svg
+                    class="bd-placeholder-img w-100 h-100 rounded-start"
+                    height="180"
+                    role="img"
+                  >
+                    <rect width="100%" height="100%" fill="#e9ecef"></rect>
+                  </svg>
+                </div>
+
+                <!-- Details -->
+                <div class="col-md-5 p-3">
+                  <h5 class="placeholder-glow">
+                    <span class="placeholder col-8"></span>
+                  </h5>
+                  <p class="placeholder-glow">
+                    <span class="placeholder col-10"></span>
+                    <span class="placeholder col-6"></span>
+                  </p>
+                </div>
+
+                <!-- Rating -->
+                <div class="col-md-1 d-flex align-items-center justify-content-center">
+                  <span class="placeholder col-8"></span>
+                </div>
+
+                <!-- Price + button -->
+                <div class="col-md-2 p-3 text-end">
+                  <p class="placeholder-glow mb-2">
+                    <span class="placeholder col-10"></span>
+                  </p>
+                  <span class="btn btn-outline-primary btn-sm disabled placeholder col-12"></span>
                 </div>
               </div>
             </div>
           </div>
 
+
           <!-- Actual properties -->
-          <div v-else class="col-md-6 col-lg-4" v-for="(property, index) in properties" :key="index">
-            <div class="card h-100 shadow-sm property-card">
-              <img :src="property.image_url" @error="$event.target.src = placeholderImg" class="card-img-top" alt="Property">
-              <div class="card-body">
-                <h5 class="card-title">{{ property.title }}</h5>
-                <p class="card-text text-muted small">{{ property.description }}</p>
-                <p class="fw-bold text-primary mb-2">{{ property.price }} / {{ property.payment_frequency }}</p>
-                <RouterLink :to="`/property/${property.id}`" class="btn btn-outline-primary btn-sm">View Details</RouterLink>
+          <div class="col-12 mb-3" v-for="(property, index) in properties" :key="index">
+            <div class="card shadow-sm property-card h-100 overflow-hidden" role="button" @click="checkDetails(property.id)">
+              <div class="row g-0 h-100">
+                <div class="col-md-4">
+                  <div class="ratio ratio-16x9 h-md-100">
+                    <img
+                      :src="property.image_url"
+                      @error="$event.target.src = placeholderImg"
+                      class="w-100 h-100 object-fit-cover"
+                      alt="Property"
+                    />
+                  </div>
+                </div>
+
+                <div class="col-md-8">
+                  <div class="d-flex flex-column h-100">
+                    
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                          <h5 class="card-title fw-bold mb-1">
+                            {{ property.title }}
+                          </h5>
+                          <p class="text-muted small mb-2">
+                            <i class="bi bi-geo-alt-fill me-1"></i>{{ property.town_name }}, {{ property.state_name }}
+                          </p>
+                        </div>
+                        
+                        <div class="text-end">
+                          <span class="badge bg-success fs-6">8.7</span>
+                          <div class="small text-muted d-none d-sm-block">Excellent</div>
+                        </div>
+                      </div>
+
+                      <p class="card-text text-muted small mb-0 mt-2 text-truncate-custom">
+                        {{ property.description }}
+                      </p>
+                    </div>
+
+                    <div class="mt-auto p-3 bg-light-subtle border-top border-md-start-0">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                          <div class="fw-bold text-primary fs-5">
+                            {{ property.price }}
+                          </div>
+                          <small class="text-muted">
+                            {{ toTitle(property.agreement_type) }} /
+                            {{ toTitle(property.payment_frequency) }}
+                          </small>
+                        </div>  
+                        
+                        <div class="d-md-none">
+                          <span class="btn btn-sm btn-outline-primary px-3">View</span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div> 
               </div>
             </div>
           </div>
+
+
 
           <!-- Empty state -->
           <div v-if="!loading && properties.length === 0" class="col-12">
@@ -408,10 +523,17 @@ export default {
       subSuccess: false,
       amenities: [],
       facilities: [],
-      property_types: [],
+      property_types: [
+        {
+            "id": null,
+            "type_name": "Property Types",
+            "created_at": null,
+            "updated_at": null
+        }
+      ],
       properties: [],
       message: '',
-      placeholderImg,
+      placeholderImg : placeholderImg ,
       selectedAmenities: [],
       selectedFacilities: [],
       priceRanges: [
@@ -422,8 +544,8 @@ export default {
       ],
       selectedPriceRange: null,
       selectedType: null,
-      selectedAgreement: null,
-      min_price: 0,            // ensure these exist
+      selectedAgreement: "",
+      min_price: 0,             // ensure these exist
       max_price: 0,
       loading: true,          // controls placeholders
       loadingAmenities: true,
@@ -435,19 +557,55 @@ export default {
     };
   },
   methods: {
-    
+    applyPriceFilter() {
+      // 1. Logic check: Swap values if Min is greater than Max
+      if (this.min_price > 0 && this.max_price > 0 && this.min_price > this.max_price) {
+        const temp = this.min_price;
+        this.min_price = this.max_price;
+        this.max_price = temp;
+      }
+
+      // 2. Trigger Search
+      this.currentPage = 1;
+      this.getFilteredProperties(1);
+    },
+
+    // Triggered by your "Reset" button
+    resetPriceFilter() {
+      this.min_price = null;
+      this.max_price = null;
+      this.currentPage = 1;
+
+      // Refresh the list
+      // If other filters are active, use getFiltered, otherwise use standard get
+      if (this.selectedAmenities.length || this.selectedType || this.selectedAgreement) {
+        this.getFilteredProperties(1);
+      } else {
+        this.getProperties(1);
+      }
+    },
+    toTitle(text){
+      return text ? text.charAt(0).toUpperCase() + text.slice(1) : "asd";
+    },
+    checkDetails(id){
+      this.$router.push(`/property/${id}`)
+    },
     changePage(page) {
+      // Prevent out of bounds
       if (page < 1 || page > this.lastPage) return;
 
       this.currentPage = page;
 
-      if (
-        this.selectedAmenities.length ||
-        this.selectedFacilities.length ||
+      // Logic check: Is any filter currently active?
+      const hasFilters = 
+        this.selectedAmenities.length > 0 ||
+        this.selectedFacilities.length > 0 ||
         this.selectedType ||
         this.selectedAgreement ||
-        this.selectedPriceRange
-      ) {
+        this.min_price || 
+        this.max_price;
+
+      if (hasFilters) {
         this.getFilteredProperties(page);
       } else {
         this.getProperties(page);
@@ -499,7 +657,10 @@ export default {
     async getPropertyTypes() {
       try {
         const response = await getPropertyTypes();
-        this.property_types = response;
+        this.property_types = [
+          ...this.property_types, 
+          ...response // Note: usually Axios data is in .data, check your API structure
+        ];
       } catch (error) {
         console.log('Property Types Error: ' + error);
       }
@@ -517,15 +678,15 @@ export default {
           page
         );
 
+        // Standard Laravel pagination response structure
         const paginated = response.data.properties;
-
         this.properties = paginated.data;
         this.currentPage = paginated.current_page;
         this.lastPage = paginated.last_page;
         this.total = paginated.total;
 
       } catch (error) {
-        console.log(error);
+        console.error("Filter Error:", error);
         this.properties = [];
       } finally {
         this.loading = false;
@@ -592,6 +753,23 @@ export default {
 
   },
   watch: {
+      min_price(newVal) {
+      if (newVal < 0) {
+        this.min_price = 0;
+      }
+      // Optional: Ensure min doesn't exceed max when max is set
+      if (this.max_price && newVal > this.max_price) {
+        // You can either reset it or show a warning
+        this.min_price = this.max_price; 
+      }
+    },
+
+    // Watches max_price for changes
+    max_price(newVal) {
+      if (newVal < 0) {
+        this.max_price = 0;
+      }
+    },
     properties() {
       this.showMap = false;
     },
@@ -617,29 +795,20 @@ export default {
       },
       deep: true
     },
-    selectedPriceRange(val) {
-      if (val) {
-        this.min_price = val.min;
-        this.max_price = val.max;
-      } else {
-        this.min_price = 0;
-        this.max_price = 0;
-      }
-      this.currentPage = 1;
-      this.getFilteredProperties(1);
-    }
+    
   }
 };
 </script>
 
 <style scoped>
 .property-card {
-  
+  cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
 .property-card .card-text {
   display: -webkit-box;
-  -webkit-line-clamp: 3;   
+  -webkit-line-clamp: 2;   
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -647,7 +816,7 @@ export default {
 
 .property-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1) !important;
 }
 
 .property-card .card-img-top {

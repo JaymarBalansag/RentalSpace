@@ -1,24 +1,28 @@
 <template>
-  <div class="p-4 bg-light" style="min-height: 100vh;">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h3 class="fw-bold text-primary">Owner List</h3>
-      <button class="btn btn-primary">
+  <div class="admin-view-container p-3 p-md-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <div>
+        <h3 class="fw-bold text-dark mb-1">User Management</h3>
+        <p class="text-muted small mb-0">Monitor tenant profiles and location data.</p>
+      </div>
+      <button class="btn btn-primary shadow-sm px-4">
         <i class="bi bi-download me-2"></i>Export List
       </button>
     </div>
 
-    <!-- Search & Filter -->
-    <div class="card shadow-sm border-0 mb-4">
-      <div class="card-body">
+    <div class="card shadow-sm border-0 mb-4 overflow-hidden">
+      <div class="card-body bg-white">
         <div class="row g-3 align-items-center">
           <div class="col-md-6">
-            <input
-              v-model="search"
-              type="text"
-              class="form-control"
-              placeholder="Search owner by name or email"
-            />
+            <div class="input-group">
+              <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-muted"></i></span>
+              <input
+                v-model="search"
+                type="text"
+                class="form-control border-start-0 ps-0"
+                placeholder="Search by name or email..."
+              />
+            </div>
           </div>
           <div class="col-md-3">
             <select v-model="filterStatus" class="form-select">
@@ -27,8 +31,8 @@
               <option value="incomplete">Incomplete Profile</option>
             </select>
           </div>
-          <div class="col-md-3 text-end">
-            <button class="btn btn-outline-secondary" @click="resetFilter">
+          <div class="col-md-3 text-md-end">
+            <button class="btn btn-light border text-secondary w-100 w-md-auto" @click="resetFilter">
               <i class="bi bi-arrow-clockwise me-1"></i> Reset
             </button>
           </div>
@@ -36,115 +40,155 @@
       </div>
     </div>
 
-    <!-- Owners Table -->
-    <div class="card shadow-sm border-0">
-      <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-        <span>All Users</span>
-        <small class="text-muted">result(s)</small>
+    <div class="data-card shadow-sm">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <span class="fw-bold text-dark">All Users</span>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ users.length }} result(s)</span>
       </div>
 
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-light">
+      <div class="table-responsive d-none d-lg-block">
+        <table class="table align-middle custom-admin-table mb-0">
+          <thead>
             <tr>
-              <th>#</th>
-              <th>User Image</th>
-              <th>User Name</th>
+              <th>ID</th>
+              <th>User</th>
               <th>Email</th>
-              <th>Region</th>
-              <th>Province</th>
-              <th>Municipal / City</th>
-              <th>Barangay</th>
-              <th>Street</th>
-              <th>Date Joined</th>
-              <th>Action</th>
+              <th>Location (Muni/Brgy)</th>
+              <th>Joined Date</th>
+              <th>Profile</th>
+              <th class="text-end px-4">Action</th>
             </tr>
           </thead>
-
           <tbody>
-            <tr v-for="(user, index) in users" :key="user.id">
-              <td>{{ user.id }}</td>
-              <td>
-                <img :src="user.user_img_url ? user.user_img_url : null " alt="User image" width="50" height="50" class="rounded-circle">
-              </td>
-              <td class="fw-semibold">{{ user.first_name }} {{ user.last_name }}</td>
-              <td>{{ user.email ? user.email : 'N/A' }}</td>
-              <td>{{ user.region_name ? user.region_name : 'N/A' }}</td>
-              <td>{{ user.state_name ? user.state_name : 'N/A' }}</td>
-              <td>{{ user.town_name ? user.town_name : 'N/A' }}</td>
-              <td>{{ user.village_name ? user.village_name : 'N/A' }}</td>
-              <td>{{ user.streets ? user.streets : 'N/A' }}</td>
-              <td>{{ user.created_at }}</td>
-              <td>
-                <div class="btn-group">
-                  <button class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                  <button
-                    class="btn btn-sm"
-                    :class="user.isComplete  ? 'btn-outline-success' : 'btn-outline-danger' "
-                  >
-                    <i :class="user.isComplete  ? 'bi bi-check-circle' : 'bi bi-x-circle' "></i>
-                  </button>
-                </div>
+            <template v-if="filteredUsers.length > 0">
+              <tr v-for="user in filteredUsers" :key="user.id">
+                <td class="text-muted small fw-bold">#{{ user.id }}</td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <img 
+                      :src="user.user_img_url || 'https://ui-avatars.com/api/?name=' + user.first_name + '+' + user.last_name" 
+                      alt="User image" 
+                      class="user-img-sm me-2"
+                    >
+                    <div class="d-flex flex-column">
+                      <span class="fw-semibold text-dark">{{ user.first_name }} {{ user.last_name }}</span>
+                      <small class="text-muted" style="font-size: 0.7rem;">{{ user.village_name || 'No Barangay' }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td class="small">{{ user.email || 'N/A' }}</td>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="small text-dark">{{ user.town_name || 'N/A' }}</span>
+                    <small class="text-muted" style="font-size: 0.7rem;">{{ user.state_name }}</small>
+                  </div>
+                </td>
+                <td class="text-muted small">{{ user.created_at }}</td>
+                <td>
+                  <span class="badge-modern" :class="user.isComplete ? 'complete' : 'incomplete'">
+                    {{ user.isComplete ? 'Complete' : 'Incomplete' }}
+                  </span>
+                </td>
+                <td class="text-end px-4">
+                  <div class="d-flex justify-content-end gap-2">
+                    <button class="btn-action view" title="View Details"><i class="bi bi-eye"></i></button>
+                    <button 
+                      class="btn-action" 
+                      :class="user.isComplete ? 'approve' : 'reject'"
+                      title="Profile Status"
+                    >
+                      <i :class="user.isComplete ? 'bi bi-patch-check' : 'bi bi-exclamation-circle'"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </template>
+            <tr v-else>
+              <td colspan="7" class="text-center py-5">
+                <i class="bi bi-person-x fs-1 text-muted opacity-25"></i>
+                <p class="text-muted mt-2">No users found.</p>
               </td>
             </tr>
-
           </tbody>
         </table>
+      </div>
+
+      <div class="d-lg-none p-3">
+        <div v-if="filteredUsers.length > 0">
+          <div v-for="user in filteredUsers" :key="user.id" class="mobile-user-card mb-3 p-3 border rounded shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <div class="d-flex align-items-center">
+                <img :src="user.user_img_url || 'https://ui-avatars.com/api/?name=' + user.first_name" class="user-img-sm me-2">
+                <h6 class="fw-bold mb-0 text-dark">{{ user.first_name }} {{ user.last_name }}</h6>
+              </div>
+              <span class="badge-modern" :class="user.isComplete ? 'complete' : 'incomplete'">
+                {{ user.isComplete ? 'Done' : 'Pending' }}
+              </span>
+            </div>
+            
+            <div class="small text-muted mb-2">
+              <div><i class="bi bi-envelope me-2"></i>{{ user.email }}</div>
+              <div><i class="bi bi-geo-alt me-2"></i>{{ user.town_name }}, {{ user.state_name }}</div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+              <span class="small text-muted">ID: #{{ user.id }}</span>
+              <div class="d-flex gap-2">
+                <button class="btn-mobile-icon view"><i class="bi bi-eye"></i></button>
+                <button class="btn-mobile-icon" :class="user.isComplete ? 'approve' : 'reject'"><i class="bi bi-shield-check"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { getUsers } from '@/api/Admin/AdminUser/AdminUser';
-import { getUserByStatus } from '@/api/Admin/AdminUser/AdminUser';
+import { getUsers, getUserByStatus } from '@/api/Admin/AdminUser/AdminUser';
 
 export default {
   name: "tenantsList",
-
   data() {
     return {
       search: "",
-      filterStatus: "",
+      filterStatus: "all",
       users: [],
     };
   },
   computed: {
-    
+    filteredUsers() {
+      if (!this.users) return [];
+      return this.users.filter((user) => {
+        const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+        return (
+          fullName.includes(this.search.toLowerCase()) ||
+          (user.email && user.email.toLowerCase().includes(this.search.toLowerCase()))
+        );
+      });
+    },
   },
   methods: {
     resetFilter() {
       this.search = "";
-      this.filterStatus = "";
+      this.filterStatus = "all";
+      this.getUsers();
     },
-    async getUsers(){
+    async getUsers() {
       try {
         const res = await getUsers();
-        this.users = [];
-        this.users = res.data.data;
+        this.users = res.data.data || res.data;
       } catch (error) {
-        console.error(error)
+        console.error("Fetch Error:", error);
       }
     },
-    async getToggleUserStatus(status){
+    async getToggleUserStatus(status) {
       try {
-        console.log("Fetching users by:", status);
-
-        let res;
-        if (status === "all") {
-          res = await getUsers();
-        } else {
-          res = await getUserByStatus(status);
-        }
-
-        console.log("API response:", res.data); // 🔍 check if this contains data
-        this.users = [];
-        this.users = res.data.data || res.data; // adjust if backend doesn’t wrap in .data.data
-        console.log("Users updated:", this.users.length);
+        let res = status === "all" ? await getUsers() : await getUserByStatus(status);
+        this.users = res.data.data || res.data;
       } catch (error) {
-        console.error(error)
+        console.error("Filter Error:", error);
       }
     },
   },
@@ -160,17 +204,61 @@ export default {
 </script>
 
 <style scoped>
-.table th,
-.table td {
-  vertical-align: middle;
+.admin-view-container { background-color: #f8f9fa; min-height: 100vh; }
+.data-card { background: white; border-radius: 12px; overflow: hidden; }
+
+/* Desktop Table Styling */
+.custom-admin-table thead th {
+  background-color: #f1f4f9;
+  border: none;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #5c677d;
+  padding: 15px;
+  font-weight: 700;
 }
-.table-hover tbody tr:hover {
-  background-color: #f8f9fa;
+.custom-admin-table tbody td { padding: 15px; border-bottom: 1px solid #f1f4f9; }
+
+/* Status Badges */
+.badge-modern {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }
-.card {
-  border-radius: 12px;
+.badge-modern.complete { background: #e6fcf5; color: #0ca678; }
+.badge-modern.incomplete { background: #fff5f5; color: #fa5252; }
+
+/* Action Buttons */
+.btn-action {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
-.btn-group .btn {
-  padding: 5px 8px;
+.btn-action.view { background: #e7f5ff; color: #228be6; }
+.btn-action.approve { background: #ebfbee; color: #40c057; }
+.btn-action.reject { background: #fff5f5; color: #fa5252; }
+
+/* Mobile Card Styling */
+.mobile-user-card { background: white; border-color: #eee !important; }
+.user-img-sm { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+.btn-mobile-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+.btn-mobile-icon.view { background: #e7f5ff; color: #228be6; }
+.btn-mobile-icon.approve { background: #40c057; color: white; }
+.btn-mobile-icon.reject { background: #fa5252; color: white; }
 </style>

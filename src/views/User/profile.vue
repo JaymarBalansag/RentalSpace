@@ -3,9 +3,9 @@
 
   <div class="container py-4">
     <!-- Back Button -->
-    <RouterLink class="btn btn-outline-secondary fw-semibold mb-3" to="/">
+    <button class="btn btn-outline-secondary fw-semibold mb-3" @click="this.$router.push('/home')">
       <i class="bi bi-arrow-left me-1"></i> Back
-    </RouterLink>
+    </button>
 
     <!-- Profile Card -->
     <div class="card shadow border-0 rounded-4 position-relative">
@@ -242,6 +242,14 @@ export default {
 
   },
   methods: {
+    BackToPrevPage(){
+      if (window.history.length > 1) {
+        this.$router.back();
+      } else {
+        this.$router.push("/home");
+      }
+
+    },
     async fetchUserProfile() {
       const response = await getUserProfile();
       const data = response.data.user[0];

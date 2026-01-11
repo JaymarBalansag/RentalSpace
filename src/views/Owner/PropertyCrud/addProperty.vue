@@ -15,851 +15,696 @@
     </div>
 
     <!-- Step 1: Basic Info -->
-    <div v-if="step === 1" class="card p-3 shadow-sm">
-      <div class="mb-3">
-        <label class="form-label">Title <span class="text-danger">*</span></label>
-        <input type="text" v-model="form.title" class="form-control" required />
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Description <span class="text-danger">*</span></label>
-        <textarea v-model="form.description" class="form-control" required></textarea>
+    <div v-if="step === 1" class="card border-0 shadow-sm overflow-hidden">
+      <div class="card-header bg-white py-3 border-bottom-0">
+        <h6 class="mb-0 fw-bold">Step 1: Property Basics</h6>
+        <small class="text-muted">Fill in the essential details about your listing.</small>
       </div>
 
-      <!-- Thumbnail Upload -->
-      <div class="mb-3">
-        <label class="form-label">Thumbnail <span class="text-danger">*</span></label>
-        <input type="file" class="form-control" @change="handleThumbnail" />
-        <div v-if="previewThumbnail" class="mt-2">
-          <img :src="previewThumbnail" alt="Preview" class="img-thumbnail" style="max-height: 150px;" />
+      <div class="card-body p-3 p-md-4">
+        <div class="mb-4">
+          <label class="form-label fw-semibold small text-uppercase">Property Name <span class="text-muted">(Title)</span></label>
+          <input 
+            type="text" 
+            v-model="form.title" 
+            class="form-control form-control-lg shadow-none border-2" 
+            placeholder="e.g. Modern 2-Bedroom Apartment"
+            required 
+          />
         </div>
-      </div>
 
-      <!-- Additional Images Upload -->
-      <div class="mb-3">
-        <label class="form-label">Property Images</label>
-        <input type="file" class="form-control" multiple @change="handlePropertyImages" />
-        <div class="d-flex gap-2 mt-2 flex-wrap">
-          <img v-for="(img, idx) in previewPropertyImages" :key="idx" :src="img" class="img-thumbnail" style="max-height: 100px;" />
+        <div class="mb-4">
+          <label class="form-label fw-semibold small text-uppercase">Description <span class="text-danger">*</span></label>
+          <textarea 
+            v-model="form.description" 
+            class="form-control shadow-none border-2" 
+            rows="4"
+            placeholder="Describe the features, amenities, and neighborhood..."
+            required
+          ></textarea>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-semibold small text-uppercase">Main Thumbnail <span class="text-danger">*</span></label>
+            <div class="upload-container position-relative">
+              <input type="file" class="file-input-overlay" @change="handleThumbnail" accept="image/*" />
+              <div class="upload-placeholder border-dashed rounded-3 p-4 text-center">
+                <div v-if="!previewThumbnail">
+                  <i class="bi bi-cloud-arrow-up fs-2 text-primary"></i>
+                  <p class="mb-0 small fw-medium">Click to upload main image</p>
+                </div>
+                <div v-else class="position-relative">
+                  <img :src="previewThumbnail" alt="Preview" class="img-fluid rounded-2 shadow-sm" style="max-height: 180px;" />
+                  <div class="upload-badge">Main Photo</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-semibold small text-uppercase">Gallery Images</label>
+            <div class="upload-container position-relative">
+              <input type="file" class="file-input-overlay" multiple @change="handlePropertyImages" accept="image/*" />
+              <div class="upload-placeholder border-dashed rounded-3 p-4 text-center h-100">
+                <i class="bi bi-images fs-2 text-muted"></i>
+                <p class="mb-0 small fw-medium">Add more photos</p>
+                
+                <div v-if="previewPropertyImages.length > 0" class="row g-2 mt-2">
+                  <div v-for="(img, idx) in previewPropertyImages.slice(0, 4)" :key="idx" class="col-3">
+                    <div class="ratio ratio-1x1">
+                      <img :src="img" class="object-fit-cover rounded border" />
+                    </div>
+                  </div>
+                  <div v-if="previewPropertyImages.length > 4" class="col-3">
+                    <div class="ratio ratio-1x1 bg-dark rounded d-flex align-items-center justify-content-center text-white small">
+                      +{{ previewPropertyImages.length - 4 }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Step 2: Property Details -->
-    <div v-if="step === 2" class="card p-3 shadow-sm">
+    <div v-if="step === 2" class="card border-0 shadow-sm overflow-hidden">
+      <div class="card-header bg-white py-3 border-bottom-0">
+        <h6 class="mb-0 fw-bold">Step 2: Specifications & Amenities</h6>
+      </div>
 
-      <div class="row">
-        <!-- Agreement Type -->
-        <div class="col-6">
-          <label class="form-label">Agreement Type <span class="text-danger">*</span></label>
-          <select v-model="form.agreement_type" class="form-select">
-            <option value="rental">Rental</option>
-            <option value="lease">Lease</option>
-          </select>
-        </div>
-
-        <!-- Property Type -->
-         <div class="col-6">
-          <label class="form-label">Property Type</label>
-          <select v-model="form.property_type_id" class="form-select">
-            <option disabled selected value="">Select Property Type</option>
-            <option 
-              v-for="type in property_types" 
-              :key="type.id" 
-              :value="type.id"
-            >
-              {{ type.type_name }}
-            </option>
-          </select>
-
+      <div class="card-body p-3 p-md-4">
+        <div class="row g-4">
           
-         </div>
+          <div class="col-12 col-lg-7">
+            
+            <div class="row g-3 mb-4">
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-bold small">Agreement Type <span class="text-danger">*</span></label>
+                <select v-model="form.agreement_type" class="form-select border-2">
+                  <option value="rental">Rental</option>
+                  <option value="lease">Lease</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-bold small">Property Type</label>
+                <select v-model="form.property_type_id" class="form-select border-2">
+                  <option disabled selected value="">Select Property Type</option>
+                  <option v-for="type in property_types" :key="type.id" :value="type.id">
+                    {{ type.type_name }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="accordion border rounded-3" id="propertyDetailsAccordion">
+              
+              <div class="accordion-item border-0 border-bottom">
+                <h2 class="accordion-header">
+                  <button class="accordion-button bg-light-subtle fw-bold shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUtils">
+                    Utilities
+                  </button>
+                </h2>
+                <div id="collapseUtils" class="accordion-collapse collapse show" data-bs-parent="#propertyDetailsAccordion">
+                  <div class="accordion-body">
+                    <label class="form-label d-block small fw-bold">Utilities Included</label>
+                    <div class="row">
+                      <div v-for="utility in utilitiesList" :key="utility.value" class="col-6 col-md-4 mb-2">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" :id="'utility-' + utility.value" :value="utility.value" v-model="form.utilities" />
+                          <label class="form-check-label small" :for="'utility-' + utility.value">{{ utility.label }}</label>
+                        </div>
+                      </div>
+                    </div>
+                    <hr class="my-3">
+                    <label class="form-label d-block small fw-bold">Add Other Utilities</label>
+                    <div class="d-flex gap-2 mb-3">
+                      <input type="text" class="form-control" v-model="customUtility" placeholder="e.g. Solar Backup" @keyup.enter="addCustomUtility" />
+                      <button type="button" class="btn btn-outline-primary" @click="addCustomUtility">Add</button>
+                    </div>
+                    <div v-if="form.custom_utilities.length">
+                      <span v-for="(utility, index) in form.custom_utilities" :key="index" class="badge bg-secondary me-2 mb-2 p-2">
+                        {{ utility }}
+                        <button type="button" class="btn-close btn-close-white ms-2" @click="removeCustomUtility(index)"></button>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="accordion-item border-0 border-bottom">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed bg-light-subtle fw-bold shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAmen">
+                    Amenities
+                  </button>
+                </h2>
+                <div id="collapseAmen" class="accordion-collapse collapse" data-bs-parent="#propertyDetailsAccordion">
+                  <div class="accordion-body">
+                    <div class="row">
+                      <div v-for="amenity in amenities" :key="amenity.id" class="col-6 col-md-4 mb-2">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" :id="'amenity-' + amenity.id" :value="amenity.id" v-model="form.property_amenities" />
+                          <label class="form-check-label small" :for="'amenity-' + amenity.id">{{ amenity.amenity_name }}</label>
+                        </div>
+                      </div>
+                    </div>
+                    <hr class="my-3">
+                    <label class="form-label d-block small fw-bold">Add Other Amenities</label>
+                    <div class="d-flex gap-2 mb-3">
+                      <input type="text" class="form-control" v-model="customAmenity" placeholder="e.g. Swimming Pool" @keyup.enter="addCustomAmenity" />
+                      <button type="button" class="btn btn-outline-primary" @click="addCustomAmenity">Add</button>
+                    </div>
+                    <div v-if="form.custom_amenities.length">
+                      <span v-for="(amenity, index) in form.custom_amenities" :key="index" class="badge bg-secondary me-2 mb-2 p-2">
+                        {{ amenity }}
+                        <button type="button" class="btn-close btn-close-white ms-2" @click="removeCustomAmenity(index)"></button>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="accordion-item border-0">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed bg-light-subtle fw-bold shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFac">
+                    Facilities
+                  </button>
+                </h2>
+                <div id="collapseFac" class="accordion-collapse collapse" data-bs-parent="#propertyDetailsAccordion">
+                  <div class="accordion-body">
+                    <div class="row">
+                      <div v-for="facility in facilities" :key="facility.id" class="col-6 col-md-4 mb-2">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" :id="'facility-' + facility.id" :value="facility.id" v-model="form.property_facilities" />
+                          <label class="form-check-label small" :for="'facility-' + facility.id">{{ facility.facility_name }}</label>
+                        </div>
+                      </div>
+                    </div>
+                    <hr class="my-3">
+                    <label class="form-label d-block small fw-bold">Add Other Facilities</label>
+                    <div class="d-flex gap-2 mb-3">
+                      <input type="text" class="form-control" v-model="customFacility" placeholder="e.g. Gym" @keyup.enter="addCustomFacility" />
+                      <button type="button" class="btn btn-outline-primary" @click="addCustomFacility">Add</button>
+                    </div>
+                    <div v-if="form.custom_facilities.length">
+                      <span v-for="(facility, index) in form.custom_facilities" :key="index" class="badge bg-secondary me-2 mb-2 p-2">
+                        {{ facility }}
+                        <button type="button" class="btn-close btn-close-white ms-2" @click="removeCustomFacility(index)"></button>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-5">
+            
+            <div class="mb-4">
+              <label class="form-label fw-bold small">Furnishing</label>
+              <select v-model="form.furnishing" class="form-select border-2">
+                <option value="fully-furnished">Furnished</option>
+                <option value="semi-furnished">Semi-Furnished</option>
+                <option value="unfurnished">Unfurnished</option>
+              </select>
+            </div>
+
+            <div v-if="showBedrooms" class="card shadow-sm mb-3">
+              <div class="card-header bg-light d-flex align-items-center">
+                <label class="mb-0 me-2 small fw-bold">Bedrooms:</label>
+                <input type="number" min="1" v-model="form.bedrooms" class="form-control form-control-sm w-25" />
+              </div>
+              <div class="card-body">
+                <label class="form-label small fw-bold">Bed Types</label>
+                <div class="row g-2">
+                  <div v-for="bed in bed_types" :key="bed" class="col-6 mb-2">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" :id="'bed-' + bed" :value="bed" v-model="form.bed_type" />
+                      <label class="form-check-label small" :for="'bed-' + bed">{{ bed }}</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="row g-2 mt-2">
+                  <div v-if="form.bed_type.includes('Single Bed')" class="col-6">
+                    <label class="small text-muted">Single Beds</label>
+                    <input type="number" v-model="form.single_bed" class="form-control form-control-sm" />
+                  </div>
+                  <div v-if="form.bed_type.includes('Double Bed')" class="col-6">
+                    <label class="small text-muted">Double Beds</label>
+                    <input type="number" v-model="form.double_bed" class="form-control form-control-sm" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="showBathrooms" class="card shadow-sm mb-3">
+              <div class="card-header bg-light py-2"><label class="mb-0 fw-bold small">Bathrooms</label></div>
+              <div class="card-body">
+                <div class="row g-2 mb-2">
+                  <div v-for="bath in bath_types" :key="bath" class="col-6 mb-1">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" :id="'bath-' + bath" :value="bath" v-model="form.bath_type" />
+                      <label class="form-check-label small" :for="'bath-' + bath">{{ bath }}</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="row g-2 mt-2">
+                  <div v-if="form.bath_type.includes('Private')" class="col-6">
+                    <label class="small text-muted">Private</label>
+                    <input type="number" v-model="form.private_bath" class="form-control form-control-sm" />
+                  </div>
+                  <div v-if="form.bath_type.includes('Public')" class="col-6">
+                    <label class="small text-muted">Public</label>
+                    <input type="number" v-model="form.public_bath" class="form-control form-control-sm" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-light p-3 rounded-3 border mb-3">
+              <div v-if="showBedSpace" class="mb-3">
+                <label class="form-label small fw-bold">Max Occupants (Bed Space)</label>
+                <input type="number" v-model="form.bed_space" class="form-control" />
+                <small class="text-muted d-block mt-1">Total people allowed</small>
+              </div>
+
+              <div v-if="showSizeFiels" class="row g-2">
+                <div class="col-6">
+                  <label class="form-label small fw-bold">Floor Area (sqm)</label>
+                  <div class="input-group input-group-sm">
+                    <input type="number" v-model="form.floor_area" class="form-control" />
+                    <span class="input-group-text">m²</span>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-bold">Lot Area (sqm)</label>
+                  <div class="input-group input-group-sm">
+                    <input type="number" v-model="form.lot_area" class="form-control" />
+                    <span class="input-group-text">m²</span>
+                  </div>
+                </div>
+                <div class="col-12 mt-3">
+                  <label class="form-label small fw-bold">Maximum Occupants</label>
+                  <input type="number" v-model="form.max_size" class="form-control" />
+                </div>
+              </div>
+            </div>
+
+            <div class="card shadow-sm border-0 bg-white shadow-sm p-3">
+              <h6 class="fw-bold mb-3">Other Rules</h6>
+              <div class="mb-3">
+                <label class="form-label small">House Rules</label>
+                <textarea v-model="form.rules" class="form-control" rows="3" placeholder="e.g. No smoking..."></textarea>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label small fw-bold">Is there a curfew?</label>
+                <select v-model="form.has_curfew" class="form-select">
+                  <option :value="false">No</option>
+                  <option :value="true">Yes</option>
+                </select>
+              </div>
+
+              <div v-if="form.has_curfew" class="row g-2 animate__animated animate__fadeIn">
+                <div class="col-6">
+                  <label class="small text-muted">From</label>
+                  <input type="time" v-model="form.curfew_from" class="form-control" />
+                </div>
+                <div class="col-6">
+                  <label class="small text-muted">To</label>
+                  <input type="time" v-model="form.curfew_to" class="form-control" />
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
       </div>
-
-      <!-- Utilities/ Amenities/ Facilities Included -->
-      <div class="row mb-3 mt-3">
-
-        <div class="col-6 ">
-          <!-- Utilities -->
-          <div class="card shadow-sm mb-3">
-          <div class="card-header bg-light">
-            <label class="form-label fs-5 mb-0">Utilities</label>
-          </div>
-
-          <div class="card-body">
-            <label class="form-label d-block">Utilities Included</label>
-
-            <!-- DEFAULT UTILITIES -->
-            <div class="row">
-              <div 
-                v-for="utility in utilitiesList" 
-                :key="utility.value" 
-                class="col-md-4 col-sm-6 mb-2"
-              >
-                <div class="form-check">
-                  <input 
-                    class="form-check-input" 
-                    type="checkbox" 
-                    :id="'utility-' + utility.value" 
-                    :value="utility.value"
-                    v-model="form.utilities"
-                  />
-                  <label class="form-check-label " :for="'utility-' + utility.value">
-                    {{ utility.label }}
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <!-- DIVIDER -->
-            <hr class="my-3">
-
-            <!-- CUSTOM UTILITIES -->
-            <label class="form-label d-block">Add Other Utilities</label>
-
-            <div class="d-flex gap-2 mb-3">
-              <input
-                type="text"
-                class="form-control"
-                v-model="customUtility"
-                placeholder="e.g. Solar Backup, Free Drinking Water"
-                @keyup.enter="addCustomUtility"
-              />
-              <button
-                type="button"
-                class="btn btn-outline-primary"
-                @click="addCustomUtility"
-              >
-                Add
-              </button>
-            </div>
-
-            <!-- CUSTOM UTILITIES LIST -->
-            <div v-if="form.custom_utilities.length">
-              <span
-                v-for="(utility, index) in form.custom_utilities"
-                :key="index"
-                class="badge bg-secondary me-2 mb-2"
-              >
-                {{ utility }}
-                <button
-                  type="button"
-                  class="btn-close btn-close-white ms-2"
-                  aria-label="Remove"
-                  @click="removeCustomUtility(index)"
-                ></button>
-              </span>
-            </div>
-
-          </div>
-        </div>
-
-          <!-- Utilities End -->
-
-          <!-- Amenities -->
-          <div class="card shadow-sm mb-3">
-            <div class="card-header bg-light">
-              <label class="form-label fs-5 mb-0">Amenities</label>
-            </div>
-
-            <div class="card-body">
-              <!-- DEFAULT AMENITIES -->
-              <div class="row">
-                <div
-                  v-for="amenity in amenities"
-                  :key="amenity.id"
-                  class="col-md-6 col-sm-12 mb-2"
-                >
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      :id="'amenity-' + amenity.id"
-                      :value="amenity.id"
-                      v-model="form.property_amenities"
-                    />
-                    <label class="form-check-label" :for="'amenity-' + amenity.id">
-                      {{ amenity.amenity_name }}
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <!-- DIVIDER -->
-              <hr class="my-3">
-
-              <!-- CUSTOM AMENITIES -->
-              <label class="form-label d-block">Add Other Amenities</label>
-
-              <div class="d-flex gap-2 mb-3">
-                <input
-                  type="text"
-                  class="form-control"
-                  v-model="customAmenity"
-                  placeholder="e.g. Swimming Pool, Study Area"
-                  @keyup.enter="addCustomAmenity"
-                />
-                <button
-                  type="button"
-                  class="btn btn-outline-primary"
-                  @click="addCustomAmenity"
-                >
-                  Add
-                </button>
-              </div>
-
-              <!-- CUSTOM AMENITIES LIST -->
-              <div v-if="form.custom_amenities.length">
-                <span
-                  v-for="(amenity, index) in form.custom_amenities"
-                  :key="index"
-                  class="badge bg-secondary me-2 mb-2"
-                >
-                  {{ amenity }}
-                  <button
-                    type="button"
-                    class="btn-close btn-close-white ms-2"
-                    aria-label="Remove"
-                    @click="removeCustomAmenity(index)"
-                  ></button>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Amenities End -->
-
-           <!-- Facilities -->
-          <div class="card shadow-sm mb-3">
-            <div class="card-header bg-light">
-              <label class="form-label fs-5 mb-0">Facilities</label>
-            </div>
-            <div class="card-body">
-              <div class="row">
-                <div
-                  v-for="facility in facilities"
-                  :key="facility.id"
-                  class="col-md-6 col-sm-12 mb-2"
-                >
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      :id="'facility-' + facility.id"
-                      :value="facility.id"
-                      v-model="form.property_facilities"
-                    />
-                    <label class="form-check-label" :for="'facility-' + facility.id">
-                      {{ facility.facility_name }}
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <!-- DIVIDER -->
-              <hr class="my-3">
-
-              <!-- CUSTOM FACILITIES -->
-              <label class="form-label d-block">Add Other Facilities</label>
-
-              <div class="d-flex gap-2 mb-3">
-                <input
-                  type="text"
-                  class="form-control"
-                  v-model="customFacility"
-                  placeholder="e.g. Swimming Pool, Study Area"
-                  @keyup.enter="addCustomFacility"
-                />
-                <button
-                  type="button"
-                  class="btn btn-outline-primary"
-                  @click="addCustomFacility"
-                >
-                  Add
-                </button>
-              </div>
-
-              <!-- CUSTOM FACILITIES LIST -->
-              <div v-if="form.custom_facilities.length">
-                <span
-                  v-for="(facility, index) in form.custom_facilities"
-                  :key="index"
-                  class="badge bg-secondary me-2 mb-2"
-                >
-                  {{ facility }}
-                  <button
-                    type="button"
-                    class="btn-close btn-close-white ms-2"
-                    aria-label="Remove"
-                    @click="removeCustomFacility(index)"
-                  ></button>
-                </span>
-              </div>
-
-
-            </div>
-          </div>
-          <!-- FAcilities end -->
-        </div>
-
-        <!-- Right Fields -->
-        <div class="col-6">
-          <div class="mb-3">
-            <label class="form-label">Furnishing</label>
-            <select v-model="form.furnishing" class="form-select">
-              <option value="fully-furnished">Furnished</option>
-              <option value="semi-furnished">Semi-Furnished</option>
-              <option value="unfurnished">Unfurnished</option>
-            </select>
-          </div>
-
-          <!-- Bedrooms -->
-          <div v-if="showBedrooms" class="card shadow-sm mb-3">
-            <div class="card-header d-flex align-content-center justify-content-center bg-light">
-              <div class="input-group">
-                <label class="input-group-text fs-5 mb-0">Bedrooms</label>
-                <input
-                  type="number"
-                  min="1"
-                  v-model="form.bedrooms"
-                  class="form-control"
-                />
-              </div>
-            </div>
-
-            <div class="card-body">
-              <label class="form-label d-block">Bed Types</label>
-
-              <!-- DEFAULT UTILITIES -->
-              <div class="row">
-                <div 
-                  v-for="bed in bed_types" 
-                  :key="bed" 
-                  class="col-md-4 col-sm-6 mb-2"
-                >
-                  <div class="form-check">
-                    <input 
-                      class="form-check-input" 
-                      type="checkbox" 
-                      :id="'bed-' + bed" 
-                      :value="bed"
-                      v-model="form.bed_type"
-                    />
-                    <label class="form-check-label " :for="'bed-' + bed">
-                      {{ bed }}
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div v-if="form.bed_type.includes('Single Bed')"  class="col-6">
-                  <label class="form-label">Number of Single Bed</label>
-                  <input
-                    type="number"
-                    min="1"
-                    v-model="form.single_bed"
-                    class="form-control"
-                  />
-                </div>
-                <div v-if="form.bed_type.includes('Double Bed')"  class="col-6">
-                  <label class="form-label">Number of Double Bed</label>
-                  <input
-                    type="number"
-                    min="1"
-                    v-model="form.double_bed"
-                    class="form-control"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Bathrooms -->
-          <div v-if="showBathrooms" class="card shadow-sm mb-3">
-            <div class="card-header bg-light">
-              <label class="form-label fs-5 mb-0">Bathrooms</label>
-            </div>
-
-            <div class="card-body">
-              <label class="form-label d-block">Bathroom Types</label>
-
-              <!-- DEFAULT UTILITIES -->
-              <div class="row">
-                <div 
-                  v-for="bath in bath_types" 
-                  :key="bath" 
-                  class="col-md-4 col-sm-6 mb-2"
-                >
-                  <div class="form-check">
-                    <input 
-                      class="form-check-input" 
-                      type="checkbox" 
-                      :id="'bath-' + bath" 
-                      :value="bath"
-                      v-model="form.bath_type"
-                    />
-                    <label class="form-check-label " :for="'bath-' + bath">
-                      {{ bath }}
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div v-if="form.bath_type.includes('Private')"  class="col-6">
-                  <label class="form-label">Number of Private Bathroom</label>
-                  <input
-                    type="number"
-                    min="1"
-                    v-model="form.private_bath"
-                    class="form-control"
-                  />
-                </div>
-                <div v-if="form.bath_type.includes('Public')"  class="col-6">
-                  <label class="form-label">Number of Public Bathroom</label>
-                  <input
-                    type="number"
-                    min="1"
-                    v-model="form.public_bath"
-                    class="form-control"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Max Occupants ( Bed Space ) -->
-          <div v-if="showBedSpace" class="mb-3">
-            <label class="form-label">Maximum Occupants</label>
-            <small class="text-muted">
-              (Bed Space)
-            </small>
-            <input
-              type="number"
-              min="1"
-              v-model="form.bed_space"
-              class="form-control"
-            />
-            <small class="text-muted">
-              Total number of people allowed to stay
-            </small>
-          </div>
-
-          <!-- Floor Area -->
-          <div v-if="showSizeFiels" class="mb-3">
-            <label class="form-label">Floor Area</label>
-            <small class="text-muted">
-              (sqm)
-            </small>
-            <div class="input-group">
-              <input
-                type="number"
-                min="1"
-                v-model="form.floor_area"
-                class="form-control"
-              />
-              <span class="input-group-text">m²</span>
-            </div>
-          </div>
-
-          <!-- Lot Area -->
-          <div v-if="showSizeFiels" class="mb-3">
-            <label class="form-label">Lot Area</label>
-            <small class="text-muted">
-              (sqm)
-            </small>
-            <div class="input-group">
-              <input
-                type="number"
-                min="1"
-                v-model="form.lot_area"
-                class="form-control"
-              />
-              <span class="input-group-text">m²</span>
-            </div>
-          </div>
-
-          <!-- Max Occupants  -->
-          <div class="mb-3" v-if="showSizeFiels">
-            <label class="form-label">Maximum Occupants</label>
-            <input
-              type="number"
-              min="1"
-              v-model="form.max_size"
-              class="form-control"
-            />
-            <small class="text-muted">
-              Total number of people allowed to stay
-            </small>
-          </div>
-
-          <h5 class="mb-3">Others</h5>
-
-          <!-- Rules -->
-          <div class="mb-3">
-            <label class="form-label">Rules</label>
-            <textarea
-              v-model="form.rules"
-              class="form-control"
-              rows="3"
-              placeholder="e.g. No smoking, No loud music after 10 PM"
-            ></textarea>
-          </div>
-
-          <!-- Curfew -->
-          <div class="mb-3">
-            <label class="form-label">Is there a curfew?</label>
-            <select v-model="form.has_curfew" class="form-select">
-              <option :value="false">No</option>
-              <option :value="true">Yes</option>
-            </select>
-          </div>
-
-          <!-- CURFEW RANGE -->
-          <div v-if="form.has_curfew" class="mb-3">
-            <label class="form-label">Curfew Time</label>
-            <div class="row">
-              <div class="col-6">
-                <label class="form-label text-muted">From</label>
-                <input
-                  type="time"
-                  v-model="form.curfew_from"
-                  class="form-control"
-                />
-              </div>
-              <div class="col-6">
-                <label class="form-label text-muted">To</label>
-                <input
-                  type="time"
-                  v-model="form.curfew_to"
-                  class="form-control"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- End of right -->
-      </div>
-
-
     </div>
 
     <!-- Step 3: Price -->
-    <div v-if="step === 3" class="card p-3 shadow-sm">
+    <div v-if="step === 3" class="card border-0 shadow-sm">
+      <div class="card-header bg-white py-3 border-bottom-0">
+        <h6 class="mb-0 fw-bold text-primary">
+          <i class="bi bi-tags-fill me-2"></i>
+          {{ form.agreement_type === 'rental' ? 'Rental Pricing' : 'Lease Details' }}
+        </h6>
+        <small class="text-muted">Set your rates and contract terms.</small>
+      </div>
 
-      <!-- RENTAL PRICING -->
-      <div v-if="form.agreement_type === 'rental'">
+      <div class="card-body p-3 p-md-4">
+        
+        <div v-if="form.agreement_type === 'rental'" class="animate__animated animate__fadeIn">
+          <div class="row g-3">
+            
+            <div class="col-12 col-md-6">
+              <label class="form-label fw-semibold small text-uppercase">Payment Frequency</label>
+              <select v-model="form.payment_frequency" class="form-select border-2 shadow-none">
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="yearly">Yearly</option>
+                <option value="per_night">Per Night</option>
+                <option value="per_day">Per Day</option>
+                <option value="weekly">Weekly</option>
+              </select>
+            </div>
 
-        <h5 class="mb-3">Rental Pricing</h5>
+            <div class="col-12 col-md-6">
+              <label class="form-label fw-semibold small text-uppercase">
+                Base Price <small class="text-primary fw-bold">({{ frequecyText }})</small>
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-primary text-white border-primary">₱</span>
+                <input
+                  v-model="form.price"
+                  type="number"
+                  min="1"
+                  class="form-control border-2 shadow-none"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+            </div>
 
-        <!-- PAYMENT FREQUENCY -->
-        <div class="mb-3">
-          <label class="form-label">Payment Frequency</label>
-          <select v-model="form.payment_frequency" class="form-select">
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-            <option value="yearly">Yearly</option>
-            <option value="per_night">Per Night</option>
-            <option value="per_day">Per Day</option>
-            <option value="weekly">Weekly</option>
-          </select>
-        </div>
+            <div class="col-12">
+              <div class="p-3 rounded-3 bg-light border">
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label fw-semibold small text-uppercase">Advance Payment</label>
+                    <div class="input-group">
+                      <span class="input-group-text border-2">₱</span>
+                      <input
+                        v-model="form.advance_payment_months"
+                        type="number"
+                        min="0"
+                        class="form-control border-2 shadow-none"
+                        placeholder="Amount"
+                      />
+                    </div>
+                    <small class="text-muted mt-1 d-block">Initial payment amount</small>
+                  </div>
 
-        <!-- PRICE -->
-        <div class="mb-3">
-          <label class="form-label">
-            Price
-            <small class="text-muted">({{ frequecyText }})</small>
-          </label>
-
-          <div class="input-group">
-            <span class="input-group-text">₱</span>
-            <input
-              v-model="form.price"
-              type="number"
-              min="1"
-              class="form-control"
-              placeholder="0.00"
-              required
-            />
+                  <div class="col-12 col-md-6">
+                    <label class="form-label fw-semibold small text-uppercase">Security Deposit</label>
+                    <div class="input-group">
+                      <span class="input-group-text border-2">₱</span>
+                      <input
+                        v-model="form.deposit_required"
+                        type="number"
+                        min="0"
+                        class="form-control border-2 shadow-none"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <small class="text-muted mt-1 d-block">Refundable deposit amount</small>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- ADVANCE PAYMENT -->
-        <div class="mb-3">
-          <label class="form-label">Advance Payment</label>
-          <div class="input-group">
-            <span class="input-group-text">₱</span>
-            <input
-              v-model="form.advance_payment_months"
-              type="number"
-              min="0"
-              class="form-control"
-            />
+        <div v-if="form.agreement_type === 'lease'" class="animate__animated animate__fadeIn">
+          <div class="row g-4">
+            
+            <div class="col-12 col-md-4">
+              <label class="form-label fw-semibold small text-uppercase">Lease Term</label>
+              <div class="input-group">
+                <input
+                  v-model="form.lease_term_months"
+                  type="number"
+                  min="1"
+                  class="form-control border-2 shadow-none"
+                />
+                <span class="input-group-text border-2 bg-white text-muted">months</span>
+              </div>
+            </div>
 
-          </div>
-          <small class="text-muted">
-            Amount of money to pay in advance
-          </small>
-        </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label fw-semibold small text-uppercase">Renewal Option</label>
+              <select v-model="form.renewal_option" class="form-select border-2 shadow-none">
+                <option value="none">None</option>
+                <option value="manual">Manual Renewal</option>
+                <option value="auto">Auto Renewal</option>
+              </select>
+            </div>
 
-        <!-- SECURITY DEPOSIT -->
-        <div class="mb-3">
-          <label class="form-label">Security Deposit</label>
-          <small class="text-muted"> (Deposit)</small>
-          <div class="input-group">
-            <span class="input-group-text">₱</span>
-            <input
-              v-model="form.deposit_required"
-              type="number"
-              min="0"
-              class="form-control"
-              placeholder="0.00"
-            />
+            <div class="col-12 col-md-4">
+              <label class="form-label fw-semibold small text-uppercase">Notice Period</label>
+              <div class="input-group">
+                <input
+                  v-model="form.notice_period"
+                  type="number"
+                  min="0"
+                  class="form-control border-2 shadow-none"
+                />
+                <span class="input-group-text border-2 bg-white text-muted">days</span>
+              </div>
+              <small class="text-muted d-block mt-1">Days before move-out notice</small>
+            </div>
+
           </div>
         </div>
 
       </div>
-
-      <!-- LEASE PRICING -->
-      <div v-if="form.agreement_type === 'lease'">
-
-        <h5 class="mb-3">Lease Details</h5>
-
-        <!-- LEASE TERM -->
-        <div class="mb-3">
-          <label class="form-label">Lease Term</label>
-          <div class="input-group">
-            <input
-              v-model="form.lease_term_months"
-              type="number"
-              min="1"
-              class="form-control"
-            />
-            <span class="input-group-text">months</span>
-          </div>
-        </div>
-
-        <!-- RENEWAL OPTION -->
-        <div class="mb-3">
-          <label class="form-label">Renewal Option</label>
-          <select v-model="form.renewal_option" class="form-select">
-            <option value="none">None</option>
-            <option value="manual">Manual Renewal</option>
-            <option value="auto">Auto Renewal</option>
-          </select>
-        </div>
-
-        <!-- NOTICE PERIOD -->
-        <div class="mb-3">
-          <label class="form-label">Notice Period</label>
-          <div class="input-group">
-            <input
-              v-model="form.notice_period"
-              type="number"
-              min="0"
-              class="form-control"
-            />
-            <span class="input-group-text">days</span>
-          </div>
-        </div>
-
-      </div>
-
     </div>
-
-
-
 
     <!-- Step 4: Location Details -->
-    <div v-if="step === 4" class="card p-3 shadow-sm">
-
-    <!-- HEADER -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="mb-0">Location Details 
-        <div v-if="this.loading" class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+    <div v-if="step === 4" class="card border-0 shadow-sm overflow-hidden">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0">
+        <div>
+          <h6 class="mb-0 fw-bold text-primary">Step 4: Property Location</h6>
+          <small v-if="loading" class="text-primary animate__animated animate__pulse animate__infinite">
+            <span class="spinner-border spinner-border-sm me-1"></span> Fetching details...
+          </small>
+          <small v-else class="text-muted">Pin the exact location of your property.</small>
         </div>
-      </h5>
 
-      <button
-        class="btn btn-outline-primary btn-sm"
-        type="button"
-        @click="requestCurrentLocation"
-      >
-        📍 Use My Current Location
-      </button>
+        <button
+          class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm"
+          type="button"
+          @click="requestCurrentLocation"
+          :disabled="loading"
+        >
+          <i class="bi bi-geo-alt-fill me-1"></i> My Location
+        </button>
+      </div>
+
+      <div class="card-body p-0 p-md-3">
+        <div class="position-relative">
+          <div
+            class="property-map border-top border-bottom border-md rounded-md-3"
+            ref="propertyMap"
+            style="height: 45vh; min-height: 350px;"
+          ></div>
+          
+          <div class="position-absolute bottom-0 start-0 w-100 p-2 pointer-events-none">
+            <div class="badge bg-dark bg-opacity-75 text-wrap w-100 py-2 fw-normal">
+              <i class="bi bi-info-circle me-1"></i> Drag marker or click map to set location
+            </div>
+          </div>
+        </div>
+
+        <div class="p-3">
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="form-floating mb-2">
+                <input type="number" v-model="form.latitude" class="form-control bg-light border-0 shadow-none" id="lat" placeholder="Lat" readonly />
+                <label for="lat" class="small text-muted">Latitude</label>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="form-floating mb-2">
+                <input type="number" v-model="form.longitude" class="form-control bg-light border-0 shadow-none" id="lng" placeholder="Lng" readonly />
+                <label for="lng" class="small text-muted">Longitude</label>
+              </div>
+            </div>
+
+            <div class="col-12 mt-2">
+              <div class="card bg-light border-0 rounded-3 p-2">
+                <div class="row g-2">
+                  <div class="col-6 col-md-3">
+                    <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Region</label>
+                    <input type="text" v-model="form.region_name" class="form-control-plaintext py-0 fw-semibold" readonly />
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">State</label>
+                    <input type="text" v-model="form.state_name" class="form-control-plaintext py-0 fw-semibold" readonly />
+                  </div>
+                  <div class="col-6 col-md-3 border-top border-md-top-0 pt-2 pt-md-0">
+                    <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Town</label>
+                    <input type="text" v-model="form.town_name" class="form-control-plaintext py-0 fw-semibold" readonly />
+                  </div>
+                  <div class="col-6 col-md-3 border-top border-md-top-0 pt-2 pt-md-0">
+                    <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Village</label>
+                    <input type="text" v-model="form.village_name" class="form-control-plaintext py-0 fw-semibold" readonly />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <!-- MAP -->
-    <div class="mb-3">
-      <div
-        class="rounded border"
-        ref="propertyMap"
-        style="height: 60vh;"
-      ></div>
-      <small class="text-muted">
-        Drag the marker or click on the map to adjust the exact location.
-      </small>
-    </div>
-
-    <!-- LOCATION DETAILS -->
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label class="form-label">Latitude</label>
-        <input type="number" v-model="form.latitude" class="form-control" readonly />
-      </div>
-      <div class="col-md-6 mb-3">
-        <label class="form-label">Longitude</label>
-        <input type="number" v-model="form.longitude" class="form-control" readonly />
-      </div>
-
-      <div class="col-md-3 mb-3">
-        <label class="form-label">Region</label>
-        <input type="text" v-model="form.region_name" class="form-control" readonly />
-      </div>
-      <div class="col-md-3 mb-3">
-        <label class="form-label">State</label>
-        <input type="text" v-model="form.state_name" class="form-control" readonly />
-      </div>
-      <div class="col-md-3 mb-3">
-        <label class="form-label">Town</label>
-        <input type="text" v-model="form.town_name" class="form-control" readonly />
-      </div>
-      <div class="col-md-3 mb-3">
-        <label class="form-label">Village</label>
-        <input type="text" v-model="form.village_name" class="form-control" readonly />
-      </div>
-    </div>
-
-  </div>
 
 
       <!-- Final Step: Review and Submit -->
-    <div v-if="step === 5" class="card p-3 shadow-sm">
-      <h5 class="mb-3">📋 Review Your Property Details</h5>
-
-      <div class="table-responsive">
-        <table class="table table-bordered align-middle">
-          <tbody>
-            <tr>
-              <th>Title</th>
-              <td>{{ form.title }}</td>
-            </tr>
-            <tr>
-              <th>Description</th>
-              <td>{{ form.description }}</td>
-            </tr>
-            <tr>
-              <th>Agreement Type</th>
-              <td>{{ form.agreement_type }}</td>
-            </tr>
-            <tr>
-              <th>Property Type</th>
-              <td>
-                {{ property_types.find(p => p.id === form.property_type_id)?.type_name || 'N/A' }}
-              </td>
-            </tr>
-            <tr>
-              <th>Price</th>
-              <td>₱{{ form.price?.toLocaleString() }}</td>
-            </tr>
-            <tr v-if="form.agreement_type === 'rental'">
-              <th>Advance Payment</th>
-              <td>{{ form.advance_payment_months || 0 }} month(s)</td>
-            </tr>
-            <tr v-if="form.agreement_type === 'rental'">
-              <th>Deposit Required</th>
-              <td>{{ form.deposit_required || 0 }}</td>
-            </tr>
-            <tr v-if="form.agreement_type === 'rental'">
-              <th>Payment Frequency</th>
-              <td>{{ form.payment_frequency }}</td>
-            </tr>
-            <tr v-if="form.agreement_type === 'lease'">
-              <th>Lease Term</th>
-              <td>{{ form.lease_term_months || 0 }} month(s)</td>
-            </tr>
-            <tr v-if="form.agreement_type === 'lease'">
-              <th>Renewal Option</th>
-              <td>{{ form.renewal_option }}</td>
-            </tr>
-            <tr v-if="form.agreement_type === 'lease'">
-              <th>Notice Period</th>
-              <td>{{ form.notice_period || 0 }} day(s)</td>
-            </tr>
-            <tr>
-              <th>Furnishing</th>
-              <td>{{ form.furnishing?.replace('-', ' ') || 'N/A' }}</td>
-            </tr>
-            <tr>
-              <th>Parking</th>
-              <td>{{ form.parking ? 'Yes' : 'No' }}</td>
-            </tr>
-            <tr>
-              <th>Utilities</th>
-              <td>
-                <span v-if="form.utilities && form.utilities.length">
-                  {{ form.utilities.join(', ') }}
-                </span>
-                <span v-else>No utilities selected</span>
-              </td>
-            </tr>
-            <tr>
-              <th>Amenities</th>
-              <td>
-                <span v-if="form.property_amenities.length">
-                  {{ form.property_amenities.length }} selected
-                </span>
-                <span v-else>None</span>
-              </td>
-            </tr>
-            <tr>
-              <th>Facilities</th>
-              <td>
-                <span v-if="form.property_facilities.length">
-                  {{ form.property_facilities.length }} selected
-                </span>
-                <span v-else>None</span>
-              </td>
-            </tr>
-            <tr>
-              <th>Rules</th>
-              <td>{{ form.rules || 'N/A' }}</td>
-            </tr>
-            <tr>
-              <th>Curfew</th>
-              <td>
-                <span v-if="form.has_curfew">Yes ({{ form.curfew_time }})</span>
-                <span v-else>No</span>
-              </td>
-            </tr>
-            <tr>
-              <th>Location</th>
-              <td>
-                {{ this.form.region_name }},
-                {{ this.form.state_name }},
-                {{ this.form.town_name }},
-                {{ this.form.village_name }}
-              </td>
-            </tr>
-            <tr>
-              <th>Coordinates</th>
-              <td>Lat: {{ form.latitude }} | Lng: {{ form.longitude }}</td>
-            </tr>
-            <tr>
-              <th>Images</th>
-              <td>
-                <span v-if="form.thumbnail">✅ Thumbnail selected</span><br />
-                <span>{{ form.images.length }} additional image(s)</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <div v-if="step === 5" class="card border-0 shadow-sm animate__animated animate__fadeIn">
+      <div class="card-header bg-white py-3">
+        <h6 class="mb-0 fw-bold text-success">
+          <i class="bi bi-clipboard-check-fill me-2"></i> Review Your Property Details
+        </h6>
+        <small class="text-muted">Please double-check everything before submitting.</small>
       </div>
 
-      <div class="text-end">
-        <button class="btn btn-success px-4" @click="validateForm">
-          <i class="bi bi-check-circle"></i> Submit Property
-        </button>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-4" style="width: 30%;">Field</th>
+                <th class="pe-4">Information</th>
+              </tr>
+            </thead>
+            <tbody class="border-top-0">
+              <tr>
+                <th class="ps-4 small text-uppercase text-muted">Title</th>
+                <td class="pe-4 fw-bold text-dark">{{ form.title }}</td>
+              </tr>
+              <tr>
+                <th class="ps-4 small text-uppercase text-muted">Description</th>
+                <td class="pe-4 small text-wrap" style="max-width: 250px;">{{ form.description }}</td>
+              </tr>
+
+              <tr class="table-primary-subtle">
+                <th class="ps-4 small text-uppercase text-muted">Agreement & Type</th>
+                <td class="pe-4">
+                  <span class="badge bg-primary me-2">{{ form.agreement_type }}</span>
+                  <span class="fw-semibold">
+                    {{ property_types.find(p => p.id === form.property_type_id)?.type_name || 'N/A' }}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <th class="ps-4 small text-uppercase text-muted">Pricing</th>
+                <td class="pe-4">
+                  <span class="h6 mb-0 fw-bold text-success">₱{{ form.price?.toLocaleString() }}</span>
+                  <small class="text-muted"> / {{ form.payment_frequency }}</small>
+                </td>
+              </tr>
+
+              <template v-if="form.agreement_type === 'rental'">
+                <tr>
+                  <th class="ps-4 small text-uppercase text-muted">Advance Payment</th>
+                  <td class="pe-4">{{ form.advance_payment_months || 0 }} month(s)</td>
+                </tr>
+                <tr>
+                  <th class="ps-4 small text-uppercase text-muted">Deposit Required</th>
+                  <td class="pe-4">₱{{ form.deposit_required?.toLocaleString() || 0 }}</td>
+                </tr>
+              </template>
+
+              <template v-if="form.agreement_type === 'lease'">
+                <tr>
+                  <th class="ps-4 small text-uppercase text-muted">Lease Term</th>
+                  <td class="pe-4">{{ form.lease_term_months || 0 }} month(s)</td>
+                </tr>
+                <tr>
+                  <th class="ps-4 small text-uppercase text-muted">Renewal</th>
+                  <td class="pe-4 text-capitalize">{{ form.renewal_option }}</td>
+                </tr>
+                <tr>
+                  <th class="ps-4 small text-uppercase text-muted">Notice Period</th>
+                  <td class="pe-4">{{ form.notice_period || 0 }} day(s)</td>
+                </tr>
+              </template>
+
+              <tr>
+                <th class="ps-4 small text-uppercase text-muted">Furnishing & Parking</th>
+                <td class="pe-4">
+                  <span class="text-capitalize">{{ form.furnishing?.replace('-', ' ') || 'N/A' }}</span> 
+                  <span class="text-muted mx-2">|</span>
+                  <span :class="form.parking ? 'text-success' : 'text-danger'">
+                    {{ form.parking ? 'Parking Available' : 'No Parking' }}
+                  </span>
+                </td>
+              </tr>
+
+              <tr>
+                <th class="ps-4 small text-uppercase text-muted">Inclusions</th>
+                <td class="pe-4">
+                  <div class="d-flex flex-wrap gap-1">
+                    <span v-if="form.utilities && form.utilities.length" class="badge rounded-pill bg-light text-dark border">
+                      {{ form.utilities.length }} Utilities
+                    </span>
+                    <span v-if="form.property_amenities.length" class="badge rounded-pill bg-light text-dark border">
+                      {{ form.property_amenities.length }} Amenities
+                    </span>
+                    <span v-if="form.property_facilities.length" class="badge rounded-pill bg-light text-dark border">
+                      {{ form.property_facilities.length }} Facilities
+                    </span>
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <th class="ps-4 small text-uppercase text-muted">House Rules</th>
+                <td class="pe-4 small">
+                  <i v-if="form.has_curfew" class="bi bi-clock text-warning me-1"></i>
+                  <span v-if="form.has_curfew" class="me-2 text-dark fw-bold">Curfew: {{ form.curfew_time }}</span>
+                  <span class="text-muted">{{ form.rules || 'No specific rules set' }}</span>
+                </td>
+              </tr>
+
+              <tr class="table-light">
+                <th class="ps-4 small text-uppercase text-muted">Location</th>
+                <td class="pe-4 small py-3">
+                  <div class="fw-bold text-dark">
+                    {{ form.village_name }}, {{ form.town_name }}
+                  </div>
+                  <div class="text-muted">
+                    {{ form.state_name }}, {{ form.region_name }}
+                  </div>
+                  <div class="smaller text-muted mt-1">
+                    Lat: {{ form.latitude }} | Lng: {{ form.longitude }}
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <th class="ps-4 small text-uppercase text-muted">Photos</th>
+                <td class="pe-4">
+                  <div class="d-flex align-items-center gap-3">
+                    <div v-if="form.thumbnail" class="text-success small">
+                      <i class="bi bi-image-fill"></i> Thumbnail Ready
+                    </div>
+                    <div class="text-primary small fw-bold">
+                      <i class="bi bi-images"></i> {{ form.images.length }} Gallery Photos
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-footer bg-white py-3 border-top-0">
+        <div class="d-grid gap-2">
+          <button v-if="!loading" class="btn btn-success btn-lg shadow-sm py-3 fw-bold" @click="validateForm">
+            <i class="bi bi-cloud-arrow-up-fill me-2"></i> SUBMIT PROPERTY
+          </button>
+          <button v-else-if="loading" disabled class="btn btn-success btn-lg shadow-sm py-3 fw-bold">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </button>
+          <button class="btn btn-link btn-sm text-muted text-decoration-none" @click="step = 4">
+            Go back and edit
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1131,6 +976,7 @@ export default {
     },
 
     async validateForm() {
+      this.loading = true;  
       try {
         // Title & Description
         if (!this.form.title || this.form.title.trim() === "") {
@@ -1269,6 +1115,8 @@ export default {
           console.error("Error submitting property:", error);
           alert("Something went wrong. Check console.");
         }
+      } finally {
+        this.loading = false;
       }
     },
 
@@ -1587,6 +1435,34 @@ export default {
 <style scoped>
 /* Add custom styles here for better UX */
 
+/* Custom styling for Step 4 */
+.smaller {
+  font-size: 0.65rem;
+}
+
+.form-control-plaintext {
+  outline: none;
+  font-size: 0.9rem;
+}
+
+.pointer-events-none {
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  /* On mobile, remove card padding to give more room to the map */
+  .property-map {
+    border-left: 0;
+    border-right: 0;
+  }
+}
+
+/* Floating labels adjustments for readonly */
+.form-floating > .form-control:focus ~ label, 
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+  transform: scale(.85) translateY(-0.75rem) translateX(0.15rem);
+}
+
 
 .card-header {
   background-color: #f1f1f1;
@@ -1609,5 +1485,40 @@ button {
 button:focus {
   outline: none;
   box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+/* Better touch experience for checkboxes on mobile */
+.custom-check {
+  background: #ffffff;
+  border: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.custom-check:hover {
+  border-color: #0d6efd;
+  background-color: #f1f6ff;
+}
+
+.form-check-input:checked + .form-check-label {
+  color: #0d6efd;
+  font-weight: bold;
+}
+
+/* Accordion Styling */
+.accordion-button:not(.collapsed) {
+  background-color: #e7f1ff;
+  color: #0d6efd;
+}
+
+.accordion-button::after {
+  background-size: 1rem;
+}
+
+/* Scrollable container if list is too long */
+.accordion-body {
+  max-height: 300px;
+  overflow-y: auto;
 }
 </style>

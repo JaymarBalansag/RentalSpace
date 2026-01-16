@@ -62,7 +62,7 @@
           <label class="form-label small fw-bold text-muted">Select Bill to Pay</label>
           <select class="form-select" v-model="paymentForm.billing_id">
             <option v-for="bill in unpaidBillings" :key="bill.id" :value="bill.id">
-              {{ bill.rent_cycle }} Rent - ₱{{ formatAmount(bill.rent_amount) }}
+              {{ toTitle(bill.rent_cycle) }} Rent - ₱{{ formatAmount(bill.rent_amount) }}
             </option>
           </select>
         </div>
@@ -178,6 +178,9 @@ export default {
     this.fetchMyData();
   },
   methods: {
+    toTitle(text){
+      return text ? text.charAt(0).toUpperCase() + text.slice(1) : "asd";
+    },
     async fetchMyData() {
       try {
         const res = await getMyBillings();

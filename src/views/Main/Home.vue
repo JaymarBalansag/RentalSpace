@@ -268,17 +268,56 @@
             >
               <div class="accordion-body">
                 <!-- Price inputs -->
-                 <div class="form-check" v-for="(range, index) in priceRanges" :key="index">
-                  <input
-                    class="form-check-input"
-                    type="radio"
-                    :id="'price-' + index"
-                    :value="range"
-                    v-model="selectedPriceRange"
-                  />
-                  <label class="form-check-label" :for="'price-' + index">
-                    {{ range.label }}
-                  </label>
+                <div class="p-3 border rounded shadow-sm bg-white mb-4">
+                  <h5 class="fw-bold mb-3" style="font-size: 1rem;">Price Range</h5>
+                  
+                  <div class="row g-2 mb-3">
+                    <div class="col-6">
+                      <label class="form-label small text-muted mb-1">Min Price</label>
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light text-secondary">$</span>
+                        <input 
+                          type="number" 
+                          v-model.number="min_price" 
+                          class="form-control" 
+                          placeholder="0"
+                          @keyup.enter="applyPriceFilter"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="col-6">
+                      <label class="form-label small text-muted mb-1">Max Price</label>
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light text-secondary">$</span>
+                        <input 
+                          type="number" 
+                          v-model.number="max_price" 
+                          class="form-control" 
+                          placeholder="Any"
+                          @keyup.enter="applyPriceFilter"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="d-flex gap-2">
+                    <button 
+                      @click="applyPriceFilter" 
+                      class="btn btn-primary btn-sm flex-grow-1 fw-bold"
+                    >
+                      Apply Filter
+                    </button>
+                    
+                    <button 
+                      @click="resetPriceFilter" 
+                      class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center"
+                      style="width: 40px;"
+                      title="Reset Price"
+                    >
+                      <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -389,7 +428,7 @@
                 <div class="col-md-4">
                   <div class="ratio ratio-16x9 h-md-100">
                     <img
-                      :src="property.image_url"
+                      :src="property.image_url || placeholderImg"
                       @error="$event.target.src = placeholderImg"
                       class="w-100 h-100 object-fit-cover"
                       alt="Property"
@@ -614,6 +653,7 @@ export default {
     async getProperties(page = 1) {
       this.loading = true;
       try {
+        this.properties = [];
         const response = await getProperties(page);
 
         const paginated = response.data.properties;
@@ -668,6 +708,7 @@ export default {
     async getFilteredProperties(page = 1) {
       this.loading = true;
       try {
+        this.properties = [];
         const response = await getFilteredProperties(
           this.selectedAmenities,
           this.selectedFacilities,

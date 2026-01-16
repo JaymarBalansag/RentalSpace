@@ -57,7 +57,7 @@
 
           <div class="position-relative overflow-hidden rounded-top" style="height: 200px;">
             <img 
-              :src="property.image_url" 
+              :src="property.image_url || placeholderImg" 
               @error="$event.target.src = placeholderImg" 
               class="card-img-top w-100 h-100 object-fit-cover transition-transform" 
               alt="Property"

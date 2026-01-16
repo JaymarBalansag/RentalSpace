@@ -42,7 +42,7 @@
         <div class="d-flex flex-wrap gap-2 mb-4">
           <div class="stat-pill"><i class="bi bi-house me-2"></i>{{ property.type_name }}</div>
           <div class="stat-pill"><i class="bi bi-file-earmark-text me-2"></i>{{ toTitle(property.agreement_type) }}</div>
-          <div class="stat-pill"><i class="bi bi-clock me-2"></i>{{ property.payment_frequency }}</div>
+          <div class="stat-pill"><i class="bi bi-clock me-2"></i>{{ toTitle(property.payment_frequency) }}</div>
         </div>
 
         <div class="row g-3 mb-4">
@@ -69,7 +69,7 @@
         <div class="card border-0 shadow-lg rounded-4 p-4">
           <h1 class="h3 fw-bold text-dark mb-1">{{ property.title }}</h1>
           <p class="text-success h2 fw-bold mb-4">
-            ₱{{ property.price }} <span class="fs-6 text-muted fw-normal">/ {{ property.payment_frequency }}</span>
+            ₱{{ property.price }} <span class="fs-6 text-muted fw-normal">/ {{ toTitle(property.payment_frequency) }}</span>
           </p>
 
           <div class="mb-4">
@@ -176,7 +176,7 @@
           <div v-if="property_type === 'Boarding House'" class="d-grid gap-3">
             <div>
               <label class="form-label small fw-bold">Stay Duration</label>
-              <select v-model="agreement.stay_months" class="form-select rounded-3">
+              <select required v-model="agreement.stay_months" class="form-select rounded-3">
                 <option value="1">1 month</option>
                 <option value="3">3 months</option>
                 <option value="6">6 months</option>
@@ -187,37 +187,37 @@
             </div>
             <div>
               <label class="form-label small fw-bold">Move-in Date</label>
-              <input type="date" v-model="agreement.move_in_date" class="form-control rounded-3" />
+              <input type="date" required v-model="agreement.move_in_date" class="form-control rounded-3" />
             </div>
           </div>
 
           <div v-else-if="['Apartment', 'Condo', 'House'].includes(property_type)" class="d-grid gap-3">
             <div>
               <label class="form-label small fw-bold">Lease Duration (Months)</label>
-              <input type="number" v-model="agreement.lease_duration" min="1" class="form-control rounded-3" />
+              <input type="number" required v-model="agreement.lease_duration" min="1" class="form-control rounded-3" />
             </div>
             <div>
               <label class="form-label small fw-bold">Number of Occupants</label>
-              <input type="number" v-model="agreement.occupant_num" min="1" class="form-control rounded-3" />
+              <input type="number" required v-model="agreement.occupant_num" min="1" class="form-control rounded-3" />
             </div>
             <div>
               <label class="form-label small fw-bold">Move-in Date</label>
-              <input type="date" v-model="agreement.move_in_date" class="form-control rounded-3" />
+              <input type="date" required v-model="agreement.move_in_date" class="form-control rounded-3" />
             </div>
           </div>
 
           <div v-else-if="property_type === 'Commercial Space'" class="d-grid gap-3">
             <div>
               <label class="form-label small fw-bold">Lease Duration (Months)</label>
-              <input type="number" v-model="agreement.lease_duration" min="1" class="form-control rounded-3" />
+              <input type="number" required v-model="agreement.lease_duration" min="1" class="form-control rounded-3" />
             </div>
             <div>
               <label class="form-label small fw-bold">Area Needed (sqm)</label>
-              <input type="number" v-model="agreement.occupant_num" min="1" class="form-control rounded-3" />
+              <input type="number" required v-model="agreement.occupant_num" min="1" class="form-control rounded-3" />
             </div>
             <div>
               <label class="form-label small fw-bold">Move-in Date</label>
-              <input type="date" v-model="agreement.move_in_date" class="form-control rounded-3" />
+              <input type="date" required v-model="agreement.move_in_date" class="form-control rounded-3" />
             </div>
           </div>
 
@@ -300,6 +300,9 @@ export default {
     };
   },
   methods: {
+    closeConfirmModal() {
+      this.showConfirmModal = false;
+    },
     toTitle(text){
       return text ? text.charAt(0).toUpperCase() + text.slice(1) : "asd";
     },
@@ -312,6 +315,7 @@ export default {
       try {
         const id = this.$route.params.id;
         const response = await getPropertyById(id);
+        console.log(response)
         this.property = response.data.property;
         this.property_type = response.data.property.type_name;
         this.property_type_id = response.data.property.type_id;
@@ -329,9 +333,17 @@ export default {
       this.agreement = { agreement: false, notes: "", move_in_date: "" };
       this.showUserAgreementModal = true;
     },
-    closeAgreementModal() { this.showUserAgreementModal = false; },
+    closeAgreementModal() {
+       this.showUserAgreementModal = false; 
+    },
     validateAgreement() {
-      if (!this.agreement.agreement) return alert("Please check the agreement box.");
+      const { move_in_date, stay_months, occupant_num, agreement } = this.agreement;
+
+      if (!agreement) {
+        return alert("Please check the agreement box.");
+      }
+
+      // If all checks pass:
       this.showUserAgreementModal = false;
       this.showConfirmModal = true;
     },
@@ -341,7 +353,8 @@ export default {
         alert(response.data.message || "Booking request submitted!");
         this.showConfirmModal = false;
       } catch (error) {
-        alert(error.data?.message || "Something went wrong.");
+        console.log(error)
+        alert(error.data?.error || "Something went wrong.");
       }
     },
     async contactOwner(receiver_id, property_id) {

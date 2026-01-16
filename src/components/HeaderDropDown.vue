@@ -30,6 +30,9 @@
       <template v-else-if="roleIs === 'admin'">
         <li><RouterLink class="dropdown-item" to="/admin/admin"><i class="bi bi-shield-lock"></i> Admin Panel</RouterLink></li>
       </template>
+      <template v-else-if="roleIs === 'tenants'">
+        <li><RouterLink class="dropdown-item" to="/tenant/dashboard"><i class="bi bi-shield-lock"></i> Tenant Dashboard</RouterLink></li>
+      </template>
 
       <li><hr class="dropdown-divider"></li>
       <li><RouterLink class="dropdown-item" to="/messages"><i class="bi bi-chat"></i> Messages</RouterLink></li>

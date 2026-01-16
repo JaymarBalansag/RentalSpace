@@ -1,9 +1,9 @@
 <template>
 
   <!-- Success Toast -->
-  <successToast v-if="showSuccess" message="🎉 Register successful! Please log in."></successToast>
-
+  
   <Header></Header>
+  <successToast v-if="showSuccess" message="🎉 Register successful! Please log in."></successToast>
 
   <div class="auth-container d-flex align-items-center justify-content-center vh-100">
     <div class="card shadow-lg border-0 rounded-4 auth-card">

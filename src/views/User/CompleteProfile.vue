@@ -111,8 +111,14 @@
             Next
           </button>
 
-          <button v-if="step === 4" class="btn btn-success ms-auto" @click="validateSubmitProfile">
-            Finish
+          <button 
+            v-if="step === 4" 
+            :disabled="loading" 
+            class="btn btn-success ms-auto d-flex align-items-center gap-2" 
+            @click="validateSubmitProfile"
+          >
+            <span v-if="loading" class="spinner-border spinner-border-sm" role="status"></span>
+            {{ loading ? 'Saving...' : 'Finish' }}
           </button>
         </div>
       </div>
@@ -168,6 +174,7 @@ export default {
       showConfirmModal: false,
       loading: false,
       timeoutId: null,
+      loading: false,
 
       form: {
         first_name: "",
@@ -308,6 +315,7 @@ export default {
     },
 
     async submitProfile() {
+      this.loading = true;
       this.showConfirmModal = false;
       const fd = new FormData();
       Object.entries(this.form).forEach(([k, v]) => v && fd.append(k, v));
@@ -315,6 +323,7 @@ export default {
       alert("Profile completed successfully!");
       const info = useUserInfo();
       await info.completeProfileInPage(this.form.first_name, this.form.last_name, this.previewImg);
+      this.loading = false;
       this.$router.push("/profile");
     },
   },

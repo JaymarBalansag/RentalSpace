@@ -105,7 +105,7 @@
                 <label class="form-label fw-bold small">Agreement Type <span class="text-danger">*</span></label>
                 <select v-model="form.agreement_type" class="form-select border-2">
                   <option value="rental">Rental</option>
-                  <option value="lease">Lease</option>
+                  <option disabled value="lease">Lease </option>
                 </select>
               </div>
               <div class="col-12 col-md-6">
@@ -625,10 +625,6 @@
                 <th class="ps-4 small text-uppercase text-muted">Furnishing & Parking</th>
                 <td class="pe-4">
                   <span class="text-capitalize">{{ form.furnishing?.replace('-', ' ') || 'N/A' }}</span> 
-                  <span class="text-muted mx-2">|</span>
-                  <span :class="form.parking ? 'text-success' : 'text-danger'">
-                    {{ form.parking ? 'Parking Available' : 'No Parking' }}
-                  </span>
                 </td>
               </tr>
 
@@ -953,9 +949,11 @@ export default {
         if(this.selectedPropertyName === "Commercial Space"){
           if(this.form.floor_area <= 0){
             alert("Atleast specify floor area greater than 0 for Commercial Spaces")
+            return
           }
           if(this.form.lot_area <= 0){
             alert("Atleast specify lot area greater than 0 for Commercial Spaces")
+            return
           }
         }
 

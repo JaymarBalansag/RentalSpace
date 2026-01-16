@@ -11,30 +11,31 @@ export async function   getPendingUserBookings() {
 }
 
 export async function submitAgreement(agreement, property_id) {
+    // Transform "custom" months if necessary
+    const stayMonths = agreement.stay_months === "custom" 
+        ? agreement.custom_months 
+        : agreement.stay_months;
+
+    const payload = {
+        property_id: property_id,
+        stay_months: stayMonths,
+        occupant_num: agreement.occupant_num,
+        lease_duration: agreement.lease_duration,
+        park_needed: agreement.park_needed,
+        move_in_date: agreement.move_in_date,
+        room_preference: agreement.room_preference,
+        notes: agreement.notes,
+        agreement: agreement.agreement,
+    };
+
     try {
-        let payload = {
-            property_id: property_id,
-            stay_months: agreement.stay_months === "custom" ? agreement.custom_months : agreement.stay_months,
-            occupant_num: agreement.occupant_num,
-            lease_duration: agreement.lease_duration,
-            park_needed: agreement.park_needed,
-            move_in_date: agreement.move_in_date,
-            room_preference: agreement.room_preference,
-            notes: agreement.notes,
-            agreement: agreement.agreement,
-        }
-
-        if (!payload.agreement) {
-            // Throw an error format that matches Axios so your catch block works
-            throw { response: { status: 422, data: { error: "Please check agreement" } } };
-        }
-
         return await api.post("/bookings/submit_booking", payload);
     } catch (error) {
-        // IMPORTANT: Re-throw or return the specific response so the component can read status
+        // Axios error responses are usually in error.response
         throw error.response || error;
     }
 }
+
 
 export async function approveBooking(booking_id){
     try {

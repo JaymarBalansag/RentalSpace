@@ -3,7 +3,7 @@
 
   <div class="container py-4" style="max-width: 700px;">
     <!-- Back Button -->
-    <RouterLink to="/" class="btn btn-outline-secondary mb-3">
+    <RouterLink to="/home" class="btn btn-outline-secondary mb-3">
       <i class="bi bi-arrow-left me-1"></i> Back
     </RouterLink>
 

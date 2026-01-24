@@ -1,70 +1,83 @@
 <template>
-
-  <!-- Success Toast -->
+  <Header />
   
-  <Header></Header>
-  <successToast v-if="showSuccess" message="🎉 Register successful! Please log in."></successToast>
+  <successToast v-if="showSuccess" message="🎉 Registration successful! Please log in."></successToast>
 
-  <div class="auth-container d-flex align-items-center justify-content-center vh-100">
-    <div class="card shadow-lg border-0 rounded-4 auth-card">
-      <!-- Logo -->
-      <div class="text-center mb-4">
-        <img src="@/assets/logo.jpg" alt="RentaSpace Logo" class="img-fluid mb-2" style="max-width: 80px;">
-        <h3 class="fw-bold text-primary">Renta Hub</h3>
-        <p class="text-muted small">Find your perfect rental space</p>
-      </div>
+  <div class="auth-container d-flex align-items-center justify-content-center min-vh-100 py-5 px-3">
+    <div class="card shadow-lg border-0 rounded-4 auth-card overflow-hidden">
+      <div class="auth-accent-line"></div>
 
-      <!-- Login Form -->
-      <form @submit.prevent="handleLogin">
-        <div class="mb-3">
-          <input 
-            type="email" 
-            class="form-control form-control-lg rounded-3" 
-            placeholder="Email Address" 
-            v-model="form.email" 
-            required
-          >
+      <div class="card-body p-4 p-md-5">
+        <div class="text-center mb-4">
+          <div class="logo-wrapper mb-3 mx-auto shadow-sm">
+             <i class="bi bi-house-heart-fill text-primary fs-1"></i>
+          </div>
+          <h3 class="fw-bold text-dark mb-1">Welcome</h3>
+          <p class="text-muted small">Enter your credentials to access RentaHub</p>
         </div>
-        <div class="position-relative mb-3">
-          <input
-            :type="showPassword ? 'text' : 'password'"
-            v-model="form.password"
-            class="form-control pe-5 form-control-lg rounded-3"
-            placeholder="Password"
-          />
+
+        <form @submit.prevent="handleLogin">
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Email Address</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 rounded-start-3">
+                <i class="bi bi-person text-muted"></i>
+              </span>
+              <input 
+                type="email" 
+                class="form-control rounded-end-3 shadow-none border-start-0 custom-input" 
+                placeholder="name@email.com" 
+                v-model="form.email" 
+                required
+              >
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="form-label small fw-bold text-secondary">Password</label>
+              </div>
+            <div class="position-relative">
+              <input
+                :type="showPassword ? 'text' : 'password'"
+                v-model="form.password"
+                class="form-control rounded-3 shadow-none pe-5 custom-input"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2 text-muted text-decoration-none"
+                @click="showPassword = !showPassword"
+              >
+                <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+              </button>
+            </div>
+          </div>
 
           <button
-            v-if="form.password"
-            type="button"
-            class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2"
-            @click="showPassword = !showPassword"
+            type="submit"
+            class="btn btn-primary w-100 rounded-3 py-3 fw-bold shadow-sm submit-btn d-flex align-items-center justify-content-center"
+            :disabled="loading"
           >
-            <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            <span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            {{ loading ? 'Signing in...' : 'Login' }}
           </button>
+        </form>
+
+        <div class="d-flex align-items-center my-4">
+          <hr class="flex-grow-1 text-muted opacity-25">
+          <span class="px-3 text-muted small fw-bold">OR</span>
+          <hr class="flex-grow-1 text-muted opacity-25">
         </div>
-        <button
-          type="submit"
-          class="btn btn-primary w-100 rounded-3 py-2 fw-bold"
-          :class="{ disabled: loading }"
-          :disabled="loading"
-        >
-          <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-          Login
-        </button>
-      </form>
 
-      <!-- Divider -->
-      <div class="d-flex align-items-center my-3">
-        <hr class="flex-grow-1">
-        <span class="px-2 text-muted">OR</span>
-        <hr class="flex-grow-1">
+        <p class="text-center mb-0 small">
+          Don’t have an account? 
+          <router-link to="/register" class="fw-bold text-primary text-decoration-none hover-underline">
+            Create an account
+          </router-link>
+        </p>
       </div>
-
-      <!-- Register link -->
-      <p class="text-center mb-0">
-        Don’t have an account? 
-        <router-link to="/register" class="fw-semibold text-primary">Register</router-link>
-      </p>
     </div>
   </div>
 </template>
@@ -75,7 +88,6 @@ import { useUserInfo } from '@/store/userInfo';
 import successToast from '@/components/successToast.vue';
 import { getUserProfile } from '@/api/user';
 import Header from '@/components/Header.vue';
-
 
 export default {
   name: "Login",
@@ -97,61 +109,133 @@ export default {
       this.loading = true;
       try {
         const res = await login(this.form.email, this.form.password);
-        if (res && res.first_name) {
-
-          // fetch profile image right after login
+        console.log(res)
+        // Ensure res has data before proceeding
+        if (res) {
+          // Fetch profile image right after login for the Header display
           const profileRes = await getUserProfile();
-          const data = profileRes.data.user[0];
-          const profile_photo = data.user_img_url || null;
+          const userData = profileRes.data.user[0];
+          const profile_photo = userData.user_img_url || null;
 
-          info.setUserInfo(res.first_name, res.last_name, res.role, res.email, profile_photo );
+          // Update Global State
+          info.setUserInfo(
+            res.first_name, 
+            res.last_name, 
+            res.role, 
+            res.email, 
+            profile_photo,
+            res.email_verified_at, 
+          );
+
+
+          console.log(info.first_name, info.last_name, info.role, info.email, info.email_verified_at);
+
+
+          if(res.email_verified_at === null){
+            this.$router.push("/reverify-email");
+            return;
+          }
 
           sessionStorage.setItem("loginSuccess", "true");
 
-
           this.$router.push("/home");
         } else {
-          alert("Invalid credentials");
+          alert("Invalid credentials. Please check your email and password.");
         }
       } catch (error) {
-        alert(error.response?.data?.message || "Something went wrong");
+        alert(error.response?.data?.message || "Something went wrong during login.");
       } finally {
         this.loading = false;
       }
-    },
-    registerSuccessToast() {
-      const toastEl = this.$refs.successToast;
-      
-      toastEl.classList.add("show");
-
-      setTimeout(() => {
-        toastEl.classList.remove("show");
-      }, 4000);
-
-      sessionStorage.removeItem("registerSuccess");
     }
   },
   mounted() {
-
+    // Check if user just registered
     const registerSuccess = sessionStorage.getItem("registerSuccess");
-
-    if(registerSuccess){
+    if (registerSuccess) {
       this.showSuccess = true;
-      sessionStorage.removeItem("registerSuccess")
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => {
+        this.showSuccess = false;
+      }, 5000);
+      sessionStorage.removeItem("registerSuccess");
     }
-
   }
 };
 </script>
 
 <style scoped>
+/* Matching Register Page Theme */
 .auth-container {
-  background: linear-gradient(135deg, #f8f9fa, #eef3f9);
+  background-color: #f4f7fe;
+  background-image: radial-gradient(#4780d9 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
 }
 
 .auth-card {
   width: 100%;
-  max-width: 380px;
-  padding: 2rem;
+  max-width: 420px;
+  background: white;
+}
+
+.auth-accent-line {
+  height: 6px;
+  background: linear-gradient(90deg, #4780d9, #ffd166);
+}
+
+.logo-wrapper {
+  width: 64px;
+  height: 64px;
+  background: #f0f7ff;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-input {
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #e2e8f0;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.custom-input:focus {
+  border-color: #4780d9;
+  background-color: #fcfdff;
+  box-shadow: 0 0 0 3px rgba(71, 128, 217, 0.1);
+}
+
+.submit-btn {
+  background-color: #4780d9;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background-color: #366ac2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(71, 128, 217, 0.2);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+.hover-underline:hover {
+    text-decoration: underline !important;
+}
+
+/* Mobile full-screen feel */
+@media (max-width: 576px) {
+    .auth-card {
+        max-width: 100%;
+        border-radius: 0;
+        box-shadow: none !important;
+    }
+    .auth-container {
+        padding: 0 !important;
+        background: white;
+    }
 }
 </style>

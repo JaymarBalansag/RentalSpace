@@ -9,7 +9,7 @@
           <div class="logo-box">
             <i class="bi bi-shield-lock-fill"></i>
           </div>
-          <span v-if="!isCollapsed" class="logo-text">Admin<span>Pro</span></span>
+          <span v-if="!isCollapsed" class="logo-text">Admin <span>Dashboard</span></span>
         </div>
         <button class="d-md-none btn btn-primary btn-close-sidebar" @click="toggleSidebar">
           <i class="bi bi-x-lg"></i>
@@ -64,10 +64,10 @@
               data-bs-toggle="dropdown" 
               aria-expanded="false"
             >
-              <img src="https://ui-avatars.com/api/?name=Admin&background=0D6EFD&color=fff" class="avatar" />
+              <div class="avatar-box bg-primary text-white">{{ first_name[0] }}{{ last_name[0] }}</div>
               <div class="user-info d-none d-md-block">
-                <span class="user-name">Administrator</span>
-                <span class="user-role">Super Admin</span>
+                <span class="user-name">{{ first_name }} {{ last_name }}</span>
+                <span class="user-role">{{ role }}</span>
               </div>
               <i class="bi bi-chevron-down ms-2 small opacity-50"></i>
             </button>
@@ -94,10 +94,15 @@
 </template>
 
 <script>
+import { useUserInfo } from '@/store/userInfo';
+import { logout } from '@/api/auth';
 export default {
   name: "AdminDashboard",
   data() {
     return {
+      first_name : "Admin",
+      last_name : "Account",
+      role: "Admin",
       isCollapsed: false,
       isMobileOpen: false,
       navItems: [
@@ -114,8 +119,16 @@ export default {
   mounted() {
     this.checkScreen();
     window.addEventListener("resize", this.checkScreen);
+    this.$nextTick(() => {
+      this.getUser();
+    })
   },
   methods: {
+    getUser(){
+      const info = useUserInfo();
+      this.first_name = info.first_name;
+      this.last_name = info.last_name;
+    },
     checkScreen() {
       if (window.innerWidth <= 991) {
         this.isCollapsed = false;
@@ -131,9 +144,16 @@ export default {
     closeOnMobile() {
       if (window.innerWidth <= 991) this.isMobileOpen = false;
     },
-    handleLogout() {
-      console.log("Logging out...");
-      // Logic for logout
+    async handleLogout() {
+      try {
+        await logout();
+        const info = useUserInfo();
+        info.logout();
+        this.$router.push("/login");
+      } catch (error) {
+        console.error(error);
+        this.$router.push("/login");
+      }
     }
   },
 };
@@ -364,6 +384,16 @@ export default {
 }
 
 .profile-trigger:hover { background: #f9fafb; }
+
+.avatar-box {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
 
 .avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
 

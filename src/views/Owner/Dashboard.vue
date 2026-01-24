@@ -8,7 +8,7 @@
         <div class="brand-logo bg-primary shadow-sm">
           <i class="bi bi-house-door-fill text-white"></i>
         </div>
-        <span v-if="!isCollapsed" class="brand-name d-none d-md-block">StayManager</span>
+        <span v-if="!isCollapsed" class="brand-name d-none d-md-block">Owner Dashboard</span>
       </div>
 
       <nav class="sidebar-nav">
@@ -39,14 +39,13 @@
           <button class="mobile-burger-btn d-md-none me-3" @click="isMobileOpen = !isMobileOpen">
             <i class="bi bi-list fs-4"></i>
           </button>
-          <h5 class="header-title mb-0 fw-bold d-none d-sm-block">Owner Portal</h5>
         </div>
 
         <div class="header-actions">
           <div class="dropdown">
             <button class="profile-pill border" data-bs-toggle="dropdown">
-              <div class="avatar-box bg-primary text-white">OW</div>
-              <span class="ms-2 d-none d-md-inline small fw-bold">Owner account</span>
+              <div class="avatar-box bg-primary text-white">{{ first_name[0] }}{{ last_name[0] }}</div>
+              <span class="ms-2 d-none d-md-inline small fw-bold">{{ first_name }} {{ last_name }}</span>
               <i class="bi bi-chevron-down ms-2 small opacity-50"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end border-0 shadow mt-2">
@@ -72,12 +71,15 @@
 import { RouterLink } from "vue-router";
 import { logout } from "@/api/auth";
 import { useUserInfo } from "@/store/userInfo";
+import { nextTick } from "vue";
 
 export default {
   name: "OwnerDashboard",
   components: { RouterLink },
   data() {
     return {
+      first_name : "Owner",
+      last_name : "Account",
       isCollapsed: false, // Desktop starts expanded
       isMobileOpen: false, // Mobile starts hidden
       navItems: [
@@ -91,11 +93,21 @@ export default {
       ],
     };
   },
+  mounted(){
+    this.$nextTick(() => {
+      this.getUser();
+    })
+  },
   methods: {
     closeOnMobile() {
       if (window.innerWidth <= 768) {
         this.isMobileOpen = false;
       }
+    },
+    getUser(){
+      const info = useUserInfo();
+      this.first_name = info.first_name;
+      this.last_name = info.last_name;
     },
     async handleLogout() {
       try {

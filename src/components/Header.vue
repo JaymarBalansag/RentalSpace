@@ -1,109 +1,91 @@
-
 <template>
-  <!-- TOP HEADER -->
-  <div class="container-fluid header-container px-4 py-3">
-    <nav class="navbar align-items-center justify-content-start">
-
-      <!-- Brand -->
-      <RouterLink
-        class="navbar-brand fw-bold text-light brand-text"
-        to="/"
-      >
-        RentaHub
-      </RouterLink>
-
-      <!-- Desktop Nav -->
-      <ul class="nav d-md-flex d-none gap-4 ms-4">
-        <li class="nav-item">
-          <RouterLink class="nav-link text-light" to="/">Home</RouterLink>
-        </li>
-        <li v-if="isLoggedIn" class="nav-item">
-          <RouterLink class="nav-link text-light" to="/experience">Experience</RouterLink>
-        </li>
-        <li class="nav-item">
-          <RouterLink class="nav-link text-light" to="/about">About</RouterLink>
-        </li>
-        <li class="nav-item">
-          <RouterLink class="nav-link text-light" to="/contactus">Contact</RouterLink>
-        </li>
-      </ul>
-
-      
-
-      <!-- Mobile Hamburger -->
-      <button
-        class="btn text-light d-md-none ms-auto"
-        @click="toggleMobileMenu"
-      >
-        <i class="bi bi-list fs-2"></i>
-      </button>
-
-      <!-- Desktop Auth -->
-      <div class="d-md-block ms-md-auto">
-        <RouterLink
-          v-if="!isLoggedIn && $route.path !== '/login'"
-          to="/login"
-          class="btn btn-outline-light"
-        >
-          Login
+  <header class="header-container sticky-top shadow-sm">
+    <div class="container py-2">
+      <nav class="navbar navbar-expand-md px-0">
+        
+        <RouterLink class="navbar-brand fw-bold text-white d-flex align-items-center" to="/Rentahub">
+          <i class="bi bi-house-heart-fill me-2 fs-3"></i>
+          <span class="brand-text">RentaHub</span>
         </RouterLink>
 
-        <HeaderDropDown v-if="isLoggedIn" />
-      </div>
+        <div class="collapse navbar-collapse justify-content-center d-none d-md-flex">
+          <ul class="navbar-nav gap-lg-4 gap-md-2">
+            <li class="nav-item">
+              <RouterLink class="nav-link text-white-50 px-3 hover-link" active-class="text-white active fw-bold" to="/home">
+                Home
+              </RouterLink>
+            </li>
+            <li v-if="isLoggedIn" class="nav-item">
+              <RouterLink class="nav-link text-white-50 px-3 hover-link" active-class="text-white active fw-bold" to="/experience">
+                Experience
+              </RouterLink>
+            </li>
+            <li class="nav-item">
+              <RouterLink class="nav-link text-white-50 px-3 hover-link" active-class="text-white active fw-bold" to="/about">
+                About
+              </RouterLink>
+            </li>
+            <li class="nav-item">
+              <RouterLink class="nav-link text-white-50 px-3 hover-link" active-class="text-white active fw-bold" to="/contactus">
+                Contact
+              </RouterLink>
+            </li>
+          </ul>
+        </div>
 
-    </nav>
+        <div class="ms-auto d-flex align-items-center">
+          <div v-if="!isLoggedIn && $route.path !== '/login'" class="d-none d-md-block">
+            <RouterLink to="/login" class="btn btn-outline-light rounded-pill px-4 btn-sm fw-bold">
+              Login
+            </RouterLink>
+          </div>
 
-    <!-- Mobile Dropdown Menu -->
-    <div v-if="showMobileMenu" class="mobile-menu d-md-none mt-3 " style="background-color: #4780d9 !important;">
-      <RouterLink class="mobile-link" to="/" @click="closeMenu">Home</RouterLink>
-      <RouterLink v-show="isLoggedIn" class="mobile-link" to="/experience" @click="closeMenu">Experience</RouterLink>
-      <RouterLink class="mobile-link" to="/about" @click="closeMenu">About</RouterLink>
-      <RouterLink class="mobile-link" to="/contactus" @click="closeMenu">Contact</RouterLink>
+          <HeaderDropDown v-if="isLoggedIn" />
 
-      <RouterLink
-        v-if="!isLoggedIn"
-        to="/login"
-        class="btn btn-outline-light w-100 mt-3"
-        @click="closeMenu"
-      >
-        Login
-      </RouterLink>
+          <button
+            class="navbar-toggler border-0 text-white p-2 ms-2 d-md-none"
+            type="button"
+            @click="toggleMobileMenu"
+          >
+            <i :class="showMobileMenu ? 'bi bi-x-lg' : 'bi bi-filter-right'" class="fs-1"></i>
+          </button>
+        </div>
+      </nav>
 
-      
-
+      <transition name="fade">
+        <div v-if="showMobileMenu" class="mobile-menu d-md-none shadow-lg">
+          <div class="d-flex flex-column p-3">
+            <RouterLink class="mobile-link" to="/home" @click="closeMenu">
+              <i class="bi bi-house me-3"></i>Home
+            </RouterLink>
+            <RouterLink v-if="isLoggedIn" class="mobile-link" to="/experience" @click="closeMenu">
+              <i class="bi bi-star me-3"></i>Experience
+            </RouterLink>
+            <RouterLink class="mobile-link" to="/about" @click="closeMenu">
+              <i class="bi bi-info-circle me-3"></i>About Us
+            </RouterLink>
+            <RouterLink class="mobile-link" to="/contactus" @click="closeMenu">
+              <i class="bi bi-envelope me-3"></i>Contact
+            </RouterLink>
+            
+            <div v-if="!isLoggedIn" class="mt-3">
+              <RouterLink to="/login" class="btn btn-light w-100 fw-bold py-2 rounded-pill" @click="closeMenu">
+                Login
+              </RouterLink>
+            </div>
+          </div>
+        </div>
+      </transition>
     </div>
-
-    
-  </div>
-
-  <!-- BOTTOM NAV (Mobile only) -->
-  <!-- <div class="container-fluid fixed-bottom d-md-none header-container top-shadow">
-    <nav class="navbar justify-content-center">
-      <ul class="nav gap-5">
-        <li class="nav-item">
-          <RouterLink class="nav-link text-light bottom-text" to="/">
-            <i class="bi bi-house-door nav-icons"></i>
-            Home
-          </RouterLink>
-        </li>
-
-        <li class="nav-item">
-          <RouterLink class="nav-link text-light bottom-text" to="/experience">
-            <i class="bi bi-journal nav-icons"></i>
-            Experience
-          </RouterLink>
-        </li>
-      </ul>
-    </nav>
-  </div> -->
+  </header>
 </template>
-
 
 <script>
 import HeaderDropDown from "./HeaderDropDown.vue";
 import { useUserInfo } from "@/store/userInfo";
 
 export default {
+  name: "Header",
   components: { HeaderDropDown },
 
   data() {
@@ -114,6 +96,7 @@ export default {
 
   computed: {
     isLoggedIn() {
+      // Accesses your Pinia/Vuex store to check login status
       return useUserInfo().isLoggedIn;
     }
   },
@@ -129,8 +112,97 @@ export default {
 };
 </script>
 
+<style scoped>
+/* Main Background */
+.header-container {
+    background-color: #4780d9;
+    z-index: 1050;
+}
 
+/* Brand Logo Text */
+.brand-text {
+    font-size: 1.5rem;
+    letter-spacing: -0.5px;
+}
 
+/* Desktop Nav Link Styling */
+.nav-link {
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
 
+.hover-link:hover {
+    color: #ffffff !important;
+    transform: translateY(-2px);
+}
 
-<style src="../assets/component-style/header.css" scoped></style>
+/* Underline effect for Active Page */
+.active.fw-bold {
+    position: relative;
+    opacity: 1 !important;
+}
+
+@media (min-width: 768px) {
+    .active.fw-bold::after {
+        content: '';
+        position: absolute;
+        bottom: 5px;
+        left: 20%;
+        width: 60%;
+        height: 2px;
+        background: white;
+        border-radius: 10px;
+    }
+}
+
+/* Mobile Dropdown Menu Container */
+.mobile-menu {
+    background: #4780d9;
+    border-radius: 15px;
+    margin-top: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: absolute;
+    left: 15px;
+    right: 15px;
+    z-index: 1000;
+}
+
+/* Mobile Links Styling */
+.mobile-link {
+    display: flex;
+    align-items: center;
+    color: white;
+    padding: 1.2rem;
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.2s;
+}
+
+.mobile-link:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mobile-link i {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.mobile-link:last-child {
+    border-bottom: none;
+}
+
+/* Smooth Entrance Animation */
+.fade-enter-active, .fade-leave-active {
+    transition: opacity 0.3s, transform 0.3s;
+}
+.fade-enter-from, .fade-leave-to {
+    opacity: 0;
+    transform: translateY(-15px);
+}
+
+/* Navbar Toggler Icon Color */
+.navbar-toggler:focus {
+    box-shadow: none;
+}
+</style>

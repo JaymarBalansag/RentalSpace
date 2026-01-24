@@ -13,11 +13,12 @@ onMounted(async () => {
     const user = await api.get("/user");
     const payload = {
       "user" : user.data.user[0].first_name,
-      "first_name" : user.data.user[0].last_name,
+      "first_name" : user.data.user[0].first_name,
       "last_name" : user.data.user[0].last_name,
       "role" : user.data.user[0].role,
       "email" : user.data.user[0].email,
       "profile_photo" : user.data.user[0].user_img_url,
+      "email_verified_at" : user.data.user[0].email_verified_at,
     }
     info.hydrateUserInfoFromServer(payload);
   }

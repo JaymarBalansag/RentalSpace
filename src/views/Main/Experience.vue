@@ -1,253 +1,201 @@
 <template>
   <Header />
 
-  <div class="container-fluid p-5 bg-light-subtle">
-    <div class="row">
+  <div class="experience-hero bg-primary text-white py-5 mb-n5">
+    <div class="container-fluid px-5">
+      <div class="row align-items-center">
+        <div class="col-lg-7">
+          <h1 class="display-5 fw-bold mb-2">Discover Your Space</h1>
+          <p class="lead opacity-75">Tailored recommendations and trending properties in your area.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      <!-- Left Component -->
-      <div class="col-lg-7">
+  <div class="container-fluid p-5 pt-0">
+    <div class="row g-4">
+      <div class="col-lg-8">
+        
+        <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+              <div>
+                <h3 class="fw-bold mb-0 text-dark">Recommended for You</h3>
+                <p class="text-muted small mb-0">Based on your browsing history and preferences.</p>
+              </div>
+              <button class="btn btn-light btn-sm rounded-pill px-3 fw-semibold text-primary" @click="fetchProperty">
+                <i class="bi bi-arrow-clockwise"></i> Reset
+              </button>
+            </div>
 
-        <!-- Recommended -->
-        <section class="mb-5">
-          <div class="d-flex align-items-center mb-3">
-            <h2 class="fw-bold mb-0">Recommended</h2>
-            <button class="btn btn-link ms-auto">See All</button>
-          </div>
-          <p class="text-muted small">Handpicked spaces based on your location and preferences.</p>
+            <div class="d-flex gap-2 mb-4 overflow-auto pb-2 custom-scrollbar">
+              <button 
+                class="btn btn-sm rounded-pill px-4 py-2 fw-medium d-flex align-items-center gap-2 transition" 
+                :class="activeFilter === 'near' ? 'btn-primary shadow-sm' : 'btn-outline-secondary border-light-subtle bg-light-subtle'"
+                @click="getNearProperties"
+              >
+                <i class="bi bi-geo-alt-fill"></i> Near You
+              </button>
+              <button 
+                class="btn btn-sm rounded-pill px-4 py-2 fw-medium d-flex align-items-center gap-2 transition" 
+                :class="activeFilter === 'amenities' ? 'btn-primary shadow-sm' : 'btn-outline-secondary border-light-subtle bg-light-subtle'"
+                @click="getPrefferedAmenities"
+              >
+                <i class="bi bi-stars"></i> Top Amenities
+              </button>
+              <button 
+                class="btn btn-sm rounded-pill px-4 py-2 fw-medium d-flex align-items-center gap-2 transition" 
+                :class="activeFilter === 'types' ? 'btn-primary shadow-sm' : 'btn-outline-secondary border-light-subtle bg-light-subtle'"
+                @click="getPrefferedTypes"
+              >
+                <i class="bi bi-building-fill"></i> Property Types
+              </button>
+            </div>
 
-          <!-- Filters -->
-          <div class="d-flex gap-2 mb-4">
-            <button class="btn btn-outline-primary btn-sm rounded-pill" @click="getNearProperties()">Near You</button>
-            <button class="btn btn-outline-primary btn-sm rounded-pill" @click="getPrefferedAmenities()">Amenities</button>
-            <button class="btn btn-outline-primary btn-sm rounded-pill" @click="getPrefferedTypes()">Property Types</button>
-          </div>
+            <div v-if="loading" class="d-flex gap-4 overflow-auto pb-3">
+              <div v-for="n in 3" :key="'skel-' + n" class="skeleton-card" style="min-width: 280px;">
+                <div class="placeholder-glow">
+                  <div class="placeholder col-12 rounded-4 mb-3" style="height: 180px;"></div>
+                  <div class="px-2">
+                    <span class="placeholder col-8 mb-2"></span>
+                    <span class="placeholder col-11 small"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-          <!-- Horizontal scroll cards -->
-
-          <!-- Loading placeholders -->
-          <div v-if="loading" class="d-flex gap-3 overflow-auto pb-2 mt-3">
-            <div
-              v-for="n in 6"
-              :key="'ph-' + n"
-              class="d-flex justify-content-center align-items-center"
-              style="min-width: 250px; max-width: 250px;"
-            >
-              <div class="card h-100 shadow-sm property-card">
-                <svg
-                  class="bd-placeholder-img card-img-top"
-                  width="100%"
-                  height="180"
-                  role="img"
-                  aria-label="Image placeholder"
-                >
-                  <rect width="100%" height="100%" fill="#e9ecef"></rect>
-                </svg>
-
-                <div class="card-body">
-                  <h5 class="card-title placeholder-glow">
-                    <span class="placeholder col-6"></span>
-                  </h5>
-
-                  <p class="card-text placeholder-glow">
-                    <span class="placeholder col-7"></span><br>
-                    <span class="placeholder col-4"></span><br>
-                    <span class="placeholder col-5"></span>
+            <div v-else-if="recommendedProperties.length > 0" class="d-flex gap-4 overflow-auto pb-3 custom-scrollbar">
+              <div
+                v-for="property in recommendedProperties"
+                :key="property.id"
+                class="card border-0 property-hover-card h-100"
+                style="min-width: 280px; max-width: 280px;"
+                @click="gotoProperty(property.id)"
+              >
+                <div class="position-relative overflow-hidden rounded-4 shadow-sm">
+                  <img :src="property.image_url || placeholderImage" class="card-img-top property-img" alt="Property">
+                  <div class="property-badge-overlay">
+                    <span class="badge glass-badge rounded-pill">
+                      ₱{{ property.price }}
+                    </span>
+                  </div>
+                </div>
+                <div class="card-body px-1 pt-3">
+                  <div class="d-flex justify-content-between align-items-start mb-1">
+                    <h6 class="fw-bold text-dark mb-0 text-truncate">{{ property.title }}</h6>
+                    <div class="text-warning small"><i class="bi bi-star-fill"></i> 4.8</div>
+                  </div>
+                  <p class="text-muted small mb-0 d-flex align-items-center gap-1">
+                    <i class="bi bi-geo-alt-fill text-danger"></i> {{ property.town_name }}
                   </p>
+                </div>
+              </div>
+            </div>
 
-                  <p class="fw-bold text-primary mb-2 placeholder-glow">
-                    <span class="placeholder col-4"></span>
-                  </p>
+            <div v-else class="text-center py-5 border-dashed rounded-4">
+              <div class="bg-light rounded-circle d-inline-flex p-4 mb-3">
+                <i class="bi bi-house-exclamation text-muted fs-1"></i>
+              </div>
+              <h5 class="text-dark fw-bold">No results found</h5>
+              <p class="text-muted mx-auto" style="max-width: 300px;">{{ message || 'Try adjusting your filters to see more recommendations.' }}</p>
+            </div>
+          </div>
+        </div>
 
-                  <div class="d-grid">
-                    <span class="btn btn-outline-primary btn-sm disabled placeholder col-6"></span>
+        <div class="row">
+          <div class="col-12">
+            <h4 class="fw-bold mb-4 d-flex align-items-center gap-2">
+              <i class="bi bi-fire text-orange"></i> Trending Now
+            </h4>
+          </div>
+          <div v-for="i in 2" :key="i" class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift overflow-hidden">
+              <div class="row g-0 align-items-center">
+                <div class="col-5">
+                  <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=400&q=80" class="img-fluid h-100" style="object-fit: cover; min-height: 120px;" alt="...">
+                </div>
+                <div class="col-7">
+                  <div class="card-body p-3">
+                    <h6 class="fw-bold mb-1 text-truncate">Modern Luxury Villa</h6>
+                    <p class="small text-muted mb-2 text-truncate-2">Experience premium living with private parking...</p>
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                      <span class="text-primary small fw-bold">₱45,000/mo</span>
+                      <small class="text-muted"><i class="bi bi-eye"></i> 2.4k</small>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
-          <!-- Recommended Properties -->
-          <div v-else class="d-flex gap-3 overflow-auto pb-2">
-            <div
-              v-for="property in recommendedProperties"
-              :key="property.id"
-              class="card shadow-sm"
-              style="min-width: 240px; max-width: 250px;"
-            >
-              <img :src="property.image_url || placeholderImage" class="card-img-top property-img" alt="Rental Property">
-              <div class="card-body">
-                <h6 class="card-title fw-bold">{{ property.title }}</h6>
-                <p class="card-text small text-muted clamp-text">{{ property.description }} • {{ property.town_name }}</p>
-                <p class="fw-bold text-primary mb-2">{{ property.price }}</p>
-                <RouterLink :to="`/property/${property.id}`" class="btn btn-outline-primary btn-sm">View Details</RouterLink>
-              </div>
-            </div>
-          </div>
-
-          <!-- Empty state -->
-          <div v-if="!loading && recommendedProperties.length === 0" class="d-flex justify-content-center align-content-center">
-            <div class="alert alert-light border text-muted">
-              {{ message || 'No recommended properties available at the moment.' }}
-            </div>
-          </div>
-
-          
-
-        </section>
-
-        <!-- Most Viewed Posts -->
-        <section>
-          <div class="d-flex align-items-center mb-3">
-            <h2 class="fw-bold mb-0">Most Viewed Posts</h2>
-            <button class="btn btn-link ms-auto">See All</button>
-          </div>
-          <div class="list-group">
-            <a
-              v-for="i in 4"
-              :key="i"
-              href="#"
-              class="list-group-item list-group-item-action d-flex gap-3 align-items-center"
-            >
-              <img
-                src="../../assets/hotel.jpg"
-                class="rounded"
-                style="width: 90px; height: 70px; object-fit: cover;"
-                alt="Thumbnail"
-              />
-              <div class="flex-grow-1">
-                <h6 class="mb-1 fw-semibold">Post Title</h6>
-                <p class="mb-1 small text-muted">This is a short description of the post content.</p>
-                <small class="text-secondary"><i class="bi bi-clock"></i> 3 mins ago</small>
-              </div>
-            </a>
-          </div>
-        </section>
+        </div>
       </div>
 
-      <!-- Right Sidebar -->
-      <aside class="col-lg-5">
-
-        <!-- Recent Posts -->
-        <div class="card border-0 bg-white shadow-sm mb-4">
-          <div class="card-header bg-white border-0">
-            <h5 class="fw-bold text-center mb-0">Recent Posts</h5>
-          </div>
-
-          <!-- 🔄 Loading Placeholder -->
-          <ul v-if="loading" class="list-group list-group-flush">
-            <li
-              v-for="n in 3"
-              :key="'recent-skel-' + n"
-              class="list-group-item d-flex align-items-center placeholder-glow"
-            >
-              <div
-                class="rounded me-3 placeholder"
-                style="width:60px; height:60px;"
-              ></div>
-
-              <div class="flex-grow-1">
-                <div class="placeholder col-6 mb-2"></div>
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-4">Recent Listings</h5>
+            
+            <div v-if="loading" class="placeholder-glow">
+              <div v-for="n in 3" :key="n" class="d-flex mb-4">
+                <div class="placeholder rounded-3 me-3" style="width:70px; height:70px;"></div>
+                <div class="flex-grow-1">
+                  <span class="placeholder col-8 mb-2"></span>
+                  <span class="placeholder col-4"></span>
+                </div>
               </div>
-            </li>
-          </ul>
+            </div>
 
-          <!-- ✅ Real Data -->
-          <ul v-else-if="recentProperties.length" class="list-group list-group-flush">
-            <li
-              v-for="property in recentProperties"
-              :key="property.id"
-              class="list-group-item d-flex align-items-center"
-            >
-              <img
-                :src="property.image_url || placeholderImage"
-                class="rounded me-3"
-                style="width:60px; height:60px; object-fit:cover;"
-              />
-              <div>
-                <h6 class="mb-1">{{ property.title }}</h6>
-                <small class="text-muted">
-                  {{ formatAgo(property.created_at) }}
-                </small>
+            <div v-else class="recent-list">
+              <div v-for="property in recentProperties" :key="property.id" class="d-flex align-items-center mb-4 transition-row">
+                <div class="recent-img-wrapper me-3">
+                  <img :src="property.image_url || placeholderImage" class="rounded-3 shadow-sm border" style="width:70px; height:70px; object-fit:cover;">
+                </div>
+                <div class="overflow-hidden">
+                  <h6 class="mb-1 text-dark text-truncate fw-semibold">{{ property.title }}</h6>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="small text-muted">{{ formatAgo(property.created_at) }}</span>
+                    <span class="dot-divider"></span>
+                    <span class="text-success small fw-bold">New</span>
+                  </div>
+                </div>
               </div>
-            </li>
-          </ul>
-
-          <!-- 🚫 Empty State -->
-          <ul v-else class="list-group list-group-flush">
-            <li class="list-group-item text-center text-muted">
-              No recent posts available.
-            </li>
-          </ul>
-        </div>
-
-
-        <!-- Popular Property Types -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-white border-0 text-center">
-            <h5 class="fw-bold mb-0">Popular Property Types</h5>
-          </div>
-
-          <!-- 🔄 Loading Skeleton -->
-          <div
-            v-if="loading"
-            class="card-body d-flex flex-wrap gap-2 justify-content-center placeholder-glow"
-          >
-            <span
-              v-for="n in 6"
-              :key="'type-skel-' + n"
-              class="badge rounded-pill placeholder"
-              style="width:90px; height:24px;"
-            ></span>
-          </div>
-
-          <!-- ✅ Real Data -->
-          <div
-            v-else-if="popularTypes.length"
-            class="card-body d-flex flex-wrap gap-2 justify-content-center"
-          >
-            <span
-              v-for="(type, index) in popularTypes.filter(t => t.total > 0)"
-              :key="type.id"
-              class="badge rounded-pill"
-              :class="badgeColors[index % badgeColors.length]"
-            >
-              {{ type.type_name }}
-            </span>
-          </div>
-
-          <!-- 🚫 Empty -->
-          <div v-else class="card-body text-center text-muted">
-            No popular property types yet.
+            </div>
           </div>
         </div>
 
-        <!-- Top Rated -->
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-white border-0 text-center">
-            <h5 class="fw-bold mb-0">Top Rated</h5>
-          </div>
-          <ul class="list-group list-group-flush">
-            <li v-for="i in 2" :key="i" class="list-group-item d-flex gap-3 align-items-center">
-              <img src="../../assets/rental.jpg" alt="thumb" class="rounded" style="width:60px; height:60px; object-fit:cover;">
-              <div class="flex-grow-1">
-                <h6 class="mb-1">Cozy Apartment</h6>
-                <small class="text-muted">Near University</small>
+        <div class="card border-0 shadow-sm rounded-4 bg-dark text-white overflow-hidden">
+          <div class="card-body p-4 position-relative">
+            <div class="z-index-2 position-relative">
+              <h5 class="fw-bold mb-4">Popular Categories</h5>
+              <div class="d-flex flex-wrap gap-2">
+                <span v-for="(type, index) in popularTypes" :key="type.id" 
+                      class="badge glass-dark-badge p-2 px-3 fw-medium">
+                  {{ type.type_name }} <span class="opacity-50 ms-1">{{ type.total }}</span>
+                </span>
               </div>
-              <span class="badge bg-success">4.9 ★</span>
-            </li>
-          </ul>
+            </div>
+            <i class="bi bi-building-fill-add position-absolute end-0 bottom-0 mb-n3 me-n2 opacity-25" style="font-size: 8rem;"></i>
+          </div>
         </div>
-      </aside>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { getDefaultRecommendation, getRecentProperties, getNearProperties, getPrefferedAmenities, getPrefferedTypes, getPopularTypes } from '@/api/experienceScript';
+import { 
+  getDefaultRecommendation, 
+  getRecentProperties, 
+  getNearProperties, 
+  getPrefferedAmenities, 
+  getPrefferedTypes, 
+  getPopularTypes 
+} from '@/api/experienceScript';
 import Header from '@/components/Header.vue';
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { recordView } from '@/api/property';
 
 dayjs.extend(relativeTime);
 
@@ -257,123 +205,161 @@ export default {
   data() {
     return {
       message: '',
+      activeFilter: 'default',
       recommendedProperties: [],
       recentProperties: [],
-      nearProperties: [],
       popularTypes: [],
       placeholderImage: placeholderImg,
       loading: false,
-      badgeColors: [
-        'bg-primary',
-        'bg-success',
-        'bg-warning text-dark',
-        'bg-info'
-      ]
+      badgeColors: ['bg-primary-subtle text-primary', 'bg-success-subtle text-success', 'bg-warning-subtle text-warning-emphasis', 'bg-info-subtle text-info']
     }
   },
   methods: {
     formatAgo(date) {
       return dayjs(date).fromNow();
     },
-    async fetchProperty() {
-      this.loading = true;
-      try {
-        const response = await getDefaultRecommendation();
-        
-        this.recommendedProperties = response.data.data;
 
-      } catch (error) {
-        console.error("Error fetching properties:", error);
-      } finally {
-        this.loading = false;
-      }
+    async gotoProperty(id){
+      await recordView(id);
+      this.$router.push(`/property/${id}`);
     },
-    async fetchRecentProperties() {
-      this.loading = true;
-      try {
-        const response = await getRecentProperties();
-        
-        this.recentProperties = response.data.data;
 
+    async handleLoad(apiCall, targetKey, filterName = '') {
+      this.loading = true;
+      if (filterName) this.activeFilter = filterName;
+      try {
+        const response = await apiCall();
+        this[targetKey] = response.data.data;
+        this.message = response.data.message || '';
       } catch (error) {
-        console.error("Error fetching properties:", error);
+        console.error(`Error loading ${targetKey}:`, error);
+        // this.message = error.error;
       } finally {
         this.loading = false;
       }
     },
-    async getNearProperties() {
-      this.loading = true;
-      try {
-        this.recommendedProperties = [];
-        const response = await getNearProperties();
-        this.recommendedProperties = response.data.data;
-      } catch (error) {
-        console.error("Error fetching near properties:", error);
-      } finally {
-        this.loading = false;
-      }
+
+    fetchProperty() {
+      this.handleLoad(getDefaultRecommendation, 'recommendedProperties', 'default');
     },
-    async getPrefferedAmenities(){
-      this.loading = true;
-      try {
-        const response = await getPrefferedAmenities();
-        this.message = response.data.message;
-        this.recommendedProperties = response.data.data;
-      } catch (error) {
-        console.error("Error fetching preferred amenities:", error);
-      } finally {
-        this.loading = false;
-      }
+    getNearProperties() {
+      this.handleLoad(getNearProperties, 'recommendedProperties', 'near');
     },
-    async getPrefferedTypes(){
-      this.loading = true;
-      try {
-        const response = await getPrefferedTypes();
-        this.message = response.data.message;
-        this.recommendedProperties = response.data.data;
-      } catch (error) {
-        console.error("Error fetching preferred types:", error);
-      } finally {
-        this.loading = false;
-      }
+    getPrefferedAmenities() {
+      this.handleLoad(getPrefferedAmenities, 'recommendedProperties', 'amenities');
     },
-    async getPopularTypes(){
-      this.loading = true;
-      try {
-        const response = await getPopularTypes();
-        this.message = response.data.message;
-        this.popularTypes = response.data.data;
-      } catch (error) {
-        console.error("Error fetching popular types:", error);
-      } finally {
-        this.loading = false;
-      }
+    getPrefferedTypes() {
+      this.handleLoad(getPrefferedTypes, 'recommendedProperties', 'types');
     }
   },
   mounted() {
     this.fetchProperty();
-    this.fetchRecentProperties();
-    this.getPopularTypes();
+    this.handleLoad(getRecentProperties, 'recentProperties');
+    this.handleLoad(getPopularTypes, 'popularTypes');
   }
 }
 </script>
 
 <style scoped>
-.property-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+/* Hero Section Layout */
+.experience-hero {
+  background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.text-orange { color: #fd7e14; }
+
+/* Horizontal Scroll UX */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}
+
+/* Card Styling */
+.property-hover-card {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  cursor: pointer;
+}
+.property-hover-card:hover {
+  transform: translateY(-8px);
+}
+.property-hover-card:hover img {
+  transform: scale(1.05);
 }
 
 .property-img {
-  height: 200px;          /* choose 180–220px if you want */
-  width: 100%;
-  object-fit: cover;      /* crops instead of stretching */
+  height: 180px;
+  object-fit: cover;
+  transition: transform 0.5s ease;
 }
-.clamp-text {
+
+.property-badge-overlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.glass-badge {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  color: #0d6efd;
+  font-weight: 700;
+  padding: 6px 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.glass-dark-badge {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+}
+
+/* Typography & Lists */
+.text-truncate-2 {
   display: -webkit-box;
-  -webkit-line-clamp: 3;   /* number of lines */
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+.dot-divider {
+  width: 4px;
+  height: 4px;
+  background: #ccc;
+  border-radius: 50%;
+}
 
+.border-dashed {
+  border: 2px dashed #dee2e6 !important;
+}
+
+.transition {
+  transition: all 0.2s ease-in-out;
+}
+
+.recent-img-wrapper img {
+  transition: transform 0.2s ease;
+}
+.transition-row:hover img {
+  transform: rotate(3deg) scale(1.1);
+}
 </style>

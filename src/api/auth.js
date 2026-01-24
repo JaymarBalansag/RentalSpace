@@ -23,6 +23,6 @@ export async function register(first_name, last_name, email, password) {
     password,
   });
   // localStorage.setItem("access_token", res.data.access_token);
-  return res.data.user;
+  return res;
 }
 

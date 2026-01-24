@@ -116,7 +116,7 @@ export default {
       email: null,
       role: null,
       selectedPlan: null,
-      planPrice: 50,
+      planPrice: 200,
       planBilling: "",
       paymentMethod: ""
     }
@@ -136,14 +136,13 @@ export default {
     },
     async getPlanDetails() {
       const plan = this.$route.query.plan
-      console.log("plan" + plan)
       if (plan === "Annual") {
         this.selectedPlan = "Annual"
-        this.planPrice = 5000
+        this.planPrice = 2000
         this.planBilling = "per year"
       } else if (plan === "Monthly") {
         this.selectedPlan = "Monthly"
-        this.planPrice = 500
+        this.planPrice = 200
         this.planBilling = "per month"
       } else {
         this.$router.push({
@@ -180,7 +179,7 @@ export default {
 
         sessionStorage.setItem("subscriptionSuccess", true);
         alert("✅ Subscription activated!")
-        this.$router.push("/")
+        this.$router.push("/home")
       } catch (err) {
         alert(err.response?.data?.message || "❌ Payment failed")
       }

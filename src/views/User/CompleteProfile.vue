@@ -1,140 +1,142 @@
 <template>
-  <div class="container py-4">
-    <div class="card shadow border-0 rounded-4">
-      <div class="card-body p-4">
-        <RouterLink to="/profile" class="btn btn-secondary mb-3">Back</RouterLink>
-
-        <!-- Progress -->
-        <div class="mb-4">
-          <div class="progress" style="height: 8px;">
-            <div
-              class="progress-bar bg-primary"
-              :style="{ width: progress + '%' }"
-            ></div>
-          </div>
-          <p class="text-muted small mt-2">Step {{ step }} of 4</p>
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <h2 class="fw-bold text-primary mb-0">Complete Your Profile</h2>
+          <RouterLink to="/profile" class="btn btn-link text-muted text-decoration-none">
+            <i class="bi bi-x-lg"></i> Cancel
+          </RouterLink>
         </div>
 
-        <!-- STEP 1: Basic Info -->
-        <div v-if="step === 1">
-          <h4 class="fw-bold mb-3">Basic Information</h4>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <input class="form-control form-control-lg" v-model="form.first_name" disabled />
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-body p-4">
+            <div class="step-wizard d-flex justify-content-between position-relative mb-4">
+              <div class="progress-line"></div>
+              <div v-for="n in 4" :key="n" class="step-item" :class="{ 'active': step >= n }">
+                <span class="step-number">{{ n }}</span>
+              </div>
             </div>
-            <div class="col-md-6">
-              <input class="form-control form-control-lg" v-model="form.last_name" disabled />
-            </div>
-            <div class="col-md-12">
-              <input class="form-control form-control-lg" v-model="form.email" disabled />
-            </div>
-            <div class="col-md-12">
-              <input
-                class="form-control form-control-lg"
-                placeholder="Phone Number"
-                v-model="form.phone_number"
-              />
+            <div class="progress" style="height: 6px;">
+              <div class="progress-bar bg-primary transition-all" :style="{ width: progress + '%' }"></div>
             </div>
           </div>
         </div>
 
-        <!-- STEP 2: Profile Picture -->
-        <div v-if="step === 2">
-          <h4 class="fw-bold mb-3">Profile Picture</h4>
-          <div class="text-center">
-            <img
-              v-if="previewImg"
-              :src="previewImg"
-              class="rounded-circle mb-3"
-              style="width:120px;height:120px;object-fit:cover"
-            />
-            <i v-else class="bi bi-person-circle fs-1 text-secondary"></i>
-            <input type="file" class="form-control mt-3" @change="handleImageUpload" />
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-5">
+          <div class="card-body p-4 p-md-5">
+
+            <div v-if="step === 1" class="animate-fade-in">
+              <div class="mb-4">
+                <h4 class="fw-bold mb-1">Personal Details</h4>
+                <p class="text-muted small">Verify your identity and provide a contact number.</p>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold">First Name</label>
+                  <input class="form-control bg-light" v-model="form.first_name" disabled />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold">Last Name</label>
+                  <input class="form-control bg-light" v-model="form.last_name" disabled />
+                </div>
+                <div class="col-12">
+                  <label class="form-label small fw-bold">Email Address</label>
+                  <input class="form-control bg-light" v-model="form.email" disabled />
+                </div>
+                <div class="col-12">
+                  <label class="form-label small fw-bold">Phone Number <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white">+63</span>
+                    <input class="form-control" placeholder="912 345 6789" v-model="form.phone_number" type="tel" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="step === 2" class="animate-fade-in text-center py-4">
+              <div class="mb-4">
+                <h4 class="fw-bold mb-1">Profile Photo</h4>
+                <p class="text-muted small">A photo helps people recognize you.</p>
+              </div>
+              <div class="upload-area mx-auto position-relative">
+                <div class="preview-circle shadow">
+                  <img v-if="previewImg" :src="previewImg" class="img-fluid rounded-circle h-100 w-100 object-fit-cover" />
+                  <i v-else class="bi bi-person-circle display-1 text-light-emphasis"></i>
+                </div>
+                <label for="fileUpload" class="btn btn-primary btn-sm rounded-pill floating-upload-btn shadow">
+                  <i class="bi bi-camera-fill me-1"></i> Choose Photo
+                </label>
+                <input id="fileUpload" type="file" class="d-none" @change="handleImageUpload" accept="image/*" />
+              </div>
+            </div>
+
+            <div v-show="step === 3" class="animate-fade-in">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                  <h4 class="fw-bold mb-1">Locate Your Residence</h4>
+                  <p class="text-muted small mb-0">Drag the marker or click on the map to pin your location.</p>
+                </div>
+                <div v-if="loading" class="spinner-border spinner-border-sm text-primary"></div>
+              </div>
+
+              <div id="map" style="height:350px" class="rounded-4 shadow-sm border mb-4"></div>
+
+              <div class="row g-2">
+                <div class="col-md-4"><input class="form-control form-control-sm bg-light" v-model="form.town_name" disabled placeholder="City"></div>
+                <div class="col-md-4"><input class="form-control form-control-sm bg-light" v-model="form.village_name" disabled placeholder="Barangay"></div>
+                <div class="col-md-4"><input class="form-control form-control-sm" v-model="form.streets" placeholder="Street Name *"></div>
+              </div>
+            </div>
+
+            <div v-if="step === 4" class="animate-fade-in">
+              <div class="mb-4">
+                <h4 class="fw-bold mb-1">Review Details</h4>
+                <p class="text-muted small">Please verify your information before submitting.</p>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm border-0">
+                  <tbody>
+                    <tr><td class="text-muted small">Name</td><td class="fw-bold">{{ form.first_name }} {{ form.last_name }}</td></tr>
+                    <tr><td class="text-muted small">Contact</td><td class="fw-bold">{{ form.phone_number }}</td></tr>
+                    <tr><td class="text-muted small">Location</td><td class="fw-bold">{{ form.village_name }}, {{ form.town_name }}, {{ form.state_name }}</td></tr>
+                    <tr><td class="text-muted small">Street</td><td class="fw-bold">{{ form.streets }}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="alert alert-info py-2 small d-flex align-items-center">
+                <i class="bi bi-info-circle me-2"></i> By clicking Finish, you agree to our terms of service.
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-5 pt-3 border-top">
+              <button v-if="step > 1" class="btn btn-light rounded-pill px-4" @click="prevStep">Back</button>
+              <div v-else></div>
+
+              <button v-if="step < 4" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" @click="nextStep">
+                Next <i class="bi bi-arrow-right ms-1"></i>
+              </button>
+
+              <button v-else :disabled="loading" class="btn btn-success rounded-pill px-5 fw-bold shadow-sm d-flex align-items-center gap-2" @click="validateSubmitProfile">
+                <span v-if="loading" class="spinner-border spinner-border-sm" role="status"></span>
+                {{ loading ? 'Saving...' : 'Finish Profile' }}
+              </button>
+            </div>
           </div>
-        </div>
-
-        <!-- STEP 3: Map -->
-        <div v-show="step === 3">
-          <div class="d-flex align-items-center gap-3 mb-2">
-            <h4 class="fw-bold mb-0">Your Location</h4>
-            <div v-if="loading" class="spinner-border spinner-border-sm text-primary"></div>
-          </div>
-
-          <div id="map" style="height:40vh" class="rounded shadow"></div>
-
-          <div class="row mt-3 g-2">
-            <div class="col">
-              <input class="form-control" v-model="form.region_name" disabled placeholder="Region">
-            </div>
-            <div class="col">
-              <input class="form-control" v-model="form.state_name" disabled placeholder="Province">
-            </div>
-            <div class="col">
-              <input class="form-control" v-model="form.town_name" disabled placeholder="City / Municipality">
-            </div>
-            <div class="col">
-              <input class="form-control" v-model="form.village_name" disabled placeholder="Barangay">
-            </div>
-            <div class="col">
-              <input class="form-control" v-model="form.streets" placeholder="Street">
-            </div>
-          </div>
-        </div>
-
-        <!-- STEP 4: Summary -->
-        <div v-if="step === 4">
-          <h4 class="fw-bold mb-3">Summary</h4>
-          <table class="table table-bordered">
-            <tbody>
-              <tr><th>First Name</th><td>{{ form.first_name }}</td></tr>
-              <tr><th>Last Name</th><td>{{ form.last_name }}</td></tr>
-              <tr><th>Email</th><td>{{ form.email }}</td></tr>
-              <tr><th>Phone</th><td>{{ form.phone_number }}</td></tr>
-              <tr><th>Street</th><td>{{ form.streets }}</td></tr>
-              <tr><th>Region</th><td>{{ form.region_name }}</td></tr>
-              <tr><th>Province</th><td>{{ form.state_name }}</td></tr>
-              <tr><th>City</th><td>{{ form.town_name }}</td></tr>
-              <tr><th>Barangay</th><td>{{ form.village_name }}</td></tr>
-              <tr><th>Latitude</th><td>{{ form.latitude }}</td></tr>
-              <tr><th>Longitude</th><td>{{ form.longitude }}</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- NAV -->
-        <div class="d-flex justify-content-between mt-4">
-          <button v-if="step > 1" class="btn btn-outline-secondary" @click="prevStep">
-            Previous
-          </button>
-
-          <button v-if="step < 4" class="btn btn-primary ms-auto" @click="nextStep">
-            Next
-          </button>
-
-          <button 
-            v-if="step === 4" 
-            :disabled="loading" 
-            class="btn btn-success ms-auto d-flex align-items-center gap-2" 
-            @click="validateSubmitProfile"
-          >
-            <span v-if="loading" class="spinner-border spinner-border-sm" role="status"></span>
-            {{ loading ? 'Saving...' : 'Finish' }}
-          </button>
         </div>
       </div>
     </div>
 
     <confirmModal
       :show="showConfirmModal"
-      title="Confirm Profile Completion"
-      message="Are you sure all information you entered is correct?"
-      confirm-text="Yes, Submit"
+      title="Submit Profile?"
+      message="Ensure all your details are correct. You can edit this later in your settings."
+      confirm-text="Yes, Submit Profile"
       @confirm="submitProfile"
       @cancel="closeConfirmModal"
     />
   </div>
 </template>
-
 
 <script>
 import L from "leaflet";
@@ -144,27 +146,16 @@ import { useUserInfo } from "@/store/userInfo";
 import confirmModal from "@/components/confirmModal.vue";
 import 'leaflet/dist/leaflet.css';
 
+// Fix for Leaflet icons
 delete L.Icon.Default.prototype._getIconUrl;
-
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: new URL(
-    'leaflet/dist/images/marker-icon-2x.png',
-    import.meta.url
-  ).href,
-  iconUrl: new URL(
-    'leaflet/dist/images/marker-icon.png',
-    import.meta.url
-  ).href,
-  shadowUrl: new URL(
-    'leaflet/dist/images/marker-shadow.png',
-    import.meta.url
-  ).href,
+  iconRetinaUrl: new URL('leaflet/dist/images/marker-icon-2x.png', import.meta.url).href,
+  iconUrl: new URL('leaflet/dist/images/marker-icon.png', import.meta.url).href,
+  shadowUrl: new URL('leaflet/dist/images/marker-shadow.png', import.meta.url).href,
 });
-
 
 export default {
   components: { RouterLink, confirmModal },
-
   data() {
     return {
       step: 1,
@@ -174,8 +165,6 @@ export default {
       showConfirmModal: false,
       loading: false,
       timeoutId: null,
-      loading: false,
-
       form: {
         first_name: "",
         last_name: "",
@@ -192,44 +181,18 @@ export default {
       },
     };
   },
-
   computed: {
-    progress() {
-      return (this.step / 4) * 100;
-    },
-    userInfo() {
-      return useUserInfo();
-    },
+    progress() { return (this.step / 4) * 100; },
+    userInfo() { return useUserInfo(); },
   },
-
-  mounted() {
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        this.form.latitude = pos.coords.latitude;
-        this.form.longitude = pos.coords.longitude;
-      },
-      () => alert("Unable to get your location."),
-      { enableHighAccuracy: true }
-    );
-  },
-
   watch: {
     step(val) {
       if (val === 3) {
         this.$nextTick(() => {
           if (!this.map) this.initMap();
-          this.setAddressFields();
         });
       }
     },
-
-    "form.latitude"() {
-      this.setAddressFields();
-    },
-    "form.longitude"() {
-      this.setAddressFields();
-    },
-
     userInfo: {
       immediate: true,
       handler(user) {
@@ -240,117 +203,113 @@ export default {
       },
     },
   },
-
+  mounted() {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        this.form.latitude = pos.coords.latitude;
+        this.form.longitude = pos.coords.longitude;
+      },
+      () => console.warn("GPS access denied, using default coordinates."),
+      { enableHighAccuracy: true }
+    );
+  },
   methods: {
     async setAddressFields() {
       if (this.timeoutId) clearTimeout(this.timeoutId);
       this.loading = true;
-
       this.timeoutId = setTimeout(async () => {
         try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${this.form.latitude}&lon=${this.form.longitude}&format=jsonv2`
-          );
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${this.form.latitude}&lon=${this.form.longitude}&format=jsonv2`);
           const data = await res.json();
-
           this.form.region_name = data.address.region || "";
           this.form.state_name = data.address.state || "";
           this.form.town_name = data.address.city || data.address.town || "";
           this.form.village_name = data.address.village || data.address.suburb || "";
+        } catch (e) {
+          console.error("Geocoding failed", e);
         } finally {
           this.loading = false;
         }
-      }, 1000);
+      }, 800);
     },
-
     initMap() {
-      this.map = L.map("map").setView([this.form.latitude, this.form.longitude], 16);
-
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(this.map);
-
-      this.marker = L.marker([this.form.latitude, this.form.longitude], { draggable: true }).addTo(this.map);
+      const lat = this.form.latitude || 14.5995;
+      const lng = this.form.longitude || 120.9842;
+      this.map = L.map("map").setView([lat, lng], 16);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(this.map);
+      this.marker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
+      
+      this.setAddressFields(); // Initial geocode
 
       this.marker.on("dragend", e => {
         const p = e.target.getLatLng();
         this.form.latitude = p.lat;
         this.form.longitude = p.lng;
+        this.setAddressFields();
       });
 
       this.map.on("click", e => {
         this.marker.setLatLng(e.latlng);
         this.form.latitude = e.latlng.lat;
         this.form.longitude = e.latlng.lng;
+        this.setAddressFields();
       });
     },
-
     handleImageUpload(e) {
       const file = e.target.files[0];
-      this.form.user_img = file;
-      this.previewImg = URL.createObjectURL(file);
-    },
-
-    nextStep() { this.step++; },
-    prevStep() { this.step--; },
-
-    validateSubmitProfile() {
-      const required = [
-        "phone_number",
-        "streets",
-        "latitude",
-        "longitude",
-      ];
-
-      for (const f of required) {
-        if (!this.form[f]) {
-          alert("Please complete all required fields.");
-          return;
-        }
+      if (file) {
+        this.form.user_img = file;
+        this.previewImg = URL.createObjectURL(file);
       }
-
+    },
+    nextStep() { 
+      if (this.step === 1 && !this.form.phone_number) return alert("Phone number is required.");
+      this.step++; 
+    },
+    prevStep() { this.step--; },
+    validateSubmitProfile() {
+      if (!this.form.streets) return alert("Please enter your street name.");
       this.showConfirmModal = true;
     },
-
-    closeConfirmModal() {
-      this.showConfirmModal = false;
-    },
-
+    closeConfirmModal() { this.showConfirmModal = false; },
     async submitProfile() {
       this.loading = true;
       this.showConfirmModal = false;
       const fd = new FormData();
-      Object.entries(this.form).forEach(([k, v]) => v && fd.append(k, v));
-      await completeProfile(fd);
-      alert("Profile completed successfully!");
-      const info = useUserInfo();
-      await info.completeProfileInPage(this.form.first_name, this.form.last_name, this.previewImg);
-      this.loading = false;
-      this.$router.push("/profile");
+      Object.entries(this.form).forEach(([k, v]) => { if(v) fd.append(k, v); });
+      try {
+        await completeProfile(fd);
+        const info = useUserInfo();
+        await info.completeProfileInPage(this.form.first_name, this.form.last_name, this.previewImg);
+        this.$router.push("/profile");
+      } catch (error) {
+        alert("Failed to save profile. Please try again.");
+      } finally {
+        this.loading = false;
+      }
     },
   },
 };
 </script>
 
+<style scoped>
+.transition-all { transition: width 0.4s ease; }
+.animate-fade-in { animation: fadeIn 0.3s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-<style>
+/* Step Wizard Styling */
+.step-wizard { margin: 0 1rem; }
+.progress-line { position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: #e9ecef; z-index: 1; transform: translateY(-50%); }
+.step-item { position: relative; z-index: 2; width: 30px; height: 30px; background: white; border: 2px solid #dee2e6; border-radius: 50%; transition: 0.3s; }
+.step-item.active { border-color: #0d6efd; background: #0d6efd; }
+.step-number { font-size: 12px; font-weight: bold; color: #adb5bd; line-height: 26px; text-align: center; display: block; }
+.step-item.active .step-number { color: white; }
 
-  .modal-backdrop-custom {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
+/* Upload Area */
+.upload-area { width: 150px; height: 150px; }
+.preview-circle { width: 150px; height: 150px; border-radius: 50%; background: #f8f9fa; border: 3px solid #eee; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.floating-upload-btn { position: absolute; bottom: 0; right: 0; }
 
-.modal-custom {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 420px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.2);
-}
-
-
+.custom-input:focus { border-color: #4780d9; box-shadow: 0 0 0 3px rgba(71, 128, 217, 0.1); }
+.letter-spacing-1 { letter-spacing: 1px; }
 </style>

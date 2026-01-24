@@ -1,6 +1,7 @@
 <template>
-  <SuccessToast v-if="showSuccess" message="🎉 Property Created Successfully"></SuccessToast>
-  
+  <div v-if="showSuccess" class="alert alert-success" role="alert">
+    🎉 {{ toastMessage }}
+  </div>
   <div class="container-fluid p-0">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
       <div>
@@ -81,7 +82,7 @@
             </div>
 
             <div class="mt-auto pt-3 border-top d-flex gap-2">
-              <RouterLink :to="`/properties/${property.id}/edit`" class="btn btn-outline-warning flex-grow-1 btn-sm fw-bold">
+              <RouterLink :to="`/dashboard/properties/${property.id}/edit`" class="btn btn-outline-warning flex-grow-1 btn-sm fw-bold">
                 <i class="bi bi-pencil-square me-1"></i> Edit
               </RouterLink>
               <button @click="deleteProperty(property.id)" class="btn btn-outline-danger btn-sm px-3">
@@ -109,7 +110,8 @@ export default {
       count: null,
       limitReached: false,
       placeholderImg: placeholderImg,
-      isLoading: true // Added loading state
+      isLoading: true, // Added loading state,
+      toastMessage: "",
     };
   },
   components: { SuccessToast },
@@ -159,9 +161,17 @@ export default {
     this.getPropertyLimit();
     
     const success = sessionStorage.getItem("propertyCreated");
+    const update = sessionStorage.getItem("propertyUpdate");
     if (success) {
       this.showSuccess = true;
       sessionStorage.removeItem("propertyCreated");
+      this.toastMessage = "Property Created Successfully";
+      // Auto-hide toast after 3 seconds
+      setTimeout(() => { this.showSuccess = false; }, 3000);
+    } else if (update){
+      this.showSuccess = true;
+      this.toastMessage = "Property Updated Successfully";
+      sessionStorage.removeItem("propertyUpdate");
       // Auto-hide toast after 3 seconds
       setTimeout(() => { this.showSuccess = false; }, 3000);
     }

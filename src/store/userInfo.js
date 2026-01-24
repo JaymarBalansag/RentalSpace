@@ -10,16 +10,17 @@ export const useUserInfo = defineStore("info", {
     role: null,
     isLoggedIn: false,
     profile_photo: null,
-
+    email_verified_at: null,
   }),
   actions: {
-    setUserInfo(first_name, last_name, role, email, profile_photo) {
+    setUserInfo(first_name, last_name, role, email, profile_photo, email_verified_at) {
       this.first_name = first_name;
       this.last_name = last_name;
       this.role = role;
       this.email = email;
       this.isLoggedIn = true;
       this.profile_photo = profile_photo;
+      this.email_verified_at = email_verified_at; 
 
       localStorage.setItem("userInfo", JSON.stringify(this.$state));
     },
@@ -63,7 +64,7 @@ export const useUserInfo = defineStore("info", {
       }
     },
     async hydrateUserInfoFromServer(payload) {
-      this.setUserInfo(payload.first_name, payload.last_name, payload.role, payload.email, payload.profile_photo)
+      this.setUserInfo(payload.first_name, payload.last_name, payload.role, payload.email, payload.profile_photo, payload.email_verified_at)
     },
     setLoggedIn(isLoggedIn) {
       this.isLoggedIn = isLoggedIn;
@@ -75,9 +76,10 @@ export const useUserInfo = defineStore("info", {
       this.first_name = null;
       this.last_name = null;
       this.email = null;
-      this.role = "guest"; // or 'guest' if you prefer
+      this.role = "guest";
       this.isLoggedIn = false;
       this.profile_photo = null;
+      this.email_verified_at = null;
       localStorage.removeItem("userInfo");
       localStorage.removeItem("access_token");
     }

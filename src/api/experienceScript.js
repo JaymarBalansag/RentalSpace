@@ -23,7 +23,7 @@ export async function getRecentProperties(){
 export async function getNearProperties(){
     try {
         const response = await api.get("/nearby");
-        console.log(response)
+        // console.log(response)
         return response;
     } catch (error) {
         throw error;

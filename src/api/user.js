@@ -34,6 +34,21 @@ export async function updateUserProfile(formData){
   }
 }
 
+export async function updateUserLocation(formData){
+  try {
+    const response = await api.post("/update-location", formData, {
+      headers: {
+        "Content-Type" : "multipart/form-data"
+      }
+    })
+
+    return response;
+
+  } catch (error) {
+    throw error
+  }
+}
+
 export async function getAuthUserId() {
   try {
     const response = await api.get("/UID");

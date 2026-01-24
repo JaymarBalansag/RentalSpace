@@ -132,7 +132,7 @@
             <div class="card-body">
               <h6 class="fw-bold text-truncate">{{ related.title }}</h6>
               <p class="text-success fw-bold small mb-2">₱{{ related.price }} / {{ toTitle(related.payment_frequency) }}</p>
-              <RouterLink :to="`/property/${related.id}`" class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold">View Details</RouterLink>
+              <button @click="gotoRelated(related.id)" class="btn btn-sm btn-outline-primary rounded-pill w-100 fw-bold">View Details</button>
             </div>
           </div>
         </div>
@@ -254,7 +254,7 @@
 
 <script>
 // Logic remains identical to your script but integrated into the cleaned template
-import { getPropertyById, getPropertyByType, submitBookingRequest } from "@/api/property";
+import { getPropertyById, getPropertyByType, recordView, submitBookingRequest } from "@/api/property";
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
 import { submitAgreement } from "@/api/Owner/bookings.js";
 import { initiateConversation } from "@/api/messages";
@@ -300,6 +300,10 @@ export default {
     };
   },
   methods: {
+    async gotoRelated(id){
+      await recordView(id);
+      this.$router.push(`/property/${id}`);
+    },
     closeConfirmModal() {
       this.showConfirmModal = false;
     },
@@ -315,7 +319,7 @@ export default {
       try {
         const id = this.$route.params.id;
         const response = await getPropertyById(id);
-        console.log(response)
+        // console.log(response)
         this.property = response.data.property;
         this.property_type = response.data.property.type_name;
         this.property_type_id = response.data.property.type_id;

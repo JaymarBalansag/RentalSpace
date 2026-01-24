@@ -1,185 +1,119 @@
 <template>
   <Header />
 
-  <!-- ROOT -->
-  <div class="container-fluid chat-root mt-3">
-    <div class="row h-100 d-none d-md-flex">
-
-      <!-- Chat Heads -->
-      <div class="col-md-4 border-end d-flex flex-column">
-        <div class="d-flex align-items-center mb-3 px-2">
-          <h5 class="mb-0">Messages</h5>
-          <router-link to="/" class="btn btn-light btn-sm ms-auto">
-            <i class="bi bi-arrow-left"></i> Back
-          </router-link>
+  <div class="container-fluid chat-root">
+    <div class="row h-100 g-0 overflow-hidden shadow-sm">
+      
+      <div 
+        class="col-md-4 col-lg-3 border-end bg-white d-flex flex-column conversation-sidebar"
+        :class="{ 'd-none d-md-flex': selectedChat }"
+      >
+        <div class="p-3 border-bottom bg-light">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h4 class="fw-bold mb-0">Messages</h4>
+            <router-link to="/home" class="btn btn-sm btn-outline-secondary rounded-pill">
+              <i class="bi bi-house"></i>
+            </router-link>
+          </div>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text border-0 bg-white shadow-none"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control border-0 shadow-none bg-white" placeholder="Search chats...">
+          </div>
         </div>
 
-        <ul class="list-group flex-grow-1 overflow-auto">
-          <li
-            v-for="chat in chats"
+        <div class="flex-grow-1 overflow-auto bg-white scroll-custom">
+          <div 
+            v-for="chat in chats" 
             :key="chat.user_id"
-            class="list-group-item list-group-item-action d-flex align-items-center"
-            :class="{ active: selectedChat && selectedChat.user_id === chat.user_id }"
+            class="conversation-item d-flex align-items-center p-3 border-bottom transition"
+            :class="{ 'active-chat': selectedChat && selectedChat.user_id === chat.user_id }"
             @click="selectChat(chat)"
-            style="cursor: pointer;"
           >
-            <img
-              :src="chat.profile_photo"
-              class="rounded-circle me-3"
-              width="40"
-              height="40"
-              alt="profile"
-            />
-            <div>
-              <h6 class="mb-0">{{ chat.name }}</h6>
-              <small class="text-muted">{{ chat.lastMessage }}</small>
+            <div class="position-relative">
+              <img :src="chat.profile_photo" class="rounded-circle me-3 chat-avatar shadow-sm" alt="profile">
+              <span class="status-indicator online"></span>
             </div>
-          </li>
-        </ul>
+            <div class="flex-grow-1 overflow-hidden">
+              <div class="d-flex justify-content-between">
+                <h6 class="mb-0 text-truncate fw-bold">{{ chat.name }}</h6>
+                <small class="text-muted" style="font-size: 0.7rem;">12:45 PM</small>
+              </div>
+              <small class="text-muted text-truncate d-block">{{ chat.lastMessage || 'Click to start chatting' }}</small>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Chat Window -->
-      <div class="col-md-8 d-flex flex-column chat-window">
-
-        <div v-if="selectedChat" class="d-flex flex-column h-100">
-
-          <!-- Chat Header -->
-          <div class="border-bottom py-2 px-3 d-flex align-items-center">
-            <img
-              :src="profile_photo"
-              class="rounded-circle me-2"
-              width="40"
-              height="40"
-              alt="profile"
-            />
-            <h6 class="mb-0">{{ selectedChat.name }}</h6>
-          </div>
-
-          <!-- Messages (ONLY SCROLLABLE) -->
-          <div
-            class="messages-box flex-grow-1 overflow-auto px-3 py-2"
-            ref="messagesBox"
-          >
-            <div
-              v-for="(msg, index) in messages"
-              :key="index"
-              class="mb-2"
-              :class="{ 'text-end': msg.sender_id === authId }"
-            >
-              <span
-                class="px-3 py-2 rounded-pill d-inline-block message-bubble"
-                :class="msg.sender_id === authId
-                  ? 'bg-primary text-white'
-                  : 'bg-light text-dark'"
-              >
-                {{ msg.message }}
-              </span>
+      <div 
+        class="col-md-8 col-lg-9 d-flex flex-column chat-bg"
+        :class="{ 'd-flex': selectedChat, 'd-none d-md-flex': !selectedChat }"
+      >
+        <div v-if="selectedChat" class="d-flex flex-column h-100 position-relative">
+          
+          <div class="chat-header p-3 border-bottom bg-white d-flex align-items-center justify-content-between sticky-top">
+            <div class="d-flex align-items-center">
+              <button class="btn btn-sm btn-light rounded-pill me-2 d-md-none" @click="selectedChat = null">
+                <i class="bi bi-arrow-left"></i>
+              </button>
+              <img :src="profile_photo" class="rounded-circle me-3 shadow-sm" width="45" height="45" alt="profile">
+              <div>
+                <h6 class="mb-0 fw-bold">{{ selectedChat.name }}</h6>
+                <small class="text-success small fw-bold">Online</small>
+              </div>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-link text-muted"><i class="bi bi-telephone"></i></button>
+              <button class="btn btn-link text-muted"><i class="bi bi-info-circle"></i></button>
             </div>
           </div>
 
-          <!-- Input (FIXED) -->
-          <div class="border-top p-3">
-            <div class="input-group">
-              <input
-                type="text"
-                class="form-control"
-                v-model="newMessage"
-                @keyup.enter="sendMessage"
-                placeholder="Type a message..."
-              />
-              <button class="btn btn-primary" @click="sendMessage">
-                <i class="bi bi-send"></i>
+          <div class="messages-area flex-grow-1 overflow-auto p-4 scroll-custom" ref="messagesBox">
+            <div 
+              v-for="(msg, index) in messages" 
+              :key="index" 
+              class="d-flex mb-3"
+              :class="msg.sender_id === authId ? 'justify-content-end' : 'justify-content-start'"
+            >
+              <div 
+                class="message-card shadow-sm"
+                :class="msg.sender_id === authId ? 'sent' : 'received'"
+              >
+                <div class="message-text">{{ msg.message }}</div>
+                <div class="message-time text-end mt-1">
+                  {{ msg.created_at ? formatTime(msg.created_at) : 'Just now' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-3 bg-white border-top">
+            <div class="input-wrapper d-flex align-items-center gap-2 p-2 rounded-pill bg-light border">
+              <button class="btn btn-link text-muted p-0 ms-2"><i class="bi bi-plus-circle fs-5"></i></button>
+              <input 
+                type="text" 
+                class="form-control border-0 bg-transparent shadow-none px-3" 
+                v-model="newMessage" 
+                @keyup.enter="sendMessage" 
+                placeholder="Type your message..."
+              >
+              <button class="btn btn-primary rounded-circle p-2 d-flex align-items-center justify-content-center" @click="sendMessage" style="width: 40px; height: 40px;">
+                <i class="bi bi-send-fill text-white"></i>
               </button>
             </div>
           </div>
 
         </div>
 
-        <!-- Empty State -->
-        <div
-          v-else
-          class="d-flex justify-content-center align-items-center flex-grow-1"
-        >
-          <p class="text-muted">Select a chat to start messaging</p>
+        <div v-else class="empty-chat d-flex flex-column justify-content-center align-items-center flex-grow-1 bg-white">
+          <div class="bg-light rounded-circle p-5 mb-4">
+            <i class="bi bi-chat-dots text-primary display-1 opacity-25"></i>
+          </div>
+          <h4 class="fw-bold">Your Messages</h4>
+          <p class="text-muted">Select a conversation to start chatting with owners.</p>
         </div>
 
       </div>
     </div>
-
-    <div class="row h-100 d-md-none d-flex">
-      <!-- Chat Heads -->
-      <div class="col-12 border-end d-flex flex-column">
-        <div class="d-flex align-items-center mb-3 px-2">
-          <h5 class="mb-0">Messages</h5>
-          <router-link to="/" class="btn btn-light btn-sm ms-auto">
-            <i class="bi bi-arrow-left"></i> Back
-          </router-link>
-        </div>
-
-        <div class="border-bottom py-2 px-3 d-flex align-items-center">
-          <button
-            :class="selectedChat ? 'd-inline-block' : 'd-none'"
-            class="btn btn-light btn-sm me-2"
-            @click="selectedChat = null"
-          >
-            <i class="bi bi-arrow-left"></i>
-          </button>
-
-          <h6 class="mb-0">{{ selectedChat?.name }}</h6>
-        </div>
-
-        <ul :class="selectedChat ? 'd-none' : 'd-flex'" class="list-group flex-grow-1 overflow-auto">
-          <li
-            v-for="chat in chats"
-            :key="chat.user_id"
-            class="list-group-item list-group-item-action d-flex align-items-center"
-            :class="{ active: selectedChat && selectedChat.user_id === chat.user_id }"
-            @click="selectChat(chat)"
-            style="cursor: pointer;"
-          >
-            <img
-              :src="chat.profile_photo"
-              class="rounded-circle me-3"
-              width="40"
-              height="40"
-              alt="profile"
-            />
-            <div>
-              <h6 class="mb-0">{{ chat.name }}</h6>
-              <small class="text-muted">{{ chat.lastMessage }}</small>
-            </div>
-          </li>
-        </ul>
-
-        <!-- Chat Window for mobile -->
-        <div :class="selectedChat ? 'd-block' : 'd-none'" class="messages-box flex-grow-1 overflow-auto px-3 py-2" ref="messagesBox">
-          <div v-for="(msg, index) in messages" :key="index" class="mb-2" :class="{ 'text-end': msg.sender_id === authId }">
-            <span class="px-3 py-2 rounded-pill d-inline-block message-bubble" :class="msg.sender_id === authId ? 'bg-primary text-white' : 'bg-light text-dark'">
-              {{ msg.message }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Input (FIXED) -->
-        <div :class="selectedChat ? 'd-flex' : 'd-none'" class="border-top p-3">
-          <div class="input-group">
-            <input
-              type="text"
-              class="form-control"
-              v-model="newMessage"
-              @keyup.enter="sendMessage"
-              placeholder="Type a message..."
-            />
-            <button class="btn btn-primary" @click="sendMessage">
-              <i class="bi bi-send"></i>
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-    
   </div>
 </template>
 
@@ -190,7 +124,6 @@ import Header from '@/components/Header.vue';
 
 export default {
   components: { Header },
-
   data() {
     return {
       authId: null,
@@ -201,21 +134,19 @@ export default {
       profile_photo: null
     };
   },
-
   methods: {
+    formatTime(date) {
+      return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    },
     async selectChat(chat) {
       this.selectedChat = chat;
       this.profile_photo = chat.profile_photo;
-
       const res = await fetchConversation(chat.user_id);
       this.messages = res.data.messages;
-
       this.scrollToBottom();
     },
-
     async sendMessage() {
       if (!this.newMessage.trim()) return;
-
       const text = this.newMessage;
       const receiverId = this.selectedChat.user_id;
 
@@ -235,17 +166,14 @@ export default {
         console.error(e);
       }
     },
-
     async getMessages() {
       const res = await fetchMessages();
       this.chats = res.data.chats;
     },
-
     async getAuthId() {
       const res = await getAuthUserId();
       this.authId = res.data.userid;
     },
-
     scrollToBottom() {
       this.$nextTick(() => {
         const el = this.$refs.messagesBox;
@@ -253,7 +181,6 @@ export default {
       });
     }
   },
-
   async mounted() {
     await this.getAuthId();
     await this.getMessages();
@@ -270,21 +197,74 @@ export default {
 
 <style scoped>
 .chat-root {
-  height: calc(100vh - 64px); /* header height */
+  height: calc(100vh - 72px);
+  background-color: #f0f2f5;
 }
 
-.message-bubble {
-  max-width: 75%;
-
+.chat-bg {
+  background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+  background-repeat: repeat;
+  background-size: contain;
 }
 
-.messages-box {
-  background-color: #ffffff;
+/* Sidebar Styling */
+.conversation-item {
+  cursor: pointer;
+  border-left: 4px solid transparent;
+}
+.conversation-item:hover {
+  background-color: #f8f9fa;
+}
+.active-chat {
+  background-color: #f0f7ff !important;
+  border-left-color: #0d6efd;
+}
+.chat-avatar {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
 }
 
-.list-group-item.active {
-  background-color: #e9ecef;
-  border-color: #dee2e6;
-  color: #000;
+/* Message Bubble Styling */
+.message-card {
+  max-width: 70%;
+  padding: 10px 16px;
+  border-radius: 18px;
+  font-size: 0.95rem;
+}
+.sent {
+  background-color: #0d6efd;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+.received {
+  background-color: white;
+  color: #333;
+  border-bottom-left-radius: 4px;
+}
+.message-time {
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+/* Status Indicator */
+.status-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 15px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid white;
+  border-radius: 50%;
+}
+.online { background-color: #28a745; }
+
+/* Custom Scrollbar */
+.scroll-custom::-webkit-scrollbar { width: 5px; }
+.scroll-custom::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 10px; }
+
+@media (max-width: 768px) {
+  .chat-root { height: calc(100vh - 60px); }
+  .sidebar-mobile { width: 100%; }
 }
 </style>

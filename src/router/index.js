@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import App from '@/App.vue'
-import home from '@/views/home.vue'
 import Login from '@/views/Authentication/login.vue'
 import Register from '@/views/Authentication/register.vue'
 import Profile from '@/views/User/profile.vue'
@@ -38,12 +37,21 @@ import Payment from '@/views/Owner/Payment.vue'
 import TenantDashboard from '@/views/User/TenantDashboard.vue'
 import { useUserInfo } from '@/store/userInfo'
 import Admin from '@/views/Admin/Admin.vue'
+import LandingPage from '@/views/Main/LandingPage.vue'
+import EditLocation from '@/views/User/EditLocation.vue'
+import VerifyEmail from '@/views/Authentication/VerifyEmail.vue'
+import ResendVerifyEmail from '@/views/Authentication/ResendVerifyEmail.vue'
 const routes = [
   {
       path: '/',
-      redirect: '/Home'
+      redirect: '/Rentahub'
     },
     {
+      path: '/Rentahub',
+      name: 'LandingPage',
+      component: LandingPage,
+    },
+    { 
       path: '/map',
       name: 'map',
       component: Map,
@@ -53,7 +61,7 @@ const routes = [
       path: '/experience',
       name: 'experience',
       component: Experience,
-      meta: { requiresAuth:true }
+      meta: { requiresAuth:true, isVerified:true }
     },
     {
       path: '/Home',
@@ -69,49 +77,55 @@ const routes = [
       path: '/profile',
       name: 'profile',
       component: Profile,
-      meta: { requiresAuth:true },
+      meta: { requiresAuth:true, isVerified:true },
     },
     {
       path: '/completion',
       name: 'profile_completion',
       component: CompleteProfile,
-      meta: {requiresAuth:true},
+      meta: {requiresAuth:true, isVerified:true},
     },
     {
       path: '/profile/preferences/edit',
       name: 'edit_preferences',
       component: EditPreference,
-      meta: {requiresAuth:true},
+      meta: {requiresAuth:true, isVerified:true},
+    },
+    {
+      path: '/profile/location/edit',
+      name: 'edit_location',
+      component: EditLocation,
+      meta: {requiresAuth:true, isVerified:true},
     },
     {
       path: '/profile/edit',
       name: 'edit_profile',
       component: EditProfile,
-      meta: { requiresAuth:true },
+      meta: { requiresAuth:true, isVerified:true},
     },
     {
       path: '/messages',
       name: 'messages',
       component: Message,
-      meta: { requiresAuth:true },
+      meta: { requiresAuth:true, isVerified:true},
     },
     {
       path: '/notifications',
       name: 'notifications',
       component: Notification,
-      meta: { requiresAuth:true },
+      meta: { requiresAuth:true, isVerified:true},
     },
     {
       path: '/settings',
       name: 'settings',
       component: Setting,
-      meta: { requiresAuth:true },
+      meta: { requiresAuth:true, isVerified:true},
     },
     {
       path: '/change-pass',
       name: 'changePassword',
       component: ChangePassword,
-      meta: { requiresAuth:true },
+      meta: { requiresAuth:true, isVerified:true},
     },
     {
       path: '/about',
@@ -127,19 +141,20 @@ const routes = [
       path: '/tenant/dashboard',
       name: 'tenantDashboard',
       component: TenantDashboard,
+      meta: {requiresAuth:true, isVerified:true, roleIsTenants: true}
     },
     // On development and testing ( Payment )
     {
       path: "/payment/wall",
       name: "paymentWall",
       component: PaymentWall,
-      meta: { requiresAuth:true },
+      meta: { requiresAuth:true, isUser: true, isVerified:true },
     },
     {
       path: '/payment/details',
       name: "paymentDetails",
       component: PaymentDetails,
-      meta: { requiresAuth:true },
+      meta: { requiresAuth:true, isUser: true, isVerified:true},
     },
     // Authentication Route
     {
@@ -152,13 +167,24 @@ const routes = [
       name: "register",
       component: Register
     },
+    {
+      path: '/verify-email',
+      name: 'verify-email',
+      component: VerifyEmail
+    },
+    {
+      path: "/reverify-email",
+      name: "reverify-email",
+      component: ResendVerifyEmail,
+      meta: { requiresAuth: true }
+    },
     // For Owner
     {
     path: "/dashboard",
     name: "OwnerDashboard",
     redirect: "/overview",
     component: Dashboard,
-    meta: { requiresAuth:true,  },
+    meta: { requiresAuth:true, roleIsOwner: true, isVerified:true  },
     children: [
         {
           path: "/overview",
@@ -215,45 +241,40 @@ const routes = [
           meta: { requiresAuth:true },
         }
       ]
-   },
-   {
-    path: "/admin/dashboard",
-    name: "AdminDashboard",
-    component: AdminDashboard,
-    meta: { requiresAuth:true },
-    children: [
-      {
-        path: "/admin/admin",
-        name: "AdminOverview",
-        component: Admin,
-        meta: {requiresAuth:true}
-      },
-      {
-        path: "/admin/owners",
-        name: "AdminOwners",
-        component: OwnerList,
-        meta: {requiresAuth:true}
-      },
-      {
-        path: "/admin/tenants",
-        name: "AdminTenants",
-        component: TenantsList,
-        meta: {requiresAuth: true}
-      },
-      {
-        path: "/admin/properties",
-        name: "AdminProperties",
-        component: AdminProperty,
-        meta: {requiresAuth: true}
-      } 
-    ]
-   },
-   {
-    path: "/testMessage",
-    name: "TestMessage",
-    component: TestMessage,
-    meta: { requiresAuth:true }
-   }
+    },
+    //  For Admin
+    {
+      path: "/admin/dashboard",
+      name: "AdminDashboard",
+      component: AdminDashboard,
+      meta: { requiresAuth:true, roleIsAdmin: true, isVerified:true },
+      children: [
+        {
+          path: "/admin/admin",
+          name: "AdminOverview",
+          component: Admin,
+          meta: {requiresAuth:true}
+        },
+        {
+          path: "/admin/owners",
+          name: "AdminOwners",
+          component: OwnerList,
+          meta: {requiresAuth:true}
+        },
+        {
+          path: "/admin/tenants",
+          name: "AdminTenants",
+          component: TenantsList,
+          meta: {requiresAuth: true}
+        },
+        {
+          path: "/admin/properties",
+          name: "AdminProperties",
+          component: AdminProperty,
+          meta: {requiresAuth: true}
+        } 
+      ]
+    },
 
 ]
 
@@ -262,7 +283,6 @@ const router = createRouter({
   routes
 })
 
-let prevRoute = null;
 
 
 router.beforeEach(
@@ -270,25 +290,51 @@ router.beforeEach(
     const isLoggedIn = !!localStorage.getItem("access_token");
 
 
-    prevRoute = from;
+    let role = "guest";
+    let email_verified_at = null;
+    if(isLoggedIn){
+      const user = JSON.parse(localStorage.getItem("userInfo"))
+      role = user?.role;
+      email_verified_at = user?.email_verified_at;
+    }
 
+    // Hard Lock for User who is not verified and logged in
+    if (
+      isLoggedIn &&
+      !email_verified_at &&
+      to.path !== "/reverify-email" &&
+      to.path !== "/logout"
+    ) {
+      return next("/reverify-email");
+    }
+
+    // Redirect to home if user logged in is trying to go to /login /register
     if((to.path === "/login" || to.path === "/register") && isLoggedIn){
       return next("/home");
     }
 
-    // Example usage for your Role check
-    if (to.meta.roleIsOwner && role !== 'owner') {
-      return next("/unauthorized"); // Or wherever you want to send them
-    }
-    
-    // Example usage for your Role check
-    if (to.meta.roleIsOwner && role !== 'admin') {
-      return next("/unauthorized"); // Or wherever you want to send them
+    if((to.path === "/verify-email" || to.path === "/reverify-email") && isLoggedIn && email_verified_at){
+      return next("/home");
     }
 
-    // Example usage for your Role check
-    if (to.meta.roleIsOwner && role !== 'tenants') {
-      return next("/unauthorized"); // Or wherever you want to send them
+    if(to.meta.isUser && role !== "user"){
+      return next("/home");
+    }
+
+    if(to.meta.isVerified && !email_verified_at){
+      return next("/reverify-email")
+    }
+    
+    if (to.meta.roleIsOwner && role !== 'owner') {
+      return next("/home"); 
+    }
+    
+    if (to.meta.roleIsAdmin && role !== 'admin') {
+      return next("/home"); 
+    }
+
+    if (to.meta.roleIsTenants && role !== 'tenants') {
+      return next("/home"); 
     }
 
     if(to.meta.requiresAuth && !isLoggedIn){
@@ -301,4 +347,4 @@ router.beforeEach(
 );
 
 
-export {router, prevRoute};
+export {router};

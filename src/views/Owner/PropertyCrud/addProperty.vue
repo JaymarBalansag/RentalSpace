@@ -234,7 +234,7 @@
             <div v-if="showBedrooms" class="card shadow-sm mb-3">
               <div class="card-header bg-light d-flex align-items-center">
                 <label class="mb-0 me-2 small fw-bold">Bedrooms:</label>
-                <input type="number" min="1" v-model="form.bedrooms" class="form-control form-control-sm w-25" />
+                <input type="number" min="1" v-model="form.bedrooms" @input="fillMaxOccupants" class="form-control form-control-sm w-25" />
               </div>
               <div class="card-body">
                 <label class="form-label small fw-bold">Bed Types</label>
@@ -249,11 +249,11 @@
                 <div class="row g-2 mt-2">
                   <div v-if="form.bed_type.includes('Single Bed')" class="col-6">
                     <label class="small text-muted">Single Beds</label>
-                    <input type="number" v-model="form.single_bed" class="form-control form-control-sm" />
+                    <input type="number" v-model="form.single_bed" @input="fillMaxOccupants" class="form-control form-control-sm" />
                   </div>
                   <div v-if="form.bed_type.includes('Double Bed')" class="col-6">
                     <label class="small text-muted">Double Beds</label>
-                    <input type="number" v-model="form.double_bed" class="form-control form-control-sm" />
+                    <input type="number" v-model="form.double_bed" @input="fillMaxOccupants" class="form-control form-control-sm" />
                   </div>
                 </div>
               </div>
@@ -286,8 +286,8 @@
             <div class="bg-light p-3 rounded-3 border mb-3">
               <div v-if="showBedSpace" class="mb-3">
                 <label class="form-label small fw-bold">Max Occupants (Bed Space)</label>
-                <input type="number" v-model="form.bed_space" class="form-control" />
-                <small class="text-muted d-block mt-1">Total people allowed</small>
+                <input type="number" disabled v-model="form.bed_space" class="form-control" />
+                <small class="text-muted d-block mt-1">Total people on the property</small>
               </div>
 
               <div v-if="showSizeFiels" class="row g-2">
@@ -726,7 +726,7 @@
 
 <script>
 import axios from "axios";
-import { createProperty, getRegion, getProvinces, getBarangays, getMunCities, getAmenities, getFacilities, getPropertyTypes } from "@/api/property";
+import { createProperty, getAmenities, getFacilities, getPropertyTypes } from "@/api/property";
 import confirmModal from "@/components/confirmModal.vue";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -824,7 +824,7 @@ export default {
       previewPropertyImages: [],
       timeoutId: null,
       loading: false,
-
+      maxField : false,
     };
   },
   components: {
@@ -1057,6 +1057,7 @@ export default {
       }
     },
     closeConfirmModal(){
+      this.loading = false;
       this.showConfirmModal = false;
     },
 
@@ -1237,6 +1238,25 @@ export default {
         }
       );
     },
+    fillMaxOccupants(){
+      if(this.form.bedrooms <= 0){
+        return;
+      }
+      if(this.form.single_bed > 0 || this.form.double_bed > 0){
+        let bedrooms = this.form.bedrooms;
+        let single = this.form.single_bed;
+        let double = this.form.double_bed * 2;
+        let max = 0;
+        if(this.form.single_bed > 0) {
+          max += bedrooms * single;
+          this.form.bed_space = max; 
+        }
+        if(this.form.double_bed > 0) {
+          max += bedrooms * double;
+          this.form.bed_space = max; 
+        }
+      }
+    },
 
     // Code for Property Details
     async getAmenities(){
@@ -1303,7 +1323,7 @@ export default {
       if (!this.selectedPropertyName) return false;
 
       // Hide bedrooms for these property types:
-      const excludedTypes = ['commercial space', 'hotel', 'apartment', 'condo'];
+      const excludedTypes = ['commercial space', 'hotel'];
 
       // Return false if the selected type is in the excluded list
       return !excludedTypes.includes(this.selectedPropertyName.toLowerCase());
@@ -1314,7 +1334,7 @@ export default {
     },
     showSizeFiels(){
       if (!this.selectedPropertyName) return false;
-      const includedTypes = ['apartment', 'condo', 'commercial space', 'hotel'];
+      const includedTypes = ['commercial space', 'hotel'];
       return includedTypes.includes(this.selectedPropertyName.toLowerCase());
     },
     
@@ -1335,6 +1355,34 @@ export default {
     },
     "form.longitude"() {
       this.setAddressFields();
+    },
+    'form.bed_type': {
+      handler(newVal) {
+        // If "Single Bed" is unchecked, reset its count to 0
+        if (!newVal.includes('Single Bed')) {
+          this.form.single_bed = 0;
+        }
+        // If "Double Bed" is unchecked, reset its count to 0
+        if (!newVal.includes('Double Bed')) {
+          this.form.double_bed = 0;
+        }
+        // Recalculate whenever the checkboxes change
+        this.fillMaxOccupants();
+      },
+      deep: true
+    },
+    'form.bath_type': {
+      handler(newVal) {
+        // If "Single Bed" is unchecked, reset its count to 0
+        if (!newVal.includes('Private')) {
+          this.form.private_bath = 0;
+        }
+        // If "Double Bed" is unchecked, reset its count to 0
+        if (!newVal.includes('Public')) {
+          this.form.public_bath = 0;
+        }
+      },
+      deep: true
     },
     'form.bedrooms'(newVal) {
       if (newVal < 0) {

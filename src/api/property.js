@@ -174,3 +174,13 @@ export async function getPropertyLimit(){
     throw error
   }
 }
+
+
+export async function recordView(id){
+  try {
+    const response = api.post(`/record-view/${id}`);
+    // console.log(response);
+  } catch (error) {
+    throw error
+  }
+}

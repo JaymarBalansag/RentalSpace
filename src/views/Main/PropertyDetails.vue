@@ -390,6 +390,7 @@ import { useUserInfo } from '@/store/userInfo';
 import confirmModal from "@/components/confirmModal.vue";
 import Header from "@/components/Header.vue";
 import PropertyMap from "@/components/propertyMap.vue";
+import Swal from "sweetalert2";
 
 export default {
   name: "PropertyDetails",
@@ -533,6 +534,22 @@ export default {
     toTitle(text){
       return text ? text.charAt(0).toUpperCase() + text.slice(1).replaceAll("_", " ") : "-";
     },
+    isProfileComplete(value) {
+      return value === true || value === 1 || value === "1";
+    },
+    async ensureProfileCompletedOrRedirect() {
+      const info = useUserInfo();
+      if (this.isProfileComplete(info.isComplete)) return true;
+
+      await Swal.fire({
+        icon: "warning",
+        title: "Complete your profile first",
+        text: "Please complete your profile before booking a property or messaging an owner.",
+        confirmButtonText: "Go to Profile",
+      });
+      this.$router.push("/completion");
+      return false;
+    },
     BackToPrevPage() {
       if (window.history.length > 1) { this.$router.back(); } 
       else { this.$router.push("/home"); }
@@ -557,13 +574,16 @@ export default {
         this.loading = false;
       }
     },
-    openAgreementModal() {
+    async openAgreementModal() {
       const info = useUserInfo();
       const isLoggedin = info.isLoggedIn;
       if(!isLoggedin){
         this.$router.push('/login');
         return;
       }
+
+      const canProceed = await this.ensureProfileCompletedOrRedirect();
+      if (!canProceed) return;
 
       this.agreement = { agreement: false, notes: "", move_in_date: "" };
       this.showUserAgreementModal = true;
@@ -600,6 +620,8 @@ export default {
         this.$router.push("/login");
         return;
       }
+      const canProceed = await this.ensureProfileCompletedOrRedirect();
+      if (!canProceed) return;
 
       try {
         const response = await initiateConversation(receiver_id, property_id);

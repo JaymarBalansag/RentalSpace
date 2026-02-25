@@ -83,8 +83,13 @@
                 <div class="card-body px-1 pt-3">
                   <div class="d-flex justify-content-between align-items-start mb-1">
                     <h6 class="fw-bold text-dark mb-0 text-truncate">{{ property.title }}</h6>
-                    <div class="text-warning small"><i class="bi bi-star-fill"></i> 4.8</div>
+                    <div class="text-warning small">
+                      <i class="bi bi-star-fill"></i> {{ getPropertyAverageRating(property).toFixed(1) }}
+                    </div>
                   </div>
+                  <p class="small text-muted mb-1">
+                    {{ getPropertyTotalReviews(property) }} review{{ getPropertyTotalReviews(property) === 1 ? '' : 's' }}
+                  </p>
                   <p class="text-muted small mb-0 d-flex align-items-center gap-1">
                     <i class="bi bi-geo-alt-fill text-danger"></i> {{ property.town_name }}
                   </p>
@@ -130,6 +135,14 @@
                     <p class="small text-muted mb-2 text-truncate-2">{{ property.description || 'Popular property based on recent user views.' }}</p>
                     <div class="d-flex align-items-center justify-content-between mt-2">
                       <span class="text-primary small fw-bold">PHP {{ formatPrice(property.price) }}</span>
+                      <small class="text-warning fw-semibold">
+                        <i class="bi bi-star-fill"></i> {{ getPropertyAverageRating(property).toFixed(1) }}
+                      </small>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between mt-1">
+                      <small class="text-muted">
+                        {{ getPropertyTotalReviews(property) }} review{{ getPropertyTotalReviews(property) === 1 ? '' : 's' }}
+                      </small>
                       <small class="text-muted"><i class="bi bi-eye"></i> {{ formatCompactNumber(getViewCount(property)) }}</small>
                     </div>
                   </div>
@@ -253,6 +266,14 @@ export default {
 
     formatPrice(value) {
       return new Intl.NumberFormat("en-PH").format(Number(value) || 0);
+    },
+    getPropertyAverageRating(property) {
+      const value = Number(property?.average_rating ?? property?.avg_rating ?? 0);
+      return Number.isFinite(value) ? value : 0;
+    },
+    getPropertyTotalReviews(property) {
+      const value = Number(property?.total_reviews ?? property?.review_count ?? 0);
+      return Number.isFinite(value) ? value : 0;
     },
 
     async handleLoad(apiCall, targetKey, filterName = '') {

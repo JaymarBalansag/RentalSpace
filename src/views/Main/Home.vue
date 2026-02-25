@@ -184,6 +184,18 @@
                     <p class="text-secondary small flex-grow-1 text-truncate-custom">
                       {{ property.description }}
                     </p>
+                    <div v-if="property.display_chips && property.display_chips.length" class="d-flex flex-wrap gap-2 mb-2">
+                      <span
+                        v-for="chip in property.display_chips"
+                        :key="`${property.id}-${chip}`"
+                        class="feature-chip"
+                      >
+                        {{ chip }}
+                      </span>
+                      <span v-if="(property.display_chips_more_count || 0) > 0" class="feature-chip feature-chip-more">
+                        +{{ property.display_chips_more_count }} more
+                      </span>
+                    </div>
                     <div class="d-flex justify-content-between align-items-end border-top pt-3 mt-3">
                       <div>
                         <span class="text-primary fw-bold fs-4">{{ property.price }}</span>
@@ -528,6 +540,24 @@ export default {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.feature-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #0f3d88;
+  background: #e8f0ff;
+  border: 1px solid #d4e2ff;
+}
+
+.feature-chip-more {
+  color: #5f6b7a;
+  background: #f3f5f8;
+  border-color: #e0e6ee;
 }
 
 .filter-list {

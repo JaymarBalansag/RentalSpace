@@ -1,86 +1,141 @@
 <template>
-  <Header></Header>
+  <Header />
 
   <div class="bg-light py-5">
     <div class="container">
       <div class="row justify-content-center">
-        <div class="col-lg-8">
+        <div class="col-lg-10">
           <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-
-            <!-- Header -->
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              <RouterLink to="/payment/wall" class="text-white text-decoration-none d-flex align-items-center">
-                <i class="bi bi-arrow-left fs-4 me-2"></i>
-                Back
+            
+            <div class="card-header bg-primary text-white d-flex align-items-center py-3">
+              <RouterLink to="/payment/wall" class="text-white text-decoration-none">
+                <i class="bi bi-arrow-left fs-4 me-2"></i> Back
               </RouterLink>
-              <h3 class="ms-auto me-auto mb-0 fw-semibold">Payment Details</h3>
+              <h3 class="ms-auto me-auto mb-0 fw-semibold">Secure Checkout</h3>
             </div>
 
-            <!-- Body -->
-            <div class="card-body p-4">
-              <div class="row">
+            <div class="card-body p-4 p-md-5">
+              <div class="row g-4">
                 
-                <!-- Left: Form -->
-                <div class="col-md-6 border-end">
-                  <h5 class="fw-bold mb-3 text-primary">Your Information</h5>
+                <div class="col-md-7 border-end">
                   
-                  <div class="mb-3">
-                    <label class="form-label fw-semibold">Full Name</label>
-                    <input v-model="name" type="text" class="form-control shadow-sm" readonly>
-                  </div>
+                  <div v-if="!isProcessingPayment" class="animate-fade-in">
+                    <h5 class="fw-bold mb-3 text-primary">Owner Verification</h5>
+                    <p class="text-muted small mb-4">Please provide your details to verify your account and receive payments.</p>
 
-                  <div class="mb-3">
-                    <label class="form-label fw-semibold">Email Address</label>
-                    <input v-model="email" type="email" class="form-control shadow-sm" readonly>
-                  </div>
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label fw-semibold">Full Name</label>
+                        <input v-model="name" type="text" class="form-control bg-light" readonly>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label fw-semibold">Email</label>
+                        <input v-model="email" type="text" class="form-control bg-light" readonly>
+                      </div>
+                      <div class="col-12 d-flex gap-3 border-top pt-2">
+                        <div class="form-check">
+                          <input class="form-check-input" v-model="paymentType" value="gcash" type="radio" name="radioDefault" id="radioDefault1" checked>
+                          <label class="form-check-label" for="radioDefault1">
+                            Gcash
+                          </label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" v-model="paymentType" value="paymaya" type="radio" name="radioDefault" id="radioDefault2" >
+                          <label class="form-check-label" for="radioDefault2">
+                            Paymaya
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-12 border-bottom pb-2">
+                        <label class="form-label fw-semibold">Contact Number (GCash/Maya)</label>
+                        <div class="input-group">
+                          <span class="input-group-text bg-white"><i class="bi bi-phone"></i></span>
+                          <input v-model="phoneNumber" type="tel" class="form-control" placeholder="09XXXXXXXXX" inputmode="numeric">
+                        </div>
+                        <small class="text-muted">Required for receiving payments from tenants.</small>
+                      </div>
 
-                  <h5 class="fw-bold mt-4 mb-3 text-primary">Payment Method</h5>
-                  <select v-model="paymentMethod" class="form-select shadow-sm">
-                    <option disabled value="">-- Select Payment Method --</option>
-                    <option value="qrph">QR Ph</option>
-                    <option value="gcash" disabled>GCash (Unavailable)</option>
-                    <option value="maya" disabled>Maya (Unavailable)</option>
-                  </select>
-
-                  <button 
-                    @click="validatedPayment"
-                    class="btn btn-primary w-100 mt-4 fw-semibold py-2"
-                  >
-                    <i class="bi bi-credit-card me-2"></i> Confirm Payment
-                  </button>
-                </div>
-
-                <!-- Right: Plan Summary -->
-                <div class="col-md-6">
-                  <div class="text-center p-4">
-                    <h5 class="fw-bold text-primary mb-3">Selected Plan</h5>
-
-                    <div class="p-4 rounded-4 border border-primary-subtle shadow-sm bg-white">
-                      <h3 class="fw-bold mb-2">{{ selectedPlan }}</h3>
-                      <p class="fs-4 text-primary fw-semibold mb-2">₱{{ planPrice }}</p>
-                      <p class="text-muted small mb-3">Billed {{ planBilling }}</p>
-
-                      <hr>
-
-                      <ul class="list-unstyled text-start small">
-                        <li><i class="bi bi-check2 text-success"></i> Verified listing approval</li>
-                        <li><i class="bi bi-check2 text-success"></i> Access to property dashboard</li>
-                        <li><i class="bi bi-check2 text-success"></i> Manage bookings and tenants</li>
-                      </ul>
+                      <div class="col-md-6">
+                        <label class="form-label fw-semibold">Business Permit</label>
+                        <input type="file" @change="handleFileUpload($event, 'permit')" class="form-control form-control-sm" accept="image/*,.pdf">
+                        <div v-if="permitPreview" class="mt-2 border rounded p-1 bg-white text-center shadow-sm">
+                          <img :src="permitPreview" class="img-fluid rounded" style="max-height: 80px;">
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label fw-semibold">Valid Government ID</label>
+                        <input type="file" @change="handleFileUpload($event, 'id')" class="form-control form-control-sm" accept="image/*,.pdf">
+                        <div v-if="idPreview" class="mt-2 border rounded p-1 bg-white text-center shadow-sm">
+                          <img :src="idPreview" class="img-fluid rounded" style="max-height: 80px;">
+                        </div>
+                      </div>
                     </div>
 
-                    <p class="text-muted mt-3 small">
-                      💡 Simulation mode only — payment gateway is disabled for demo purposes.
-                    </p>
+                    <button @click="validatedPayment" class="btn btn-primary w-100 mt-4 fw-bold py-2 shadow">
+                      <i class="bi bi-shield-check me-2"></i> Confirm & Generate Payment QR
+                    </button>
+                  </div>
+
+                  <div v-else class="text-center animate-fade-in py-2">
+                    <h4 class="fw-bold text-success mb-2">Scan QR Ph to Pay</h4>
+                    <p class="text-muted small">Open GCash, Maya, or any Banking App to scan.</p>
+                    
+                    <div v-if="qrCodeUrl" class="my-4">
+                      <div class="d-inline-block p-3 border rounded-4 bg-white shadow-sm">
+                        <img :src="qrCodeUrl" alt="QR Ph" class="img-fluid" style="max-width: 240px;">
+                      </div>
+                      <p class="text-danger mt-3 small fw-bold animate-pulse">
+                        <i class="bi bi-clock-history me-1"></i> Waiting for your payment...
+                      </p>
+                    </div>
+                    
+                    <div v-else class="py-5">
+                      <div class="spinner-border text-primary" role="status"></div>
+                      <p class="mt-2 text-primary fw-medium">Generating Secure QR Ph...</p>
+                    </div>
+
+                    <button @click="cancelPayment" class="btn btn-link text-muted mt-3">
+                      Cancel & Change Details
+                    </button>
+                  </div>
+                </div>
+
+                <div class="col-md-5">
+                  <div class="p-4 rounded-4 bg-primary bg-opacity-10 border border-primary-subtle shadow-sm h-100">
+                    <h5 class="fw-bold text-primary mb-4">Subscription Summary</h5>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                      <span class="text-muted">Selected Plan:</span>
+                      <span class="fw-bold">{{ selectedPlan }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-4">
+                      <span class="text-muted">Billing Cycle:</span>
+                      <span class="fw-bold text-capitalize">{{ planBilling }}</span>
+                    </div>
+                    
+                    <hr class="border-primary opacity-25">
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                      <span class="h5 mb-0">Total Amount:</span>
+                      <span class="h3 mb-0 fw-bold text-primary">₱{{ planPrice.toLocaleString() }}</span>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-3 shadow-sm mb-0">
+                      <h6 class="fw-bold small mb-2 text-uppercase text-muted">Plan Benefits:</h6>
+                      <ul class="list-unstyled small mb-0">
+                        <li class="mb-2"><i class="bi bi-patch-check-fill text-primary me-2"></i> Property Listing Management</li>
+                        <li class="mb-2"><i class="bi bi-patch-check-fill text-primary me-2"></i> Real-time Tenant Inquiries</li>
+                        <li><i class="bi bi-patch-check-fill text-primary me-2"></i> Verified Badge on Listings</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
 
               </div>
             </div>
 
-            <!-- Footer -->
             <div class="card-footer text-center bg-white py-3 text-muted small">
-              Your payment information is processed securely and privately.
+              <i class="bi bi-lock-fill me-1"></i> Your data and payments are processed through PayMongo Secure Gateway.
             </div>
           </div>
         </div>
@@ -88,124 +143,152 @@
     </div>
   </div>
 
-  <!-- Confirm Modal -->
-    <ConfirmModal
-      :show="showConfirmModal"
-      title="Confirm Payment"
-      message="Are you sure all the information you entered is correct?"
-      confirm-text="Yes, I'm Sure"
-      @confirm="confirmPayment"
-      @cancel="closeConfirmModal"
-    />
+  <ConfirmModal
+    :show="showConfirmModal"
+    title="Final Confirmation"
+    message="By clicking proceed, you confirm your details and are ready to generate your payment QR code."
+    confirm-text="Proceed to Payment"
+    @confirm="confirmPayment"
+    @cancel="showConfirmModal = false"
+  />
 </template>
 
 <script>
-import { RouterLink } from 'vue-router'
-import { useUserInfo } from '@/store/userInfo'
-import { paymentConfirmation } from '@/api/payment'
-import ConfirmModal from '@/components/confirmModal.vue';
+import api from '@/api/api';
 import Header from '@/components/Header.vue';
+import ConfirmModal from '@/components/confirmModal.vue';
+import { useUserInfo } from '@/store/userInfo';
 
 export default {
-  name: "PaymentDetails",
-  components: { RouterLink, ConfirmModal, Header },
+  name: "PaymentCheckout",
+  components: { Header, ConfirmModal },
   data() {
     return {
+      // Logic Control
+      isProcessingPayment: false,
       showConfirmModal: false,
-      name: null,
-      email: null,
-      role: null,
-      selectedPlan: null,
-      planPrice: 200,
-      planBilling: "",
-      paymentMethod: ""
-    }
+      qrCodeUrl: null,
+      subscriptionId: null,
+      checkStatusInterval: null,
+
+      // User Info
+      name: "",
+      email: "",
+      paymentType: "gcash",
+      phoneNumber: "",
+      
+      // Files & Previews
+      businessPermit: null,
+      validId: null,
+      permitPreview: null,
+      idPreview: null,
+
+      // Plan Details
+      selectedPlan: this.$route.query.plan || 'Monthly',
+      planPrice: this.$route.query.plan === 'Annual' ? 2000 : 200,
+      planBilling: this.$route.query.plan === 'Annual' ? 'per year' : 'per month'
+    };
   },
   mounted() {
-    this.getUserInfo()
-    this.getPlanDetails()
+    this.getUserInfo();
   },
   methods: {
     getUserInfo() {
-      const userInfo = JSON.parse(localStorage.getItem("userInfo"))
+      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
       if (userInfo) {
-        this.name = `${userInfo.first_name} ${userInfo.last_name}`
-        this.email = userInfo.email
-        this.role = userInfo.role
+        this.name = `${userInfo.first_name} ${userInfo.last_name}`;
+        this.email = userInfo.email;
       }
     },
-    async getPlanDetails() {
-      const plan = this.$route.query.plan
-      if (plan === "Annual") {
-        this.selectedPlan = "Annual"
-        this.planPrice = 2000
-        this.planBilling = "per year"
-      } else if (plan === "Monthly") {
-        this.selectedPlan = "Monthly"
-        this.planPrice = 200
-        this.planBilling = "per month"
+    handleFileUpload(event, type) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (type === 'permit') {
+        this.businessPermit = file;
+        this.permitPreview = URL.createObjectURL(file);
       } else {
-        this.$router.push({
-          path: '/payment/wall',
-          query: { message: 'Invalid plan selected' }
-        })
+        this.validId = file;
+        this.idPreview = URL.createObjectURL(file);
       }
     },
     validatedPayment() {
-      if (!this.paymentMethod) {
-        alert("⚠ Please select a payment method.")
-        return
-      }
-
-      if(!this.selectedPlan){
-        alert("⚠ Please select a payment plan.")
-        return
-      }
-
+      const phPhoneRegex = /^09\d{9}$/;
+      if (!phPhoneRegex.test(this.phoneNumber)) return alert("⚠ Please enter a valid 09XXXXXXXXX phone number.");
+      if (!this.businessPermit) return alert("⚠ Please upload your Business Permit.");
+      if (!this.validId) return alert("⚠ Please upload a valid Government ID.");
+      
       this.showConfirmModal = true;
-     
     },
     async confirmPayment() {
+      this.showConfirmModal = false;
+      this.isProcessingPayment = true;
+
       try {
-        const res = await paymentConfirmation(
-          this.selectedPlan,
-          this.paymentMethod
-        )
+        const fd = new FormData();
+        fd.append('plan', this.selectedPlan);
+        fd.append('amount', this.planPrice);
+        fd.append('paymentType', this.paymentType)
+        fd.append('phone', this.phoneNumber);
+        fd.append('permit', this.businessPermit);
+        fd.append('valid_id', this.validId);
 
-        const info = useUserInfo()
-        info.setRole("owner")
+        // API Call to your Laravel Backend
+        const response = await api.post('/paymongo/create-payment', fd);
+        
+        this.qrCodeUrl = response.data.qr_code;
+        this.subscriptionId = response.data.subscription_id;
 
-        localStorage.setItem("userInfo", JSON.stringify(res.data.user))
-
-        sessionStorage.setItem("subscriptionSuccess", true);
-        alert("✅ Subscription activated!")
-        this.$router.push("/home")
-      } catch (err) {
-        alert(err.response?.data?.message || "❌ Payment failed")
+        const info = useUserInfo();
+        info.setOwnerVerificationStatus("pending", null);
+        
+        this.startPolling();
+      } catch (error) {
+        this.isProcessingPayment = false;
+        alert("Error connecting to payment gateway. Please check your connection.");
       }
     },
-    closeConfirmModal() {
-      this.showConfirmModal = false;
+    startPolling() {
+      this.checkStatusInterval = setInterval(async () => {
+        try {
+          const res = await api.get(`/subscription-status/${this.subscriptionId}`);
+          if (res.data.status === 'active') {
+            clearInterval(this.checkStatusInterval);
+            this.$router.push('/payment/success');
+          }
+        } catch (e) {
+          console.error("Polling status failed...");
+        }
+      }, 3000);
+    },
+    cancelPayment() {
+      clearInterval(this.checkStatusInterval);
+      this.isProcessingPayment = false;
+      this.qrCodeUrl = null;
     }
+  },
+  watch: {
+    'phoneNumber'(val) {
+      if (!val) return;
+      // alert(this.paymentType)
+      let cleaned = val.replace(/\D/g, '');
+      if (cleaned.length > 0 && !cleaned.startsWith('09')) {
+        cleaned = cleaned.startsWith('9') ? '0' + cleaned : '09';
+      }
+      this.phoneNumber = cleaned.substring(0, 11);
+    }
+  },
+  beforeUnmount() {
+    clearInterval(this.checkStatusInterval);
   }
-}
+};
 </script>
 
 <style scoped>
-.card {
-  border-radius: 1rem;
-}
-
-.form-control,
-.form-select {
-  border-radius: 0.5rem;
-}
-
-.btn-primary {
-  border-radius: 0.5rem;
-}
-
-.bg-light {
-  background-color: #f8f9fb !important;
-}
+.animate-fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-pulse { animation: pulse 2s infinite; }
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+.card { border-radius: 1.5rem; }
+.form-control:focus { border-color: #0d6efd; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15); }
 </style>

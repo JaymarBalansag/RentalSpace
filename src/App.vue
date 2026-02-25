@@ -8,19 +8,37 @@ import api from './api/api';
 onMounted(async () => { 
   const info = useUserInfo();
   const isLoggedIn = localStorage.getItem("access_token");
+  
+  // 1. Sync local store with localStorage immediately
   info.hydrateUserInfo();
-  if(isLoggedIn){
-    const user = await api.get("/user");
-    const payload = {
-      "user" : user.data.user[0].first_name,
-      "first_name" : user.data.user[0].first_name,
-      "last_name" : user.data.user[0].last_name,
-      "role" : user.data.user[0].role,
-      "email" : user.data.user[0].email,
-      "profile_photo" : user.data.user[0].user_img_url,
-      "email_verified_at" : user.data.user[0].email_verified_at,
+
+  // 2. Only attempt server fetch if we think we are logged in
+  if (isLoggedIn) {
+    try {
+      const response = await api.get("/user");
+      
+      // Ensure data exists before mapping
+      if (response.data?.user?.[0]) {
+        const userData = response.data.user[0];
+        const payload = {
+          "user" : userData.first_name,
+          "first_name" : userData.first_name,
+          "last_name" : userData.last_name,
+          "role" : userData.role,
+          "email" : userData.email,
+          "profile_photo" : userData.user_img_url,
+          "email_verified_at" : userData.email_verified_at,
+          "isComplete" : userData.isComplete,
+          "owner_verification_status" : userData.owner_verification_status || null,
+          "owner_verified_at" : userData.owner_verified_at || null,
+        };
+        info.hydrateUserInfoFromServer(payload);
+      }
+    } catch (error) {
+      // If the interceptor failed to refresh, it will handle the redirect.
+      // We catch here just to prevent the console from throwing unhandled errors.
+      console.warn("Could not sync user profile:", error.response?.status);
     }
-    info.hydrateUserInfoFromServer(payload);
   }
 });
 

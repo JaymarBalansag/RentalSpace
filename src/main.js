@@ -11,6 +11,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 
 import "leaflet/dist/leaflet.css"
 import { createPinia } from 'pinia'
+import axios from "axios";
 
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
@@ -23,12 +24,25 @@ window.Echo = new Echo({
   cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
   forceTLS: true,
   encrypted: true,
-  authEndpoint: import.meta.env.VITE_API_BROADCAST_URL,
-  auth: {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-    }
-  },
+  authorizer: (channel) => ({
+    authorize: (socketId, callback) => {
+      const token = localStorage.getItem('access_token');
+
+      axios.post(
+        import.meta.env.VITE_API_BROADCAST_URL,
+        {
+          socket_id: socketId,
+          channel_name: channel.name,
+        },
+        {
+          withCredentials: true,
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      )
+      .then((response) => callback(false, response.data))
+      .catch((error) => callback(true, error));
+    },
+  }),
 });
 
 const pinia = createPinia()

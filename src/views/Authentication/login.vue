@@ -42,7 +42,7 @@
                 :type="showPassword ? 'text' : 'password'"
                 v-model="form.password"
                 class="form-control rounded-3 shadow-none pe-5 custom-input"
-                placeholder="••••••••"
+                placeholder="password"
                 required
               />
               <button
@@ -53,6 +53,18 @@
                 <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
               </button>
             </div>
+          </div>
+
+          <div class="mb-4 form-check">
+            <input
+              id="rememberEmail"
+              v-model="rememberEmail"
+              type="checkbox"
+              class="form-check-input"
+            />
+            <label class="form-check-label small text-secondary" for="rememberEmail">
+              Remember email on this device
+            </label>
           </div>
 
           <button
@@ -87,7 +99,9 @@ import { login } from '@/api/auth';
 import { useUserInfo } from '@/store/userInfo';
 import successToast from '@/components/successToast.vue';
 import { getUserProfile } from '@/api/user';
+import { getOwnerSubscriptionStatus } from '@/api/subscription';
 import Header from '@/components/Header.vue';
+import Swal from 'sweetalert2';
 
 export default {
   name: "Login",
@@ -98,6 +112,7 @@ export default {
   data() {
     return {
       form: { email: '', password: '' },
+      rememberEmail: false,
       showSuccess: false,
       showPassword: false,
       loading: false,
@@ -109,7 +124,7 @@ export default {
       this.loading = true;
       try {
         const res = await login(this.form.email, this.form.password);
-        console.log(res)
+        // console.log(res)
         // Ensure res has data before proceeding
         if (res) {
           // Fetch profile image right after login for the Header display
@@ -124,12 +139,41 @@ export default {
             res.role, 
             res.email, 
             profile_photo,
-            res.email_verified_at, 
+            res.email_verified_at,
+            res.isComplete,
+            res.owner_verification_status || userData.owner_verification_status || null,
+            res.owner_verified_at || userData.owner_verified_at || null,
           );
 
+          if (res.role === "owner") {
+            try {
+              const ownerSubscription = await getOwnerSubscriptionStatus();
+              info.setSubscriptionStatus(ownerSubscription);
 
-          console.log(info.first_name, info.last_name, info.role, info.email, info.email_verified_at);
+              if (ownerSubscription?.is_expiring_soon) {
+                await Swal.fire({
+                  icon: 'warning',
+                  title: 'Subscription Notice',
+                  text: ownerSubscription.message || `Your subscription will expire in ${ownerSubscription.days_left} day(s).`,
+                });
+              }
+            } catch (subscriptionError) {
+              console.warn("Subscription status fetch failed during login:", subscriptionError);
+            }
+          } else {
+            info.clearSubscriptionStatus();
+          }
 
+          console.log(info.first_name, info.last_name, info.role, info.email, info.email_verified_at, "Asdasd");
+
+
+          if (this.rememberEmail) {
+            localStorage.setItem("remember_email_enabled", "true");
+            localStorage.setItem("remembered_email", this.form.email);
+          } else {
+            localStorage.removeItem("remembered_email");
+            localStorage.setItem("remember_email_enabled", "false");
+          }
 
           if(res.email_verified_at === null){
             this.$router.push("/reverify-email");
@@ -139,17 +183,34 @@ export default {
           sessionStorage.setItem("loginSuccess", "true");
 
           this.$router.push("/home");
+          // window.location.href = '/home';
         } else {
-          alert("Invalid credentials. Please check your email and password.");
+          await Swal.fire({
+            icon: 'error',
+            title: 'Login Failed',
+            text: 'Invalid credentials. Please check your email and password.',
+          });
         }
       } catch (error) {
-        alert(error.response?.data?.message || "Something went wrong during login.");
+        const message = error.response?.data?.message || "Something went wrong during login.";
+        await Swal.fire({
+          icon: 'error',
+          title: 'Login Error',
+          text: message,
+        });
       } finally {
         this.loading = false;
       }
     }
   },
   mounted() {
+    const rememberEmailEnabled = localStorage.getItem("remember_email_enabled") === "true";
+    const rememberedEmail = localStorage.getItem("remembered_email") || "";
+    if (rememberEmailEnabled && rememberedEmail) {
+      this.form.email = rememberedEmail;
+      this.rememberEmail = true;
+    }
+
     // Check if user just registered
     const registerSuccess = sessionStorage.getItem("registerSuccess");
     if (registerSuccess) {

@@ -37,7 +37,15 @@
 
           <div class="col-md-12">
             <label class="form-label">Phone Number</label>
-            <input class="form-control" v-model="form.phone_number" />
+            <div class="input-group">
+              <span class="input-group-text bg-light"><i class="bi bi-phone"></i></span>
+              <input 
+                class="form-control" 
+                v-model="form.phone_number" 
+                placeholder="09123456789"
+                inputmode="numeric"
+              />
+            </div>
             <small v-if="errors.phone_number" class="text-danger">
               {{ errors.phone_number }}
             </small>
@@ -88,6 +96,7 @@ import { RouterLink } from "vue-router";
 import Header from "@/components/Header.vue";
 import { getUserProfile, updateUserProfile } from "@/api/user";
 import { useUserInfo } from "@/store/userInfo";
+import Swal from "sweetalert2";
 
 export default {
   name: "EditProfilePage",
@@ -167,11 +176,11 @@ export default {
         this.errors.last_name = "Last name is required.";
       }
 
-      if (this.form.phone_number) {
-        const phoneRegex = /^[0-9+\-\s]{7,15}$/;
-        if (!phoneRegex.test(this.form.phone_number)) {
-          this.errors.phone_number = "Invalid phone number format.";
-        }
+      const phPhoneRegex = /^09\d{9}$/;
+      if (!this.form.phone_number) {
+        this.errors.phone_number = "Phone number is required.";
+      } else if (!phPhoneRegex.test(this.form.phone_number)) {
+        this.errors.phone_number = "Must be a valid 11-digit number starting with 09.";
       }
 
       return Object.keys(this.errors).length === 0;
@@ -197,7 +206,11 @@ export default {
 
         const response = await updateUserProfile(formData);
 
-        alert(response.data.message || "Profile updated successfully!");
+        await Swal.fire({
+          icon: "success",
+          title: "Profile Updated",
+          text: response.data.message || "Profile updated successfully!",
+        });
 
         const info = useUserInfo();
         const first_name = response.data.user.first_name
@@ -209,10 +222,15 @@ export default {
         this.originalForm = { ...this.form };
         this.imageFile = null;
 
-        this.$router.push("/profile")
+        // this.$router.push("/profile")
+        window.location.href="/profile"
 
       } catch (error) {
-        alert(error.response?.data?.message || "Error updating profile.");
+        await Swal.fire({
+          icon: "error",
+          title: "Update Failed",
+          text: error.response?.data?.message || "Error updating profile.",
+        });
       } finally {
         this.loading = false;
       }
@@ -241,7 +259,11 @@ export default {
         this.previewImg = user.user_img_url || null;
 
       } catch {
-        alert("Error fetching user profile.");
+        await Swal.fire({
+          icon: "error",
+          title: "Load Failed",
+          text: "Error fetching user profile.",
+        });
       } finally {
         this.loading = false;
       }
@@ -250,6 +272,27 @@ export default {
 
   mounted() {
     this.getUserProfile();
+  },
+
+  watch: {
+    'form.phone_number'(val) {
+      if (!val) return;
+
+      // 1. Remove all non-numeric characters
+      let cleaned = val.replace(/\D/g, '');
+
+      // 2. Force '09' logic
+      if (cleaned.length > 0 && !cleaned.startsWith('09')) {
+        if (cleaned.startsWith('9')) {
+          cleaned = '0' + cleaned;
+        } else {
+          cleaned = '09';
+        }
+      }
+
+      // 3. Limit to 11 digits
+      this.form.phone_number = cleaned.substring(0, 11);
+    }
   },
 };
 </script>

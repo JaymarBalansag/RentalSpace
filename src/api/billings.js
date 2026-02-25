@@ -5,7 +5,16 @@ export async function getBillings(params) {
         const response = await api.get("billings", {params})
         return response
     } catch (error) {
-        return error
+        throw error
+    }
+}
+
+export async function getOwnerDashboardSummary() {
+    try {
+        const response = await api.get("/owner/dashboard-summary");
+        return response;
+    } catch (error) {
+        throw error;
     }
 }
 

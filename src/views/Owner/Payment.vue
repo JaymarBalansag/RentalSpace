@@ -61,6 +61,11 @@
                     @click="handleVerify(payment.id)">
                     Verify
                   </button>
+                  <button v-if="payment.status === 'pending'"
+                    class="btn btn-sm btn-outline-danger px-3 fw-bold"
+                    @click="handleReject(payment.id)">
+                    Reject
+                  </button>
                   <button class="btn btn-sm btn-light border" @click="viewProof(payment)">
                     <i class="bi bi-eye"></i>
                   </button>
@@ -109,6 +114,11 @@
               @click="handleVerify(payment.id)">
               <i class="bi bi-check-circle me-1"></i> Verify
             </button>
+            <button v-if="payment.status === 'pending'"
+              class="btn btn-outline-danger flex-grow-1 fw-bold"
+              @click="handleReject(payment.id)">
+              <i class="bi bi-x-circle me-1"></i> Reject
+            </button>
           </div>
         </div>
       </div>
@@ -135,7 +145,7 @@
 
 <script>
 // import { getPayments, verifyPayment } from '@/api/owner';
-import { getPayments, verifyPayment } from '@/api/Owner/bookings';
+import { getPayments, verifyPayment, rejectPayment } from '@/api/Owner/bookings';
 
 export default {
   data() {
@@ -167,7 +177,18 @@ export default {
         await verifyPayment(id);
         this.fetchPayments(); // Refresh list
       } catch (error) {
-        alert("Verification failed.");
+        alert(error?.response?.data?.message || "Verification failed.");
+      }
+    },
+    async handleReject(id) {
+      const reason = prompt("Reason for rejection (optional):", "");
+      if (reason === null) return;
+
+      try {
+        await rejectPayment(id, { reason: reason.trim() });
+        this.fetchPayments();
+      } catch (error) {
+        alert(error?.response?.data?.message || "Rejection failed.");
       }
     },
     viewProof(payment) {

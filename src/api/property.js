@@ -62,6 +62,11 @@ export async function getOwnerProperties() {
   return res;
 }
 
+export async function updateOwnerPropertyAvailability(id, is_available) {
+  const res = await api.patch(`/owner/properties/${id}/availability`, { is_available });
+  return res;
+}
+
 // Create a new property
 export async function createProperty(propertyData) {
   const res = await api.post("/properties", propertyData, {
@@ -83,7 +88,7 @@ export const getPropertyById = async (id) => {
 
 export async function getPropertyByType(type_id, property_id){
   try {
-    const response = await api.get(`/properties/type/${type_id}${property_id}`);
+    const response = await api.get(`/properties/type/${type_id}/${property_id}`);
     return response;
   } catch (error) {
     throw error
@@ -92,13 +97,17 @@ export async function getPropertyByType(type_id, property_id){
 
 // Update a property
 export async function updateProperty(id, propertyData) {
-  const res = await api.put(`/properties/${id}`, propertyData);
+  const res = await api.post(`/properties/update/id/${id}`, propertyData, {
+    headers: {
+      "Content-Type": "multipart/form-data"
+    }
+  });
   return res.data;
 }
 
 // Delete a property
 export async function deleteProperty(id) {
-  const res = await api.delete(`/properties/${id}`);
+  const res = await api.delete(`/owner/properties/${id}`);
   return res;
 }
 
@@ -145,13 +154,12 @@ export async function getFilterPropertyByType(selectedType, selectedAgreement) {
   }
 }
 
-export async function submitBookingRequest(id) {
+export async function submitBookingRequest(payload) {
   try {
-    console.log(id);
-    const res = await api.post(`/bookings/${id}`);
+    const res = await api.post(`/bookings/submit_booking`, payload);
     return res;
   } catch (error) {
-    return error
+    throw error;
   }
 }
 
@@ -178,9 +186,29 @@ export async function getPropertyLimit(){
 
 export async function recordView(id){
   try {
-    const response = api.post(`/record-view/${id}`);
-    // console.log(response);
+    const response = await api.post(`/record-view/${id}`);
+    return response;
   } catch (error) {
     throw error
+  }
+}
+
+export async function getPropertyReviews(propertyId, page = 1) {
+  try {
+    const response = await api.get(`/properties/${propertyId}/reviews`, {
+      params: { page },
+    });
+    return response;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function submitPropertyReview(propertyId, payload) {
+  try {
+    const response = await api.post(`/properties/${propertyId}/reviews`, payload);
+    return response;
+  } catch (error) {
+    throw error;
   }
 }

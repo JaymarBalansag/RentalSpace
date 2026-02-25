@@ -3,10 +3,9 @@ import api from "../api";
 export async function   getPendingUserBookings() {
     try {
         const res = await api.get("/bookings/pending");
-        console.log(res)
         return res;
     } catch (error) {
-        return error
+        throw error;
     }
 }
 
@@ -39,13 +38,12 @@ export async function submitAgreement(agreement, property_id) {
 
 export async function approveBooking(booking_id){
     try {
-        console.log(booking_id)
         const response = await api.post(`/bookings/${booking_id}/approve`)
         
         return response;
 
     } catch (error) {
-        return error;
+        throw error;
     }
 }
 

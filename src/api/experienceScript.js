@@ -57,3 +57,12 @@ export async function getPopularTypes(){
         throw error;
     }
 }
+
+export async function getTrendingProperties(limit = 2) {
+    try {
+        const response = await api.get("/trending", { params: { limit } });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+}

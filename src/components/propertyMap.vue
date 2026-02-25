@@ -50,16 +50,23 @@ export default {
       this.initMap();
     });
   },
+  beforeUnmount() {
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
+      this.marker = null;
+    }
+  },
   methods: {
     handleLocationChange() {
-      if (!this.lat || !this.lng) alert("Invalid coordinates");
+      if (this.lat == null || this.lng == null) return;
 
       this.$nextTick(() => {
         this.initMap();
       });
     },
     initMap() {
-      if (!this.lat || !this.lng) return;
+      if (this.lat == null || this.lng == null) return;
       // console.log("Initializing map at:", this.lat, this.lng);
       const latitude = this.lat;
       const longitude = this.lng;

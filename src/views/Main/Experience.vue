@@ -108,19 +108,29 @@
               <i class="bi bi-fire text-orange"></i> Trending Now
             </h4>
           </div>
-          <div v-for="i in 2" :key="i" class="col-md-6 mb-4">
-            <div class="card border-0 shadow-sm rounded-4 hover-lift overflow-hidden">
+          <div v-if="trendingLoading" class="col-12">
+            <div class="placeholder-glow d-flex gap-3">
+              <div v-for="n in 2" :key="'trend-skel-' + n" class="placeholder rounded-4" style="height: 140px; flex: 1;"></div>
+            </div>
+          </div>
+          <div v-else-if="trendingProperties.length === 0" class="col-12">
+            <div class="text-center py-4 border-dashed rounded-4">
+              <p class="mb-0 text-muted">No trending properties yet.</p>
+            </div>
+          </div>
+          <div v-for="property in trendingProperties" :key="property.id" class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift overflow-hidden" @click="gotoProperty(property.id)" style="cursor: pointer;">
               <div class="row g-0 align-items-center">
                 <div class="col-5">
-                  <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=400&q=80" class="img-fluid h-100" style="object-fit: cover; min-height: 120px;" alt="...">
+                  <img :src="property.image_url || placeholderImage" class="img-fluid h-100" style="object-fit: cover; min-height: 120px;" alt="Trending property image">
                 </div>
                 <div class="col-7">
                   <div class="card-body p-3">
-                    <h6 class="fw-bold mb-1 text-truncate">Modern Luxury Villa</h6>
-                    <p class="small text-muted mb-2 text-truncate-2">Experience premium living with private parking...</p>
+                    <h6 class="fw-bold mb-1 text-truncate">{{ property.title }}</h6>
+                    <p class="small text-muted mb-2 text-truncate-2">{{ property.description || 'Popular property based on recent user views.' }}</p>
                     <div class="d-flex align-items-center justify-content-between mt-2">
-                      <span class="text-primary small fw-bold">₱45,000/mo</span>
-                      <small class="text-muted"><i class="bi bi-eye"></i> 2.4k</small>
+                      <span class="text-primary small fw-bold">PHP {{ formatPrice(property.price) }}</span>
+                      <small class="text-muted"><i class="bi bi-eye"></i> {{ formatCompactNumber(getViewCount(property)) }}</small>
                     </div>
                   </div>
                 </div>
@@ -189,7 +199,8 @@ import {
   getNearProperties, 
   getPrefferedAmenities, 
   getPrefferedTypes, 
-  getPopularTypes 
+  getPopularTypes,
+  getTrendingProperties
 } from '@/api/experienceScript';
 import Header from '@/components/Header.vue';
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
@@ -209,8 +220,10 @@ export default {
       recommendedProperties: [],
       recentProperties: [],
       popularTypes: [],
+      trendingProperties: [],
       placeholderImage: placeholderImg,
       loading: false,
+      trendingLoading: false,
       badgeColors: ['bg-primary-subtle text-primary', 'bg-success-subtle text-success', 'bg-warning-subtle text-warning-emphasis', 'bg-info-subtle text-info']
     }
   },
@@ -222,6 +235,24 @@ export default {
     async gotoProperty(id){
       await recordView(id);
       this.$router.push(`/property/${id}`);
+    },
+
+    getViewCount(property) {
+      return Number(
+        property?.view_count ??
+        property?.views ??
+        property?.total_views ??
+        property?.property_views ??
+        0
+      ) || 0;
+    },
+
+    formatCompactNumber(value) {
+      return new Intl.NumberFormat("en", { notation: "compact" }).format(Number(value) || 0);
+    },
+
+    formatPrice(value) {
+      return new Intl.NumberFormat("en-PH").format(Number(value) || 0);
     },
 
     async handleLoad(apiCall, targetKey, filterName = '') {
@@ -250,12 +281,29 @@ export default {
     },
     getPrefferedTypes() {
       this.handleLoad(getPrefferedTypes, 'recommendedProperties', 'types');
+    },
+
+    async fetchTrendingProperties() {
+      this.trendingLoading = true;
+      try {
+        const response = await getTrendingProperties(2);
+        const list = Array.isArray(response?.data?.data) ? response.data.data : [];
+        this.trendingProperties = list
+          .sort((a, b) => this.getViewCount(b) - this.getViewCount(a))
+          .slice(0, 2);
+      } catch (error) {
+        console.error("Error loading trending properties:", error);
+        this.trendingProperties = [];
+      } finally {
+        this.trendingLoading = false;
+      }
     }
   },
   mounted() {
     this.fetchProperty();
     this.handleLoad(getRecentProperties, 'recentProperties');
     this.handleLoad(getPopularTypes, 'popularTypes');
+    this.fetchTrendingProperties();
   }
 }
 </script>

@@ -103,7 +103,7 @@
 
         <div class="d-flex justify-content-end gap-2 mt-4">
           <button class="btn btn-light px-4" @click="closePaymentModal">Cancel</button>
-          <button class="btn btn-primary px-4 fw-bold" @click="submitPayment" :disabled="loading">
+          <button class="btn btn-primary px-4 fw-bold" @click="submitPayment" :disabled="loading || !paymentForm.billing_id">
             <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
             Submit Payment
           </button>
@@ -171,7 +171,10 @@ export default {
   },
   computed: {
     unpaidBillings() {
-      return this.billings.filter(b => b.rent_status !== 'paid');
+      return this.billings.filter(b => ['unpaid', 'overdue'].includes(String(b.rent_status || '').toLowerCase()));
+    },
+    selectedBilling() {
+      return this.billings.find(b => String(b.id) === String(this.paymentForm.billing_id)) || null;
     }
   },
   mounted() {
@@ -185,8 +188,17 @@ export default {
       try {
         const res = await getMyBillings();
         this.billings = res.data.data;
+
+        const local = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        const fullName = [local.first_name, local.last_name].filter(Boolean).join(" ").trim();
+        if (fullName) this.tenantName = fullName;
+        if (this.billings.length > 0) {
+          this.propertyTitle = this.billings[0].property_title || this.propertyTitle;
+          this.propertyAddress = "Address unavailable";
+        }
+
         this.totalBalance = this.billings
-          .filter(b => b.rent_status !== 'paid')
+          .filter(b => ['unpaid', 'overdue'].includes(String(b.rent_status || '').toLowerCase()))
           .reduce((acc, curr) => acc + Number(curr.rent_amount), 0);
       } catch (err) {
         console.error("Dashboard error:", err);
@@ -196,6 +208,9 @@ export default {
       if (this.unpaidBillings.length > 0) {
         this.paymentForm.billing_id = this.unpaidBillings[0].id;
         this.paymentForm.amount_paid = this.unpaidBillings[0].rent_amount;
+      } else {
+        alert("No unpaid billing is available for payment.");
+        return;
       }
       this.showPaymentModal = true;
     },
@@ -214,11 +229,54 @@ export default {
       };
     },
     handleFileUpload(event) {
-      this.paymentForm.proof = event.target.files[0];
+      const file = event.target.files[0];
+      if (!file) {
+        this.paymentForm.proof = null;
+        return;
+      }
+
+      const allowed = ["image/jpeg", "image/jpg", "image/png"];
+      if (!allowed.includes(file.type)) {
+        alert("Only JPG and PNG files are allowed.");
+        event.target.value = "";
+        this.paymentForm.proof = null;
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Proof image must be 5MB or less.");
+        event.target.value = "";
+        this.paymentForm.proof = null;
+        return;
+      }
+
+      this.paymentForm.proof = file;
     },
     async submitPayment() {
+      if (!this.paymentForm.billing_id) {
+        alert("Please select a billing to pay.");
+        return;
+      }
+
+      if (!this.selectedBilling) {
+        alert("Selected billing is invalid.");
+        return;
+      }
+
       if (!this.paymentForm.proof) {
         alert("Please upload proof of payment.");
+        return;
+      }
+
+      const submittedAmount = Number(this.paymentForm.amount_paid);
+      const expectedAmount = Number(this.selectedBilling.rent_amount);
+      if (!Number.isFinite(submittedAmount) || submittedAmount <= 0) {
+        alert("Please enter a valid payment amount.");
+        return;
+      }
+
+      if (submittedAmount !== expectedAmount) {
+        alert(`Amount must exactly match the billing amount of ₱${this.formatAmount(expectedAmount)}.`);
         return;
       }
 
@@ -255,6 +313,15 @@ export default {
     },
     formatAmount(val) {
       return Number(val).toLocaleString(undefined, { minimumFractionDigits: 2 });
+    }
+  }
+  ,
+  watch: {
+    'paymentForm.billing_id'(nextId) {
+      const selected = this.billings.find(b => String(b.id) === String(nextId));
+      if (selected) {
+        this.paymentForm.amount_paid = selected.rent_amount;
+      }
     }
   }
 };

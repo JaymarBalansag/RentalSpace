@@ -11,7 +11,7 @@ export async function login(email, password) {
 export async function logout() {
   await api.post("/logout", {}, {
     headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` }
-  });
+  }); 
   localStorage.removeItem("access_token");
 }
 

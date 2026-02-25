@@ -2,6 +2,13 @@
   <div>
     <h4>🏠 Add Property</h4>
 
+    <div v-if="subscriptionState?.is_expiring_soon" class="alert alert-warning py-2 px-3 mt-2 mb-3">
+      {{ subscriptionState.message || `Your subscription will expire in ${subscriptionState.days_left} day(s).` }}
+    </div>
+    <div v-if="ownerVerificationStatus !== 'verified'" class="alert alert-info py-2 px-3 mt-2 mb-3">
+      <strong>Owner verification:</strong> {{ ownerVerificationMessage }}
+    </div>
+
     <!-- Message about required fields -->
     <div class="mb-3 text-muted">
       <small><span class="text-danger">*</span> denotes required fields</small>
@@ -727,6 +734,8 @@
 <script>
 import axios from "axios";
 import { createProperty, getAmenities, getFacilities, getPropertyTypes } from "@/api/property";
+import { getOwnerSubscriptionStatus } from "@/api/subscription";
+import { useUserInfo } from "@/store/userInfo";
 import confirmModal from "@/components/confirmModal.vue";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -825,12 +834,35 @@ export default {
       timeoutId: null,
       loading: false,
       maxField : false,
+      subscriptionState: null,
     };
   },
   components: {
     confirmModal
   },
   methods: {
+    async ensureOwnerCanManageProperties(options = { redirectIfBlocked: true }) {
+      try {
+        const subscription = await getOwnerSubscriptionStatus();
+        this.subscriptionState = subscription;
+
+        if (!subscription?.can_manage_properties) {
+          alert(subscription?.message || "Subscription expired or inactive. Renew to manage properties.");
+          if (options.redirectIfBlocked) {
+            this.$router.push("/overview");
+          }
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        alert("Unable to verify subscription status. Please try again.");
+        if (options.redirectIfBlocked) {
+          this.$router.push("/overview");
+        }
+        return false;
+      }
+    },
     // For Custom Amenity
     addCustomAmenity() {
       if (!this.customAmenity.trim()) return;
@@ -976,6 +1008,11 @@ export default {
     async validateForm() {
       this.loading = true;  
       try {
+        const canManage = await this.ensureOwnerCanManageProperties({ redirectIfBlocked: false });
+        if (!canManage) {
+          return;
+        }
+
         // Title & Description
         if (!this.form.title || this.form.title.trim() === "") {
           alert("Title is required");
@@ -1063,6 +1100,12 @@ export default {
 
     // Submit form
     async submitForm() {
+      const canManage = await this.ensureOwnerCanManageProperties({ redirectIfBlocked: false });
+      if (!canManage) {
+        this.loading = false;
+        return;
+      }
+
       const fd = new FormData();
 
       for (const key in this.form) {
@@ -1102,6 +1145,17 @@ export default {
         // alert("Property created successfully!");
         this.$router.push("/properties")
       } catch (error) {
+        if (error.response && error.response.status === 403) {
+          const subscriptionPayload = error.response?.data?.subscription || null;
+          if (subscriptionPayload) {
+            this.subscriptionState = subscriptionPayload;
+          }
+
+          alert(error.response?.data?.message || "Subscription expired or inactive. Renew to continue.");
+          this.$router.push("/overview");
+          return;
+        }
+
         if (error.response && error.response.status === 422) {
           const errors = error.response.data.errors;
           let message = "";
@@ -1287,9 +1341,12 @@ export default {
     }
   },
   mounted() {
-    this.getAmenities();
-    this.getFacilities();
-    this.getPropertyTypes();
+    this.ensureOwnerCanManageProperties({ redirectIfBlocked: true }).then((canManage) => {
+      if (!canManage) return;
+      this.getAmenities();
+      this.getFacilities();
+      this.getPropertyTypes();
+    });
 
     // Default location: Manila
     const defaultLat = 14.5995;
@@ -1303,6 +1360,20 @@ export default {
     // });
   },
   computed: {
+    ownerVerificationStatus() {
+      const info = useUserInfo();
+      const status = String(info?.owner_verification_status || "unverified").toLowerCase().trim();
+      return ["verified", "pending", "rejected", "unverified"].includes(status) ? status : "unverified";
+    },
+    ownerVerificationMessage() {
+      if (this.ownerVerificationStatus === "pending") {
+        return "Your documents are under admin review. You can still add properties.";
+      }
+      if (this.ownerVerificationStatus === "rejected") {
+        return "Your previous submission was rejected. Update your documents to get verified.";
+      }
+      return "Your account is not yet verified by admin. You can still add properties.";
+    },
     utilitiesList() {
       return [
         { value: 'electricity', label: 'Electricity' },

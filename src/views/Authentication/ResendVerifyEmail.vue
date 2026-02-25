@@ -82,6 +82,7 @@ export default {
         }
       } finally {
         this.loading = false;
+        this.startPolling();
       }
     },
     startCountdown(seconds = 30) {
@@ -106,6 +107,29 @@ export default {
         }
       }
     },
+    startPolling(){
+      this.checkStatusInterval = setInterval(() => {
+        console.log("log: Checking verification status...");
+        this.getVerificationStatus();
+        }, 3000);
+    },
+    clearPolling(){
+      if(this.checkStatusInterval){
+        clearInterval(this.checkStatusInterval);
+        this.checkStatusInterval = null;
+      }
+    },
+    async getVerificationStatus(){
+      const response = await api.get(`/check-resend-verification-status`);
+      const info = useUserInfo();
+
+      if(response.data.is_verified){
+        this.clearPolling();
+        info.email_verified_at = new Date().toISOString();
+        this.$router.push('/home');
+      }
+
+    }
   },
 };
 </script>

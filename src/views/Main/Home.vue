@@ -162,12 +162,25 @@
                     <div class="d-flex justify-content-between align-items-start mb-2">
                       <h5 class="fw-bold text-dark mb-0">{{ property.title }}</h5>
                       <div class="text-end">
-                        <span class="badge bg-primary px-3 py-2 rounded-3">8.7</span>
+                        <span class="badge bg-primary px-3 py-2 rounded-3">
+                          {{ getPropertyAverageRating(property).toFixed(1) }}
+                        </span>
+                        <p class="small text-muted mb-0">
+                          {{ getPropertyTotalReviews(property) }} review{{ getPropertyTotalReviews(property) === 1 ? "" : "s" }}
+                        </p>
                       </div>
                     </div>
                     <p class="text-muted small mb-3">
                       <i class="bi bi-geo-alt text-danger me-1"></i> {{ property.town_name }}, {{ property.state_name }}
                     </p>
+                    <div class="mb-2">
+                      <span
+                        class="badge rounded-pill"
+                        :class="ownerVerificationBadgeClass(property)"
+                      >
+                        {{ ownerVerificationLabel(property) }}
+                      </span>
+                    </div>
                     <p class="text-secondary small flex-grow-1 text-truncate-custom">
                       {{ property.description }}
                     </p>
@@ -317,6 +330,29 @@ export default {
     };
   },
   methods: {
+    normalizeOwnerVerificationStatus(property) {
+      const raw =
+        property?.owner_verification_status ??
+        property?.verification_status ??
+        property?.owner_status ??
+        null;
+      const status = String(raw || "unverified").toLowerCase().trim();
+      return ["verified", "pending", "rejected", "unverified"].includes(status) ? status : "unverified";
+    },
+    ownerVerificationLabel(property) {
+      const status = this.normalizeOwnerVerificationStatus(property);
+      if (status === "verified") return "Verified Owner";
+      if (status === "pending") return "Verification Pending";
+      if (status === "rejected") return "Verification Rejected";
+      return "Unverified Owner";
+    },
+    ownerVerificationBadgeClass(property) {
+      const status = this.normalizeOwnerVerificationStatus(property);
+      if (status === "verified") return "bg-success-subtle text-success";
+      if (status === "pending") return "bg-warning-subtle text-warning-emphasis";
+      if (status === "rejected") return "bg-danger-subtle text-danger";
+      return "bg-secondary-subtle text-secondary";
+    },
     applyPriceFilter() {
       if (this.min_price > 0 && this.max_price > 0 && this.min_price > this.max_price) {
         [this.min_price, this.max_price] = [this.max_price, this.min_price];
@@ -337,6 +373,14 @@ export default {
     },
     toTitle(text) {
       return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
+    },
+    getPropertyAverageRating(property) {
+      const value = Number(property?.average_rating ?? property?.avg_rating ?? 0);
+      return Number.isFinite(value) ? value : 0;
+    },
+    getPropertyTotalReviews(property) {
+      const value = Number(property?.total_reviews ?? property?.review_count ?? 0);
+      return Number.isFinite(value) ? value : 0;
     },
     async checkDetails(id) {
       await recordView(id);

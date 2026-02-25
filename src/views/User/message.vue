@@ -1,7 +1,7 @@
 <template>
   <Header />
 
-  <div class="container-fluid chat-root">
+  <div class="container-fluid chat-root" :style="chatRootStyle">
     <div class="row h-100 g-0 overflow-hidden shadow-sm">
       
       <div 
@@ -24,9 +24,9 @@
         <div class="flex-grow-1 overflow-auto bg-white scroll-custom">
           <div 
             v-for="chat in chats" 
-            :key="chat.user_id"
+            :key="chat.conversation_id"
             class="conversation-item d-flex align-items-center p-3 border-bottom transition"
-            :class="{ 'active-chat': selectedChat && selectedChat.user_id === chat.user_id }"
+            :class="{ 'active-chat': selectedChat && selectedChat.conversation_id === chat.conversation_id }"
             @click="selectChat(chat)"
           >
             <div class="position-relative">
@@ -36,7 +36,7 @@
             <div class="flex-grow-1 overflow-hidden">
               <div class="d-flex justify-content-between">
                 <h6 class="mb-0 text-truncate fw-bold">{{ chat.name }}</h6>
-                <small class="text-muted" style="font-size: 0.7rem;">12:45 PM</small>
+                <small class="text-muted" style="font-size: 0.7rem;">{{ chat.last_message_time ? formatTime(chat.last_message_time) : '' }}</small>
               </div>
               <small class="text-muted text-truncate d-block">{{ chat.lastMessage || 'Click to start chatting' }}</small>
             </div>
@@ -48,7 +48,7 @@
         class="col-md-8 col-lg-9 d-flex flex-column chat-bg"
         :class="{ 'd-flex': selectedChat, 'd-none d-md-flex': !selectedChat }"
       >
-        <div v-if="selectedChat" class="d-flex flex-column h-100 position-relative">
+        <div v-if="selectedChat" class="chat-pane d-flex flex-column h-100">
           
           <div class="chat-header p-3 border-bottom bg-white d-flex align-items-center justify-content-between sticky-top">
             <div class="d-flex align-items-center">
@@ -67,7 +67,8 @@
             </div>
           </div>
 
-          <div class="messages-area flex-grow-1 overflow-auto p-4 scroll-custom" ref="messagesBox">
+          <div class="messages-area flex-grow-1 overflow-auto p-4 scroll-custom" ref="messagesBox" @scroll.passive="onMessageScroll">
+            <div v-if="loadingOlder" class="text-center small text-muted mb-3">Loading older messages...</div>
             <div 
               v-for="(msg, index) in messages" 
               :key="index" 
@@ -86,7 +87,7 @@
             </div>
           </div>
 
-          <div class="p-3 bg-white border-top">
+          <div class="chat-input p-3 bg-white border-top">
             <div class="input-wrapper d-flex align-items-center gap-2 p-2 rounded-pill bg-light border">
               <button class="btn btn-link text-muted p-0 ms-2"><i class="bi bi-plus-circle fs-5"></i></button>
               <input 
@@ -118,7 +119,7 @@
 </template>
 
 <script>
-import { fetchConversation, fetchMessages, sendMessage } from '@/api/messages';
+import { fetchConversation, fetchConversationMessages, fetchMessages, sendConversationMessage } from '@/api/messages';
 import { getAuthUserId } from '@/api/user';
 import Header from '@/components/Header.vue';
 
@@ -131,80 +132,227 @@ export default {
       selectedChat: null,
       messages: [],
       newMessage: '',
-      profile_photo: null
+      profile_photo: null,
+      nextCursor: null,
+      hasMoreMessages: true,
+      loadingOlder: false,
+      loadingMessages: false,
+      chatsLimit: 20,
+      messagesLimit: 10,
+      chatChannelName: null,
+      headerOffset: 72,
+      canLoadOlderOnTop: true,
     };
+  },
+  computed: {
+    chatRootStyle() {
+      return {
+        height: `calc(100dvh - ${this.headerOffset}px)`,
+      };
+    },
   },
   methods: {
     formatTime(date) {
       return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     },
-    async selectChat(chat) {
+    async selectChat(chat, { keepScrollBottom = true } = {}) {
+      if (!chat || !chat.conversation_id) return;
       this.selectedChat = chat;
       this.profile_photo = chat.profile_photo;
-      const res = await fetchConversation(chat.user_id);
-      this.messages = res.data.messages;
-      this.scrollToBottom();
+      this.messages = [];
+      this.nextCursor = null;
+      this.hasMoreMessages = true;
+      this.canLoadOlderOnTop = true;
+      await this.loadMessages({ appendOlder: false, keepScrollBottom });
     },
     async sendMessage() {
-      if (!this.newMessage.trim()) return;
+      if (!this.newMessage.trim() || !this.selectedChat?.conversation_id) return;
       const text = this.newMessage;
       const receiverId = this.selectedChat.user_id;
 
       this.messages.push({
         sender_id: this.authId,
+        conversation_id: this.selectedChat.conversation_id,
         receiver_id: receiverId,
-        message: text
+        message: text,
+        created_at: new Date().toISOString(),
       });
 
       this.newMessage = '';
       this.scrollToBottom();
 
       try {
-        const res = await sendMessage(receiverId, text);
+        const res = await sendConversationMessage(this.selectedChat.conversation_id, text);
         this.messages[this.messages.length - 1] = res.data.message;
+        this.bumpChatOnTop(this.selectedChat.conversation_id, res.data.message.message, res.data.message.created_at, true);
       } catch (e) {
         console.error(e);
       }
     },
     async getMessages() {
-      const res = await fetchMessages();
-      this.chats = res.data.chats;
+      const res = await fetchMessages(null, this.chatsLimit);
+      this.chats = res?.data?.chats || [];
+    },
+    async loadMessages({ appendOlder = false, keepScrollBottom = true } = {}) {
+      if (!this.selectedChat?.conversation_id) return;
+      if (this.loadingMessages || (appendOlder && (!this.hasMoreMessages || !this.nextCursor))) return;
+
+      this.loadingMessages = true;
+      if (appendOlder) this.loadingOlder = true;
+
+      const el = this.$refs.messagesBox;
+      const previousHeight = el ? el.scrollHeight : 0;
+      const previousTop = el ? el.scrollTop : 0;
+
+      try {
+        const cursor = appendOlder ? this.nextCursor : null;
+        const res = await fetchConversationMessages(this.selectedChat.conversation_id, cursor, this.messagesLimit);
+        const data = res?.data || {};
+        const incoming = data.messages || [];
+
+        if (appendOlder) {
+          this.messages = [...incoming, ...this.messages];
+        } else {
+          this.messages = incoming;
+        }
+
+        this.nextCursor = data.next_cursor || null;
+        this.hasMoreMessages = !!data.has_more;
+
+        this.$nextTick(() => {
+          const box = this.$refs.messagesBox;
+          if (!box) return;
+
+          if (appendOlder) {
+            const newHeight = box.scrollHeight;
+            box.scrollTop = newHeight - previousHeight + previousTop;
+          } else if (keepScrollBottom) {
+            box.scrollTop = box.scrollHeight;
+          }
+        });
+      } finally {
+        this.loadingMessages = false;
+        this.loadingOlder = false;
+      }
     },
     async getAuthId() {
       const res = await getAuthUserId();
       this.authId = res.data.userid;
+    },
+    async onMessageScroll() {
+      const el = this.$refs.messagesBox;
+      if (!el || !this.selectedChat) return;
+      if (el.scrollTop > 120) {
+        this.canLoadOlderOnTop = true;
+        return;
+      }
+      if (!this.canLoadOlderOnTop) return;
+      if (!this.hasMoreMessages || !this.nextCursor || this.loadingOlder) return;
+
+      this.canLoadOlderOnTop = false;
+      await this.loadMessages({ appendOlder: true, keepScrollBottom: false });
+    },
+    bumpChatOnTop(conversationId, lastMessage, lastMessageTime, selectChat = false) {
+      const idx = this.chats.findIndex((c) => c.conversation_id === conversationId);
+      if (idx === -1) return;
+
+      const chat = { ...this.chats[idx], lastMessage, last_message_time: lastMessageTime };
+      this.chats.splice(idx, 1);
+      this.chats.unshift(chat);
+      if (selectChat && this.selectedChat?.conversation_id === conversationId) {
+        this.selectedChat = chat;
+      }
+    },
+    async openFromRouteQuery() {
+      const conversationId = this.$route.query.conversation ? Number(this.$route.query.conversation) : null;
+      const userId = this.$route.query.user ? Number(this.$route.query.user) : null;
+
+      let target = null;
+      if (conversationId) {
+        target = this.chats.find((c) => Number(c.conversation_id) === conversationId) || null;
+      }
+      if (!target && userId) {
+        target = this.chats.find((c) => Number(c.user_id) === userId) || null;
+      }
+
+      if (!target && userId) {
+        const fallback = await fetchConversation(userId, null, this.messagesLimit);
+        const cid = fallback?.data?.conversation_id || null;
+        if (cid) {
+          target = this.chats.find((c) => Number(c.conversation_id) === Number(cid)) || null;
+        }
+      }
+
+      if (target) {
+        await this.selectChat(target, { keepScrollBottom: true });
+      }
     },
     scrollToBottom() {
       this.$nextTick(() => {
         const el = this.$refs.messagesBox;
         if (el) el.scrollTop = el.scrollHeight;
       });
+    },
+    bindRealtimeChannel() {
+      if (!this.authId || !window.Echo) return;
+      this.chatChannelName = `chat.${this.authId}`;
+
+      window.Echo.private(this.chatChannelName).listen('MessageSent', async (e) => {
+        this.bumpChatOnTop(e.conversation_id, e.message, e.created_at, false);
+
+        if (this.selectedChat && Number(e.conversation_id) === Number(this.selectedChat.conversation_id)) {
+          this.messages.push(e);
+          this.scrollToBottom();
+          return;
+        }
+
+        const exists = this.chats.some((c) => Number(c.conversation_id) === Number(e.conversation_id));
+        if (!exists) {
+          await this.getMessages();
+        }
+      });
+    },
+    unbindRealtimeChannel() {
+      if (!this.chatChannelName || !window.Echo) return;
+      window.Echo.leave(`private-${this.chatChannelName}`);
+      this.chatChannelName = null;
+    },
+    updateHeaderOffset() {
+      const header = document.querySelector('.header-container');
+      if (!header) return;
+      this.headerOffset = header.getBoundingClientRect().height;
     }
   },
   async mounted() {
     await this.getAuthId();
     await this.getMessages();
-
-    window.Echo.private(`chat.${this.authId}`).listen('MessageSent', (e) => {
-      if (this.selectedChat && (e.sender_id === this.selectedChat.user_id || e.receiver_id === this.selectedChat.user_id)) {
-        this.messages.push(e);
-        this.scrollToBottom();
-      }
-    });
-  }
+    await this.openFromRouteQuery();
+    this.updateHeaderOffset();
+    window.addEventListener('resize', this.updateHeaderOffset);
+    this.bindRealtimeChannel();
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.updateHeaderOffset);
+    this.unbindRealtimeChannel();
+  },
 };
 </script>
 
 <style scoped>
 .chat-root {
-  height: calc(100vh - 72px);
   background-color: #f0f2f5;
+}
+.chat-pane {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .chat-bg {
   background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
   background-repeat: repeat;
   background-size: contain;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Sidebar Styling */
@@ -231,6 +379,11 @@ export default {
   padding: 10px 16px;
   border-radius: 18px;
   font-size: 0.95rem;
+}
+.message-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .sent {
   background-color: #0d6efd;
@@ -262,9 +415,18 @@ export default {
 /* Custom Scrollbar */
 .scroll-custom::-webkit-scrollbar { width: 5px; }
 .scroll-custom::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 10px; }
+.messages-area {
+  min-height: 0;
+  flex: 1 1 0;
+  overflow-y: auto;
+}
+.chat-input {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
 
 @media (max-width: 768px) {
-  .chat-root { height: calc(100vh - 60px); }
   .sidebar-mobile { width: 100%; }
 }
 </style>

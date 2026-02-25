@@ -121,7 +121,6 @@
 <script>
 import { getTenantsByProperty, getTenantsList, moveIn } from '@/api/Owner/tenants';
 import { getOwnerProperties } from '@/api/property';
-import axios from 'axios'; // For the update calls
 
 export default {
   data() {

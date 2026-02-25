@@ -107,6 +107,7 @@ import {
   updateUserPreferences
 } from "@/api/user";
 import { RouterLink } from "vue-router";
+import Swal from "sweetalert2";
 
 export default {
   name: "editPreference",
@@ -164,12 +165,20 @@ export default {
           this.form.property_types
         );
 
-        alert("Preferences saved successfully!");
+        await Swal.fire({
+          icon: "success",
+          title: "Preferences Saved",
+          text: "Preferences saved successfully!",
+        });
         this.$router.push("/profile");
 
       } catch (error) {
         console.error(error);
-        alert("Failed to save preferences.");
+        await Swal.fire({
+          icon: "error",
+          title: "Save Failed",
+          text: "Failed to save preferences.",
+        });
 
       } finally {
         this.loading = false;

@@ -83,6 +83,7 @@ import L from "leaflet";
 import Header from "@/components/Header.vue";
 import { getUserProfile, updateUserLocation } from "@/api/user"; // Ensure these API helpers exist
 import 'leaflet/dist/leaflet.css';
+import Swal from "sweetalert2";
 
 export default {
   components: { Header },
@@ -161,28 +162,56 @@ export default {
     async handleUpdateLocation() {
       this.saving = true;
       if(!this.form.streets){
-        alert("Streets cannot be empty")
+        await Swal.fire({
+          icon: "warning",
+          title: "Street Required",
+          text: "Streets cannot be empty",
+        });
+        this.saving = false;
         return;
       }
       if(!this.form.region_name){
-        alert("Region cannot be empty")
+        await Swal.fire({
+          icon: "warning",
+          title: "Region Required",
+          text: "Region cannot be empty",
+        });
+        this.saving = false;
         return;
       }
       if(!this.form.state_name){
-        alert("State cannot be empty")
+        await Swal.fire({
+          icon: "warning",
+          title: "State Required",
+          text: "State cannot be empty",
+        });
+        this.saving = false;
         return;
       }
       if(!this.form.village_name){
-        alert("Village cannot be empty")
+        await Swal.fire({
+          icon: "warning",
+          title: "Village Required",
+          text: "Village cannot be empty",
+        });
+        this.saving = false;
         return;
       }
       try {
         // Replace with your actual API call
         await updateUserLocation(this.form); 
-        alert("Location updated successfully!");
+        await Swal.fire({
+          icon: "success",
+          title: "Location Updated",
+          text: "Location updated successfully!",
+        });
         this.$router.push("/profile");
       } catch (e) {
-        alert("Failed to update location.");
+        await Swal.fire({
+          icon: "error",
+          title: "Update Failed",
+          text: "Failed to update location.",
+        });
       } finally {
         this.saving = false;
       }

@@ -9,3 +9,21 @@ export async function getOwner() {
         return error;
     }
 }
+
+export async function getOwnerDetails(ownerId) {
+  return api.get(`/admin/owner/${ownerId}`);
+}
+
+export async function verifyOwner(ownerId, payload = {}) {
+  return api.patch(`/admin/owner/${ownerId}/verification`, {
+    verification_status: "verified",
+    ...payload,
+  });
+}
+
+export async function rejectOwnerVerification(ownerId, reason = "") {
+  return api.patch(`/admin/owner/${ownerId}/verification`, {
+    verification_status: "rejected",
+    reason,
+  });
+}

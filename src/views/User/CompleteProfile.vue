@@ -47,8 +47,14 @@
                 <div class="col-12">
                   <label class="form-label small fw-bold">Phone Number <span class="text-danger">*</span></label>
                   <div class="input-group">
-                    <span class="input-group-text bg-white">+63</span>
-                    <input class="form-control" placeholder="912 345 6789" v-model="form.phone_number" type="tel" />
+                    <span class="input-group-text bg-white"><i class="bi bi-phone"></i></span>
+                    <input 
+                      class="form-control" 
+                      placeholder="09123456789" 
+                      v-model="form.phone_number" 
+                      type="tel" 
+                      inputmode="numeric"
+                    />
                   </div>
                 </div>
               </div>
@@ -80,7 +86,7 @@
                 <div v-if="loading" class="spinner-border spinner-border-sm text-primary"></div>
               </div>
 
-              <div id="map" style="height:350px" class="rounded-4 shadow-sm border mb-4"></div>
+              <div ref="mapEl" style="height:350px" class="rounded-4 shadow-sm border mb-4"></div>
 
               <div class="row g-2">
                 <div class="col-md-4"><input class="form-control form-control-sm bg-light" v-model="form.town_name" disabled placeholder="City"></div>
@@ -145,6 +151,7 @@ import { completeProfile } from "@/api/user";
 import { useUserInfo } from "@/store/userInfo";
 import confirmModal from "@/components/confirmModal.vue";
 import 'leaflet/dist/leaflet.css';
+import Swal from "sweetalert2";
 
 // Fix for Leaflet icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -189,7 +196,11 @@ export default {
     step(val) {
       if (val === 3) {
         this.$nextTick(() => {
-          if (!this.map) this.initMap();
+          if (!this.map) {
+            this.initMap();
+          } else {
+            this.map.invalidateSize();
+          }
         });
       }
     },
@@ -201,6 +212,25 @@ export default {
         this.form.last_name = user.last_name;
         this.form.email = user.email;
       },
+    },
+    'form.phone_number'(val) {
+      if (!val) return;
+
+      // 1. Remove all non-numeric characters
+      let cleaned = val.replace(/\D/g, '');
+
+      // 2. Force the start to be '09'
+      // If they type '9', turn it into '09'. If they type anything else first, reset it to '09'
+      if (cleaned.length > 0 && !cleaned.startsWith('09')) {
+        if (cleaned.startsWith('9')) {
+          cleaned = '0' + cleaned;
+        } else {
+          cleaned = '09';
+        }
+      }
+
+      // 3. Limit to 11 digits
+      this.form.phone_number = cleaned.substring(0, 11);
     },
   },
   mounted() {
@@ -235,11 +265,27 @@ export default {
     initMap() {
       const lat = this.form.latitude || 14.5995;
       const lng = this.form.longitude || 120.9842;
-      this.map = L.map("map").setView([lat, lng], 16);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(this.map);
+
+      if (this.map) {
+        this.map.setView([lat, lng], 16);
+        if (this.marker) {
+          this.marker.setLatLng([lat, lng]);
+        }
+        this.map.invalidateSize();
+        return;
+      }
+
+      this.map = L.map(this.$refs.mapEl).setView([lat, lng], 16);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(this.map);
       this.marker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
       
       this.setAddressFields(); // Initial geocode
+
+      setTimeout(() => {
+        if (this.map) this.map.invalidateSize();
+      }, 250);
 
       this.marker.on("dragend", e => {
         const p = e.target.getLatLng();
@@ -263,12 +309,48 @@ export default {
       }
     },
     nextStep() { 
-      if (this.step === 1 && !this.form.phone_number) return alert("Phone number is required.");
-      this.step++; 
+      if (this.step === 1) {
+        const phone = this.form.phone_number;
+
+        // Check if it's exactly 11 digits and starts with 09
+        const phPhoneRegex = /^09\d{9}$/;
+        
+        if (!phone || !phPhoneRegex.test(phone)) {
+          Swal.fire({
+            icon: "warning",
+            title: "Invalid Phone Number",
+            text: "Please enter a valid 11-digit mobile number starting with 09 (e.g., 09123456789).",
+          });
+          return;
+        }
+      }
+      
+      this.step++;
     },
     prevStep() { this.step--; },
     validateSubmitProfile() {
-      if (!this.form.streets) return alert("Please enter your street name.");
+      if (!this.form.streets) {
+        Swal.fire({
+          icon: "warning",
+          title: "Street Required",
+          text: "Please enter your street name.",
+        });
+        return;
+      }
+
+      const hasCoordinates =
+        Number.isFinite(Number(this.form.latitude)) &&
+        Number.isFinite(Number(this.form.longitude));
+
+      if (!hasCoordinates) {
+        Swal.fire({
+          icon: "warning",
+          title: "Location Required",
+          text: "Please pin your location on the map before submitting.",
+        });
+        return;
+      }
+
       this.showConfirmModal = true;
     },
     closeConfirmModal() { this.showConfirmModal = false; },
@@ -276,18 +358,41 @@ export default {
       this.loading = true;
       this.showConfirmModal = false;
       const fd = new FormData();
-      Object.entries(this.form).forEach(([k, v]) => { if(v) fd.append(k, v); });
+      Object.entries(this.form).forEach(([k, v]) => {
+        if (v !== null && v !== undefined && v !== "") fd.append(k, v);
+      });
       try {
         await completeProfile(fd);
         const info = useUserInfo();
         await info.completeProfileInPage(this.form.first_name, this.form.last_name, this.previewImg);
-        this.$router.push("/profile");
+        await Swal.fire({
+          icon: "success",
+          title: "Profile Completed",
+          text: "Your profile has been updated successfully.",
+          timer: 1400,
+          showConfirmButton: false,
+        });
+        // this.$router.push("/profile");
+        window.location.href="/profile"
       } catch (error) {
-        alert("Failed to save profile. Please try again.");
+        const message = error?.response?.data?.message || "Failed to save profile. Please try again.";
+        await Swal.fire({
+          icon: "error",
+          title: "Profile Save Failed",
+          text: message,
+        });
       } finally {
         this.loading = false;
       }
     },
+  },
+  beforeUnmount() {
+    if (this.timeoutId) clearTimeout(this.timeoutId);
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
+      this.marker = null;
+    }
   },
 };
 </script>
@@ -313,3 +418,4 @@ export default {
 .custom-input:focus { border-color: #4780d9; box-shadow: 0 0 0 3px rgba(71, 128, 217, 0.1); }
 .letter-spacing-1 { letter-spacing: 1px; }
 </style>
+

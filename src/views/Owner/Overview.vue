@@ -1,8 +1,8 @@
 <template>
   <div class="container-fluid p-0">
     <div class="mb-4">
-      <h4 class="fw-bold text-dark mb-1">📊 Dashboard Overview</h4>
-      <p class="text-muted small">Welcome back! Here is what's happening with your properties today.</p>
+      <h4 class="fw-bold text-dark mb-1">Dashboard Overview</h4>
+      <p class="text-muted small">Welcome back. Here is what is happening with your properties today.</p>
     </div>
 
     <div class="row g-3 g-md-4">
@@ -21,8 +21,8 @@
               <h2 class="fw-bold mb-3">{{ item.count }}</h2>
             </div>
 
-            <RouterLink 
-              :to="item.link" 
+            <RouterLink
+              :to="item.link"
               class="btn btn-link p-0 text-decoration-none stretched-link fw-semibold small"
               :class="`text-${item.color}`"
             >
@@ -34,35 +34,63 @@
     </div>
 
     <div class="row mt-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm bg-primary text-white p-4">
-                <div class="d-flex align-items-center">
-                    <div class="me-3">
-                        <i class="bi bi-lightning-charge-fill display-6"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold mb-1">Need to collect rent?</h5>
-                        <p class="mb-0 opacity-75 small">You have 0 pending invoices waiting for payment verification.</p>
-                    </div>
-                    <RouterLink to="/billing" class="btn btn-light ms-auto fw-bold px-4">Go to Billing</RouterLink>
-                </div>
+      <div class="col-12">
+        <div class="card border-0 shadow-sm bg-primary text-white p-4">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <i class="bi bi-lightning-charge-fill display-6"></i>
             </div>
+            <div>
+              <h5 class="fw-bold mb-1">Need to collect rent?</h5>
+              <p class="mb-0 opacity-75 small">You have {{ summary.pending_payments_count }} pending payment proof(s) for review.</p>
+            </div>
+            <RouterLink to="/ledger" class="btn btn-light ms-auto fw-bold px-4">Go to Ledger</RouterLink>
+          </div>
         </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+import { getOwnerDashboardSummary } from '@/api/billings';
+
 export default {
   data() {
     return {
+      summary: {
+        properties_count: 0,
+        active_tenants_count: 0,
+        pending_bookings_count: 0,
+        pending_payments_count: 0,
+        monthly_verified_total: 0,
+      },
       overviewItems: [
         { title: 'Properties', count: 0, link: '/properties', icon: 'house-door-fill', color: 'primary' },
         { title: 'Tenants', count: 0, link: '/tenants', icon: 'people-fill', color: 'info' },
-        { title: 'Billing', count: '₱0', link: '/billing', icon: 'wallet2', color: 'success' },
-        { title: 'Reports', count: 0, link: '/reports', icon: 'bar-chart-line-fill', color: 'warning' },
+        { title: 'Monthly Verified', count: 'PHP 0', link: '/ledger', icon: 'wallet2', color: 'success' },
+        { title: 'Pending Bookings', count: 0, link: '/bookings', icon: 'bar-chart-line-fill', color: 'warning' },
       ],
     };
+  },
+  async mounted() {
+    await this.loadSummary();
+  },
+  methods: {
+    async loadSummary() {
+      try {
+        const res = await getOwnerDashboardSummary();
+        this.summary = res?.data?.data || this.summary;
+        this.overviewItems = [
+          { title: 'Properties', count: this.summary.properties_count, link: '/properties', icon: 'house-door-fill', color: 'primary' },
+          { title: 'Tenants', count: this.summary.active_tenants_count, link: '/tenants', icon: 'people-fill', color: 'info' },
+          { title: 'Monthly Verified', count: `PHP ${Number(this.summary.monthly_verified_total || 0).toLocaleString()}`, link: '/ledger', icon: 'wallet2', color: 'success' },
+          { title: 'Pending Bookings', count: this.summary.pending_bookings_count, link: '/bookings', icon: 'bar-chart-line-fill', color: 'warning' },
+        ];
+      } catch (error) {
+        console.error("Failed to load owner summary:", error);
+      }
+    },
   },
 };
 </script>
@@ -88,18 +116,17 @@ export default {
 }
 
 .stretched-link::after {
-    /* Ensures the entire card is clickable via the RouterLink */
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 1;
-    content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  content: "";
 }
 
 .bg-primary-subtle { background-color: #e7f1ff; }
 .bg-success-subtle { background-color: #e6fcf5; }
-.bg-info-subtle    { background-color: #e7f5ff; }
+.bg-info-subtle { background-color: #e7f5ff; }
 .bg-warning-subtle { background-color: #fff9db; }
 </style>

@@ -7,6 +7,11 @@
       <div>
         <h4 class="mb-1 fw-bold text-dark">🏠 My Properties</h4>
         <p class="text-muted small mb-0">Manage and track your property listings</p>
+        <div class="mt-2">
+          <span class="badge rounded-pill" :class="ownerVerificationBadgeClass">
+            {{ ownerVerificationLabel }}
+          </span>
+        </div>
       </div>
 
       <div class="d-flex flex-column align-items-md-end">
@@ -51,8 +56,8 @@
       <div class="col-12 col-md-6 col-lg-4" v-for="property in properties" :key="property.id">
         <div class="card h-100 border-0 shadow-sm property-card">
           <div class="position-absolute top-0 end-0 m-3 z-1">
-            <span :class="property.status == 'active' ? 'bg-success' : 'bg-danger'" class="badge shadow-sm px-3 py-2">
-              {{ property.status == 'active' ? 'Active' : 'Inactive' }}
+            <span :class="property.is_available ? 'bg-success' : 'bg-danger'" class="badge shadow-sm px-3 py-2">
+              {{ property.is_available ? 'Available' : 'Fully Booked' }}
             </span>
           </div>
 
@@ -89,6 +94,26 @@
                 <i class="bi bi-trash"></i>
               </button>
             </div>
+
+            <div class="pt-3 mt-3 border-top">
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="small fw-semibold text-muted">Availability</span>
+                <div class="form-check form-switch mb-0">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    :id="`availability-${property.id}`"
+                    :checked="property.is_available"
+                    :disabled="availabilityLoadingIds.includes(property.id)"
+                    @change="toggleAvailability(property)"
+                  />
+                  <label class="form-check-label small ms-1" :for="`availability-${property.id}`">
+                    {{ property.is_available ? "Open" : "Full" }}
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -97,9 +122,10 @@
 </template>
 
 <script>
-import { getOwnerProperties, getPropertyLimit } from '@/api/property';
+import { deleteProperty as deleteOwnerPropertyApi, getOwnerProperties, getPropertyLimit, updateOwnerPropertyAvailability } from '@/api/property';
 import SuccessToast from '@/components/successToast.vue';
 import placeholderImg from '@/assets/Placeholder/thumbnail_placeholder.jpg'; 
+import { useUserInfo } from '@/store/userInfo';
 
 export default {
   data() {
@@ -109,23 +135,45 @@ export default {
       limit: null,
       count: null,
       limitReached: false,
+      availabilityLoadingIds: [],
       placeholderImg: placeholderImg,
       isLoading: true, // Added loading state,
       toastMessage: "",
     };
   },
   components: { SuccessToast },
+  computed: {
+    ownerVerificationStatus() {
+      const info = useUserInfo();
+      const status = String(info?.owner_verification_status || "unverified").toLowerCase().trim();
+      return ["verified", "pending", "rejected", "unverified"].includes(status) ? status : "unverified";
+    },
+    ownerVerificationLabel() {
+      if (this.ownerVerificationStatus === "verified") return "Owner: Verified";
+      if (this.ownerVerificationStatus === "pending") return "Owner: Verification Pending";
+      if (this.ownerVerificationStatus === "rejected") return "Owner: Verification Rejected";
+      return "Owner: Unverified";
+    },
+    ownerVerificationBadgeClass() {
+      if (this.ownerVerificationStatus === "verified") return "bg-success-subtle text-success";
+      if (this.ownerVerificationStatus === "pending") return "bg-warning-subtle text-warning-emphasis";
+      if (this.ownerVerificationStatus === "rejected") return "bg-danger-subtle text-danger";
+      return "bg-secondary-subtle text-secondary";
+    },
+  },
   methods: {
     async deleteProperty(id) {
-      // Use a more modern confirm if possible, but keeping your logic
       if (confirm("Are you sure you want to delete this property? This action cannot be undone.")) {
         try {
-          // Add your actual delete API call here
-          // await deletePropertyApi(id);
+          await deleteOwnerPropertyApi(id);
+          this.toastMessage = "Property deleted successfully";
+          this.showSuccess = true;
+          setTimeout(() => { this.showSuccess = false; }, 3000);
           this.getProperties(); // Refresh list
           this.getPropertyLimit(); // Refresh limit
         } catch (error) {
           console.error("Delete failed", error);
+          alert(error?.response?.data?.message || "Delete failed.");
         }
       }
     },
@@ -148,6 +196,21 @@ export default {
         this.limitReached = this.count >= this.limit;
       } catch (error) {
         console.error("Limit Fetch Error:", error);
+      }
+    },
+    async toggleAvailability(property) {
+      if (this.availabilityLoadingIds.includes(property.id)) return;
+      const nextAvailability = !property.is_available;
+      this.availabilityLoadingIds.push(property.id);
+
+      try {
+        await updateOwnerPropertyAvailability(property.id, nextAvailability);
+        property.is_available = nextAvailability;
+      } catch (error) {
+        console.error("Availability update failed:", error);
+        alert(error?.response?.data?.message || "Failed to update availability.");
+      } finally {
+        this.availabilityLoadingIds = this.availabilityLoadingIds.filter((id) => id !== property.id);
       }
     },
     goToAddProperty() {

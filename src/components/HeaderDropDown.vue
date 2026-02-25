@@ -21,7 +21,7 @@
 
       <li><RouterLink class="dropdown-item" to="/profile"><i class="bi bi-person"></i> My Profile</RouterLink></li>
       
-      <template v-if="roleIs === 'user'">
+      <template v-if="roleIs === 'user' && isComplete ">
         <li><button @click="goToPaymentWall" class="dropdown-item text-primary fw-bold"><i class="bi bi-plus-circle"></i> List Property</button></li>
       </template>
       <template v-else-if="roleIs === 'owner'">
@@ -32,6 +32,9 @@
       </template>
       <template v-else-if="roleIs === 'tenants'">
         <li><RouterLink class="dropdown-item" to="/tenant/dashboard"><i class="bi bi-shield-lock"></i> Tenant Dashboard</RouterLink></li>
+      </template>
+      <template v-else>
+        <li><RouterLink class="dropdown-item" to="/completion"><i class="bi bi-person-check"></i> Comeplete Profile</RouterLink></li>
       </template>
 
       <li><hr class="dropdown-divider"></li>
@@ -72,7 +75,11 @@ export default {
     Profile(){
       const info = useUserInfo();
       return info.profile_photo;
-    }
+    },
+    isComplete(){
+      const info = useUserInfo();
+      return info.isComplete;
+    },
   },
   data() {
     return {

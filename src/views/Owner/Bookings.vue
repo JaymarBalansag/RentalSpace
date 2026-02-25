@@ -202,7 +202,7 @@ export default {
 
       this.loading = true;
       try {
-        const response = await approveBooking(this.selectedBooking.id, this.selectedBooking);
+        const response = await approveBooking(this.selectedBooking.id);
         if (response.status === 200) {
           alert("Booking approved successfully!");
           this.closeApproveModal();

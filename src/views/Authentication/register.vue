@@ -164,9 +164,11 @@ export default {
           this.form.password
         );
 
-        console.log(res);
+        const userID = res.data.userId;
 
-        this.$router.push("/verify-email");
+        // console.log(res);
+
+        this.$router.push(`/verify-email/${userID}`);
         
       } catch (error) {
         // Handle API errors (like Email already exists)

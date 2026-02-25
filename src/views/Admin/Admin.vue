@@ -31,19 +31,32 @@
       <div class="col-lg-4">
         <div class="card shadow-sm border-0 h-100">
           <div class="card-header bg-white py-3">
-            <h6 class="fw-bold mb-0">Recent Activity</h6>
+            <h6 class="fw-bold mb-0">Admin Action Queue</h6>
           </div>
           <div class="card-body">
-            <div class="activity-timeline">
-              <div v-for="activity in recentActivities" :key="activity.id" class="activity-item">
-                <div class="activity-dot" :class="activity.type"></div>
-                <div class="activity-content">
-                  <p class="mb-0 small"><strong>{{ activity.user }}</strong> {{ activity.action }}</p>
-                  <span class="text-muted extra-small">{{ activity.time }}</span>
+            <div class="d-flex flex-column gap-3">
+              <div
+                v-for="item in actionQueue"
+                :key="item.id"
+                class="queue-item d-flex justify-content-between align-items-start"
+              >
+                <div>
+                  <p class="mb-1 small fw-semibold text-dark">{{ item.label }}</p>
+                  <div class="d-flex align-items-center gap-2">
+                    <span :class="['badge rounded-pill', item.badgeClass]">{{ item.count }}</span>
+                    <span class="text-muted extra-small">{{ item.waiting }}</span>
+                  </div>
                 </div>
+                <RouterLink
+                  v-if="item.route && !item.isStatic"
+                  :to="item.route"
+                  class="btn btn-light btn-sm text-primary border"
+                >
+                  Review
+                </RouterLink>
+                <button v-else class="btn btn-light btn-sm text-secondary border" disabled>Soon</button>
               </div>
             </div>
-            <button class="btn btn-light btn-sm w-100 mt-3 text-primary">View All Logs</button>
           </div>
         </div>
       </div>
@@ -78,6 +91,9 @@
                     <button class="btn btn-sm btn-outline-primary py-0 px-2"><i class="bi bi-check2"></i></button>
                   </td>
                 </tr>
+                <tr v-if="!pendingProperties.length">
+                  <td colspan="4" class="text-center text-muted small py-4">No pending approvals.</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -88,27 +104,80 @@
 </template>
 
 <script>
+import { getAdminOverview } from "@/api/Admin/AdminDashboard/AdminDashboard";
+
 export default {
   name: "AdminOverview",
   data() {
     return {
+      loading: false,
       stats: [
-        { label: "Total Revenue", value: "₱128,430", icon: "bi bi-wallet2", colorClass: "blue", trend: 12 },
-        { label: "Active Properties", value: "42", icon: "bi bi-house-door", colorClass: "green", trend: 5 },
-        { label: "Total Users", value: "1,240", icon: "bi bi-people", colorClass: "purple", trend: -2 },
-        { label: "New Bookings", value: "+18", icon: "bi bi-calendar-check", colorClass: "orange", trend: 8 },
+        { label: "Active Properties", value: "0", icon: "bi bi-house-door", colorClass: "green", trend: 0 },
+        { label: "Total Users", value: "0", icon: "bi bi-people", colorClass: "purple", trend: 0 },
+        { label: "Pending Approvals", value: "0", icon: "bi bi-hourglass-split", colorClass: "orange", trend: 0 },
+        { label: "Collections This Month", value: "P 0", icon: "bi bi-wallet2", colorClass: "blue", trend: 0 },
       ],
-      recentActivities: [
-        { id: 1, user: "John Doe", action: "listed a new property", time: "2 mins ago", type: "green" },
-        { id: 2, user: "Admin", action: "approved payment #8821", time: "1 hour ago", type: "blue" },
-        { id: 3, user: "Maria S.", action: "reported an issue", time: "3 hours ago", type: "red" },
-      ],
-      pendingProperties: [
-        { id: 1, name: "Sunset Villa", owner: "Kurt Destriza" },
-        { id: 2, name: "City Loft", owner: "Marilou B." },
-        { id: 3, name: "Garden Apartment", owner: "James B." },
-      ]
+      actionQueue: [],
+      pendingProperties: []
     };
+  },
+  methods: {
+    formatNumber(value) {
+      return new Intl.NumberFormat("en-PH").format(Number(value) || 0);
+    },
+    mapBadgeClass(label, isStatic = false) {
+      if (isStatic) {
+        return "bg-secondary-subtle text-secondary border border-secondary-subtle";
+      }
+
+      const normalized = String(label || "").toLowerCase();
+      if (normalized.includes("property")) {
+        return "bg-warning-subtle text-warning-emphasis border border-warning-subtle";
+      }
+      if (normalized.includes("owner")) {
+        return "bg-info-subtle text-info border border-info-subtle";
+      }
+      if (normalized.includes("payment")) {
+        return "bg-primary-subtle text-primary border border-primary-subtle";
+      }
+      return "bg-secondary-subtle text-secondary border border-secondary-subtle";
+    },
+    async loadOverview() {
+      this.loading = true;
+      try {
+        const res = await getAdminOverview();
+        const payload = res?.data?.data || {};
+        const stats = payload?.stats || {};
+        const queue = Array.isArray(payload?.action_queue) ? payload.action_queue : [];
+        const pending = Array.isArray(payload?.pending_properties) ? payload.pending_properties : [];
+
+        this.stats = [
+          { label: "Active Properties", value: this.formatNumber(stats.active_properties), icon: "bi bi-house-door", colorClass: "green", trend: 0 },
+          { label: "Total Users", value: this.formatNumber(stats.total_users), icon: "bi bi-people", colorClass: "purple", trend: 0 },
+          { label: "Pending Approvals", value: this.formatNumber(stats.pending_approvals), icon: "bi bi-hourglass-split", colorClass: "orange", trend: 0 },
+          { label: "Collections This Month", value: `P ${this.formatNumber(stats.collections_this_month)}`, icon: "bi bi-wallet2", colorClass: "blue", trend: 0 },
+        ];
+
+        this.actionQueue = queue.map((item, index) => ({
+          id: item.id || `queue-${index}`,
+          label: item.label || "Queue item",
+          count: item.count === null || item.count === undefined ? "Static" : item.count,
+          waiting: item.waiting || "-",
+          route: item.route || null,
+          isStatic: !!item.is_static,
+          badgeClass: this.mapBadgeClass(item.label, !!item.is_static),
+        }));
+
+        this.pendingProperties = pending;
+      } catch (error) {
+        console.error("Failed to load admin overview:", error);
+      } finally {
+        this.loading = false;
+      }
+    },
+  },
+  mounted() {
+    this.loadOverview();
   }
 };
 </script>
@@ -136,33 +205,12 @@ export default {
 .trend-up { color: #40c057; font-size: 0.85rem; font-weight: 600; }
 .trend-down { color: #fa5252; font-size: 0.85rem; font-weight: 600; }
 
-/* Timeline Activity */
-.activity-timeline { position: relative; padding-left: 20px; }
-.activity-timeline::before {
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: #f1f3f5;
+.queue-item {
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #fff;
 }
-
-.activity-item { position: relative; padding-bottom: 20px; }
-.activity-dot {
-  position: absolute;
-  left: -20px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #adb5bd;
-  border: 2px solid #fff;
-  z-index: 1;
-}
-
-.activity-dot.green { background: #40c057; }
-.activity-dot.blue { background: #228be6; }
-.activity-dot.red { background: #fa5252; }
 
 .extra-small { font-size: 0.7rem; }
 .prop-img-sm { width: 32px; height: 32px; flex-shrink: 0; }

@@ -302,17 +302,6 @@
         <form @submit.prevent="validateAgreement">
           <div v-if="property_type === 'Boarding House'" class="d-grid gap-3">
             <div>
-              <label class="form-label small fw-bold">Stay Duration</label>
-              <select required v-model="agreement.stay_months" class="form-select rounded-3">
-                <option value="1">1 month</option>
-                <option value="3">3 months</option>
-                <option value="6">6 months</option>
-                <option value="12">1 year</option>
-                <option value="custom">Custom</option>
-              </select>
-              <input v-if="agreement.stay_months === 'custom'" type="number" v-model="agreement.custom_months" class="form-control mt-2 rounded-3" placeholder="Number of months" />
-            </div>
-            <div>
               <label class="form-label small fw-bold">Move-in Date</label>
               <input type="date" required v-model="agreement.move_in_date" class="form-control rounded-3" />
             </div>
@@ -333,7 +322,19 @@
             </div>
           </div>
 
-          <div v-else-if="property_type === 'Commercial Space'" class="d-grid gap-3">
+          <div class="mt-3">
+            <label class="form-label small fw-bold">Valid ID (Required)</label>
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png,.pdf"
+              class="form-control rounded-3"
+              @change="onValidIdChange"
+              required
+            />
+            <small class="text-muted">Accepted: JPG, PNG, PDF (max 5MB)</small>
+          </div>
+
+          <!-- <div v-else-if="property_type === 'Commercial Space'" class="d-grid gap-3">
             <div>
               <label class="form-label small fw-bold">Lease Duration (Months)</label>
               <input type="number" required v-model="agreement.lease_duration" min="1" class="form-control rounded-3" />
@@ -346,7 +347,7 @@
               <label class="form-label small fw-bold">Move-in Date</label>
               <input type="date" required v-model="agreement.move_in_date" class="form-control rounded-3" />
             </div>
-          </div>
+          </div> -->
 
           <div class="mt-3">
             <label class="form-label small fw-bold">Additional Notes</label>
@@ -422,14 +423,13 @@ export default {
         comment: "",
       },
       agreement: {
-        stay_months: null,
         occupant_num: null,
         lease_duration: null,
-        custom_months: null,
         move_in_date: "",
         room_preference: null,
         notes: "",
         agreement: false,
+        valid_id: null,
       },
     };
   },
@@ -585,17 +585,32 @@ export default {
       const canProceed = await this.ensureProfileCompletedOrRedirect();
       if (!canProceed) return;
 
-      this.agreement = { agreement: false, notes: "", move_in_date: "" };
+      this.agreement = {
+        occupant_num: null,
+        lease_duration: null,
+        move_in_date: "",
+        room_preference: null,
+        notes: "",
+        agreement: false,
+        valid_id: null,
+      };
       this.showUserAgreementModal = true;
     },
     closeAgreementModal() {
        this.showUserAgreementModal = false; 
     },
+    onValidIdChange(event) {
+      const file = event.target?.files?.[0] || null;
+      this.agreement.valid_id = file;
+    },
     validateAgreement() {
-      const { move_in_date, stay_months, occupant_num, agreement } = this.agreement;
+      const { agreement, valid_id } = this.agreement;
 
       if (!agreement) {
         return alert("Please check the agreement box.");
+      }
+      if (!valid_id) {
+        return alert("Please upload a valid ID.");
       }
 
       // If all checks pass:

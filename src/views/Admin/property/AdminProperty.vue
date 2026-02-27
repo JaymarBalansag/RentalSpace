@@ -52,14 +52,14 @@
                 </td>
                 <td class="text-end">
                   <div class="d-flex justify-content-end gap-2">
-                    <button class="btn-action view" @click="viewDetails(property)" title="View Details">
+                    <button class="btn-action view" @click="viewDetails(property.property_id)" title="View Details">
                       <i class="bi bi-eye"></i>
                     </button>
                     <template v-if="property.status === 'pending'">
-                      <button class="btn-action approve" @click="approveProperty(property.property_id)" title="Approve">
+                      <button class="btn-action approve" @click="openApproveModal(property)" title="Approve">
                         <i class="bi bi-check-lg"></i>
                       </button>
-                      <button class="btn-action reject" @click="rejectProperty(property.property_id)" title="Reject">
+                      <button class="btn-action reject" @click="openRejectModal(property)" title="Reject">
                         <i class="bi bi-x-lg"></i>
                       </button>
                     </template>
@@ -92,10 +92,10 @@
               <span class="fw-bold text-primary">₱{{ property.price }}</span>
             </div>
             <div class="d-flex gap-2">
-              <button class="btn-mobile-icon view" @click="viewDetails(property)"><i class="bi bi-eye"></i></button>
+              <button class="btn-mobile-icon view" @click="viewDetails(property.property_id)"><i class="bi bi-eye"></i></button>
               <template v-if="property.status === 'pending'">
-                <button class="btn-mobile-icon approve" @click="approveProperty(property.property_id)"><i class="bi bi-check-lg"></i></button>
-                <button class="btn-mobile-icon reject" @click="rejectProperty(property.property_id)"><i class="bi bi-x"></i></button>
+                <button class="btn-mobile-icon approve" @click="openApproveModal(property)"><i class="bi bi-check-lg"></i></button>
+                <button class="btn-mobile-icon reject" @click="openRejectModal(property)"><i class="bi bi-x"></i></button>
               </template>
             </div>
           </div>
@@ -120,19 +120,147 @@
         </div>
       </div>
     </div>
+
+    <div v-if="showDetailsModal && selectedPropertyDetails" class="modal-overlay-custom" @click.self="closeDetailsModal">
+      <div class="modal-body-custom rounded-4 shadow-lg p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Property Details</h5>
+          <button class="btn-close" @click="closeDetailsModal"></button>
+        </div>
+
+        <div class="mb-3">
+          <p class="mb-1"><strong>Title:</strong> {{ selectedPropertyDetails.property?.title || "-" }}</p>
+          <p class="mb-1"><strong>Owner:</strong> {{ selectedPropertyDetails.property?.first_name }} {{ selectedPropertyDetails.property?.last_name }}</p>
+          <p class="mb-1"><strong>Type:</strong> {{ selectedPropertyDetails.property?.type_name || "-" }}</p>
+          <p class="mb-0"><strong>Address:</strong> {{ fullAddress }}</p>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6 col-md-3">
+            <div class="border rounded p-2 text-center">
+              <small class="text-muted d-block">Price</small>
+              <strong>{{ selectedPropertyDetails.property?.price ?? "-" }}</strong>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="border rounded p-2 text-center">
+              <small class="text-muted d-block">Bedrooms</small>
+              <strong>{{ selectedPropertyDetails.property?.bedrooms ?? selectedPropertyDetails.property?.bedroom ?? "-" }}</strong>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="border rounded p-2 text-center">
+              <small class="text-muted d-block">Public Bath</small>
+              <strong>{{ selectedPropertyDetails.property?.public_bath ?? "-" }}</strong>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="border rounded p-2 text-center">
+              <small class="text-muted d-block">Private Bath</small>
+              <strong>{{ selectedPropertyDetails.property?.private_bath ?? "-" }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="border rounded p-2 text-center">
+            <small class="text-muted d-block">Status</small>
+            <strong class="text-capitalize">{{ selectedPropertyDetails.property?.status || "-" }}</strong>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <p class="fw-semibold small mb-2">Amenities</p>
+          <div class="d-flex flex-wrap gap-2">
+            <span v-for="(item, index) in selectedPropertyDetails.amenities" :key="`amenity-${index}`" class="chip">{{ item.name }}</span>
+            <small v-if="!selectedPropertyDetails.amenities?.length" class="text-muted">No amenities listed.</small>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <p class="fw-semibold small mb-2">Facilities</p>
+          <div class="d-flex flex-wrap gap-2">
+            <span v-for="(item, index) in selectedPropertyDetails.facilities" :key="`facility-${index}`" class="chip">{{ item.name }}</span>
+            <small v-if="!selectedPropertyDetails.facilities?.length" class="text-muted">No facilities listed.</small>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <p class="fw-semibold small mb-2">Utilities</p>
+          <div class="d-flex flex-wrap gap-2">
+            <span v-for="(item, index) in selectedPropertyDetails.utilities" :key="`utility-${index}`" class="chip">{{ item.name }}</span>
+            <small v-if="!selectedPropertyDetails.utilities?.length" class="text-muted">No utilities listed.</small>
+          </div>
+        </div>
+
+        <div>
+          <p class="fw-semibold small mb-2">Images</p>
+          <div class="row g-2">
+            <div v-for="(img, index) in selectedPropertyDetails.images" :key="`image-${index}`" class="col-6 col-md-4">
+              <img :src="img.images_url" alt="Property image" class="img-fluid rounded border w-100 property-image-preview">
+            </div>
+            <small v-if="!selectedPropertyDetails.images?.length" class="text-muted">No images uploaded.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ConfirmModal
+      :show="showConfirmModal"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      :confirm-text="confirmConfig.confirmText"
+      :variant="confirmConfig.variant"
+      :loading="isActionLoading"
+      :show-input="confirmConfig.showInput"
+      :input-label="confirmConfig.inputLabel"
+      :input-placeholder="confirmConfig.inputPlaceholder"
+      :input-required="confirmConfig.inputRequired"
+      :input-value="confirmInput"
+      @update:inputValue="confirmInput = $event"
+      @cancel="closeConfirmModal"
+      @confirm="handleConfirmAction"
+    />
   </div>
 </template>
 
 <script>
-import { fetchPendingProperties, getActiveProperties, fetchRejectedProperties, approveProperty } from "@/api/Admin/AdminProperty/AdminProperty";
-import axios from "axios";
+import ConfirmModal from "@/components/confirmModal.vue";
+import {
+  fetchPendingProperties,
+  getActiveProperties,
+  fetchRejectedProperties,
+  getPropertyDetails,
+  approveProperty as approvePropertyApi,
+  rejectProperty as rejectPropertyApi,
+} from "@/api/Admin/AdminProperty/AdminProperty";
 
 export default {
   name: "AdminPropertyTable",
+  components: {
+    ConfirmModal,
+  },
   data() {
     return {
       properties: [],
+      showDetailsModal: false,
+      selectedPropertyDetails: null,
       statusFilter: "active",
+      showConfirmModal: false,
+      confirmInput: "",
+      confirmConfig: {
+        action: null,
+        propertyId: null,
+        title: "Confirm Action",
+        message: "Are you sure you want to proceed?",
+        confirmText: "Yes",
+        variant: "success",
+        showInput: false,
+        inputLabel: "Reason",
+        inputPlaceholder: "Type here...",
+        inputRequired: false,
+      },
+      isActionLoading: false,
       statuses: [
         { label: "Active", value: "active" },
         { label: "Pending", value: "pending" },
@@ -152,6 +280,19 @@ export default {
   mounted() {
     this.fetchData();
   },
+  computed: {
+    fullAddress() {
+      const property = this.selectedPropertyDetails?.property || {};
+      return [
+        property.brgyDesc,
+        property.muncityDesc,
+        property.provDesc,
+        property.regDesc,
+      ]
+        .filter(Boolean)
+        .join(", ") || "-";
+    },
+  },
   methods: {
     async fetchData(page = 1) {
       try {
@@ -160,12 +301,20 @@ export default {
         else if (this.statusFilter === "pending") res = await fetchPendingProperties(page);
         else if (this.statusFilter === "rejected") res = await fetchRejectedProperties(page);
 
-        // Standardizing the response handling based on your API structure
-        if (res && res.data) {
-          // Note: Adjusting based on your provided fetch snippets
-          const rawData = res.data.data;
-          this.properties = rawData.data || rawData; // Handles nested data.data.data vs data.data
-          this.pagination = res.data;
+        if (res && res.status >= 200 && res.status < 300 && res.data) {
+          const paginator = res.data.data || {};
+          this.properties = paginator.data || [];
+          this.pagination = {
+            current_page: paginator.current_page || 1,
+            total: paginator.total || 0,
+            from: paginator.from || 0,
+            to: paginator.to || 0,
+            next_page_url: paginator.next_page_url || null,
+            prev_page_url: paginator.prev_page_url || null,
+            last_page: paginator.last_page || 1,
+          };
+        } else {
+          this.properties = [];
         }
       } catch (error) {
         console.error("Fetch error:", error);
@@ -181,29 +330,90 @@ export default {
         this.fetchData(page);
       }
     },
-    viewDetails(property) {
-      alert(`Viewing: ${property.title}`);
-    },
-    async approveProperty(id) {
+    async viewDetails(propertyId) {
       try {
-        await approveProperty(id);
-        alert("Approved Successfully");
-        this.fetchData(this.pagination.current_page);
+        const res = await getPropertyDetails(propertyId);
+        if (res && res.status >= 200 && res.status < 300) {
+          this.selectedPropertyDetails = res.data?.data || null;
+          this.showDetailsModal = !!this.selectedPropertyDetails;
+          return;
+        }
+        alert(res?.data?.message || "Failed to load property details.");
       } catch (error) {
         console.error(error);
+        alert("Failed to load property details.");
       }
     },
-    async rejectProperty(id) {
-      if (confirm("Reject this property?")) {
-        try {
-          // Using your existing axios logic for rejection
-          await axios.post(`/api/admin/property/reject/${id}`);
-          this.fetchData(this.pagination.current_page);
-        } catch (error) {
-          console.error(error);
+    closeDetailsModal() {
+      this.showDetailsModal = false;
+      this.selectedPropertyDetails = null;
+    },
+    openApproveModal(property) {
+      this.confirmInput = "";
+      this.confirmConfig = {
+        action: "approve",
+        propertyId: property.property_id,
+        title: "Approve Property",
+        message: `Approve "${property.title}"?`,
+        confirmText: "Approve",
+        variant: "success",
+        showInput: false,
+        inputLabel: "Reason",
+        inputPlaceholder: "Type here...",
+        inputRequired: false,
+      };
+      this.showConfirmModal = true;
+    },
+    openRejectModal(property) {
+      this.confirmInput = "";
+      this.confirmConfig = {
+        action: "reject",
+        propertyId: property.property_id,
+        title: "Reject Property",
+        message: `Reject "${property.title}"?`,
+        confirmText: "Reject",
+        variant: "danger",
+        showInput: true,
+        inputLabel: "Rejection Reason",
+        inputPlaceholder: "State why this property was rejected...",
+        inputRequired: true,
+      };
+      this.showConfirmModal = true;
+    },
+    closeConfirmModal() {
+      if (this.isActionLoading) return;
+      this.showConfirmModal = false;
+      this.confirmInput = "";
+    },
+    async handleConfirmAction() {
+      if (this.isActionLoading) return;
+
+      const { action, propertyId } = this.confirmConfig;
+      if (!action || !propertyId) return;
+
+      this.isActionLoading = true;
+      try {
+        let res;
+        if (action === "approve") {
+          res = await approvePropertyApi(propertyId);
+        } else {
+          res = await rejectPropertyApi(propertyId, this.confirmInput.trim());
         }
+
+        if (!res || res.status < 200 || res.status >= 300) {
+          alert(res?.data?.message || "Action failed.");
+          return;
+        }
+
+        this.closeConfirmModal();
+        await this.fetchData(this.pagination.current_page || 1);
+      } catch (error) {
+        console.error(error);
+        alert("Action failed.");
+      } finally {
+        this.isActionLoading = false;
       }
-    }
+    },
   }
 };
 </script>
@@ -264,4 +474,35 @@ export default {
 .type-label { background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; color: #6c757d; }
 .page-nav-btn { background: #f1f4f9; border: none; width: 34px; height: 34px; border-radius: 8px; }
 .page-nav-btn:disabled { opacity: 0.5; }
+
+.modal-overlay-custom {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-body-custom {
+  background: white;
+  width: 92%;
+  max-width: 760px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f1f4f9;
+  color: #495057;
+  font-size: 0.8rem;
+}
+
+.property-image-preview {
+  object-fit: cover;
+  height: 120px;
+}
 </style>

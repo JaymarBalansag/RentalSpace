@@ -5,8 +5,8 @@
         <h3 class="fw-bold text-dark mb-1">User Management</h3>
         <p class="text-muted small mb-0">Monitor tenant profiles and location data.</p>
       </div>
-      <button class="btn btn-primary shadow-sm px-4">
-        <i class="bi bi-download me-2"></i>Export List
+      <button class="btn btn-outline-secondary shadow-sm px-4" @click="getUsers">
+        <i class="bi bi-arrow-repeat me-2"></i>Refresh
       </button>
     </div>
 
@@ -312,8 +312,20 @@ export default {
 </script>
 
 <style scoped>
-.admin-view-container { background-color: #f8f9fa; min-height: 100vh; }
-.data-card { background: white; border-radius: 12px; overflow: hidden; }
+.admin-view-container {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 0 0, rgba(226, 240, 255, 0.7), transparent 40%),
+    radial-gradient(circle at 100% 0, rgba(255, 244, 231, 0.45), transparent 35%),
+    #f6f8fc;
+}
+
+.data-card { background: white; border-radius: 14px; overflow: hidden; border: 1px solid #e4eaf4; }
+
+.card {
+  border-radius: 14px;
+  border: 1px solid #e3e9f3 !important;
+}
 
 /* Desktop Table Styling */
 .custom-admin-table thead th {
@@ -352,6 +364,7 @@ export default {
 .btn-action.view { background: #e7f5ff; color: #228be6; }
 .btn-action.approve { background: #ebfbee; color: #40c057; }
 .btn-action.reject { background: #fff5f5; color: #fa5252; }
+.btn-action:hover { transform: translateY(-1px); }
 
 /* Mobile Card Styling */
 .mobile-user-card { background: white; border-color: #eee !important; }

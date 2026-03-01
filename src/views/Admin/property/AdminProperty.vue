@@ -1,8 +1,8 @@
 <template>
   <div class="admin-view-container p-3 p-md-4">
     <div class="header-section mb-4">
-      <h3 class="fw-bold text-dark">Property Management</h3>
-      <p class="text-muted small">Review and manage property listings (Admin Portal)</p>
+      <h3 class="fw-bold text-dark mb-1">Property Management</h3>
+      <p class="text-muted small mb-0">Review and manage property listings (Admin Portal)</p>
     </div>
 
     <div class="d-flex flex-wrap gap-2 mb-4">
@@ -419,8 +419,22 @@ export default {
 </script>
 
 <style scoped>
-.admin-view-container { background-color: #f8f9fa; min-height: 100vh; }
-.data-card { background: white; border-radius: 12px; border: 1px solid #ebedef; overflow: hidden; }
+.admin-view-container {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 0 0, rgba(226, 240, 255, 0.7), transparent 40%),
+    radial-gradient(circle at 100% 0, rgba(255, 245, 230, 0.5), transparent 35%),
+    #f6f8fc;
+}
+
+.header-section {
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid #e3e9f3;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.data-card { background: white; border-radius: 14px; border: 1px solid #e4eaf4; overflow: hidden; }
 
 /* Desktop Table */
 .custom-admin-table thead th {
@@ -436,15 +450,17 @@ export default {
 
 /* Filter Pills */
 .filter-pill {
-  border: 1px solid #dee2e6;
+  border: 1px solid #d8dfeb;
   background: white;
   padding: 8px 18px;
   border-radius: 50px;
   font-size: 0.85rem;
   font-weight: 600;
   transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-.filter-pill.active { background: #0d6efd; color: white; border-color: #0d6efd; }
+.filter-pill:hover { transform: translateY(-1px); }
+.filter-pill.active { background: #2563eb; color: white; border-color: #2563eb; }
 .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
 .status-dot.active { background: #28a745; }
 .status-dot.pending { background: #ffc107; }
@@ -457,10 +473,11 @@ export default {
 .badge-modern.rejected { background: #fff5f5; color: #fa5252; }
 
 /* Actions */
-.btn-action { width: 32px; height: 32px; border-radius: 8px; border: none; transition: 0.2s; }
+.btn-action { width: 32px; height: 32px; border-radius: 9px; border: none; transition: 0.2s; }
 .btn-action.view { background: #e7f5ff; color: #228be6; }
 .btn-action.approve { background: #ebfbee; color: #40c057; }
 .btn-action.reject { background: #fff5f5; color: #fa5252; }
+.btn-action:hover { transform: translateY(-1px); filter: brightness(0.98); }
 
 /* Mobile Cards */
 .mobile-data-card { background: white; border: 1px solid #ebedef; border-radius: 10px; }

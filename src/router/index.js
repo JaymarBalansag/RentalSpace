@@ -172,7 +172,8 @@ const routes = [
       { path: "/admin/admin", name: "AdminOverview", component: () => import('@/views/Admin/Admin.vue') },
       { path: "/admin/owners", name: "AdminOwners", component: () => import('@/views/Admin/owners/ownerList.vue') },
       { path: "/admin/tenants", name: "AdminTenants", component: () => import('@/views/Admin/tenants/tenantsList.vue') },
-      { path: "/admin/properties", name: "AdminProperties", component: () => import('@/views/Admin/property/AdminProperty.vue') }
+      { path: "/admin/properties", name: "AdminProperties", component: () => import('@/views/Admin/property/AdminProperty.vue') },
+      { path: "/admin/bookings", name: "AdminBookings", component: () => import('@/views/Admin/bookings/AdminBookings.vue') }
     ]
   },
 

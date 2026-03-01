@@ -483,7 +483,7 @@
       <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0">
         <div>
           <h6 class="mb-0 fw-bold text-primary">Step 4: Property Location</h6>
-          <small v-if="loading" class="text-primary animate__animated animate__pulse animate__infinite">
+          <small v-if="isGeocoding" class="text-primary animate__animated animate__pulse animate__infinite">
             <span class="spinner-border spinner-border-sm me-1"></span> Fetching details...
           </small>
           <small v-else class="text-muted">Pin the exact location of your property.</small>
@@ -493,7 +493,7 @@
           class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm"
           type="button"
           @click="requestCurrentLocation"
-          :disabled="loading"
+          :disabled="isGeocoding || isSubmitting || isCheckingAccess"
         >
           <i class="bi bi-geo-alt-fill me-1"></i> My Location
         </button>
@@ -696,14 +696,20 @@
 
       <div class="card-footer bg-white py-3 border-top-0">
         <div class="d-grid gap-2">
-          <button v-if="!loading" class="btn btn-success btn-lg shadow-sm py-3 fw-bold" @click="validateForm">
-            <i class="bi bi-cloud-arrow-up-fill me-2"></i> SUBMIT PROPERTY
+          <button
+            class="btn btn-success btn-lg shadow-sm py-3 fw-bold"
+            @click="validateForm"
+            :disabled="isValidating || isSubmitting || isCheckingAccess"
+          >
+            <template v-if="isValidating || isSubmitting || isCheckingAccess">
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              {{ submitButtonText }}
+            </template>
+            <template v-else>
+              <i class="bi bi-cloud-arrow-up-fill me-2"></i> SUBMIT PROPERTY
+            </template>
           </button>
-          <button v-else-if="loading" disabled class="btn btn-success btn-lg shadow-sm py-3 fw-bold">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-          </button>
+          <small v-if="isSubmitting && submitStatusMessage" class="text-muted text-center">{{ submitStatusMessage }}</small>
           <button class="btn btn-link btn-sm text-muted text-decoration-none" @click="step = 4">
             Go back and edit
           </button>
@@ -721,6 +727,7 @@
     <!-- Confirm Modal -->
     <confirmModal
       :show="showConfirmModal"
+      :loading="isSubmitting || isCheckingAccess"
       title="Confirm Property Info"
       message="Are you sure all the information you entered is correct?"
       confirm-text="Yes, I'm Sure"
@@ -732,7 +739,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import { createProperty, getAmenities, getFacilities, getPropertyTypes } from "@/api/property";
 import { getOwnerSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
@@ -832,7 +838,11 @@ export default {
       previewThumbnail: null,
       previewPropertyImages: [],
       timeoutId: null,
-      loading: false,
+      isValidating: false,
+      isSubmitting: false,
+      isGeocoding: false,
+      isCheckingAccess: false,
+      submitStatusMessage: "",
       maxField : false,
       subscriptionState: null,
     };
@@ -842,6 +852,7 @@ export default {
   },
   methods: {
     async ensureOwnerCanManageProperties(options = { redirectIfBlocked: true }) {
+      this.isCheckingAccess = true;
       try {
         const subscription = await getOwnerSubscriptionStatus();
         this.subscriptionState = subscription;
@@ -861,6 +872,8 @@ export default {
           this.$router.push("/overview");
         }
         return false;
+      } finally {
+        this.isCheckingAccess = false;
       }
     },
     // For Custom Amenity
@@ -1006,13 +1019,8 @@ export default {
     },
 
     async validateForm() {
-      this.loading = true;  
+      this.isValidating = true;
       try {
-        const canManage = await this.ensureOwnerCanManageProperties({ redirectIfBlocked: false });
-        if (!canManage) {
-          return;
-        }
-
         // Title & Description
         if (!this.form.title || this.form.title.trim() === "") {
           alert("Title is required");
@@ -1074,12 +1082,16 @@ export default {
         }
 
         // Location
-        if (!this.form.region_name || !this.form.state_name || !this.form.town_name || !this.form.village_name) {
-          alert("Complete location details are required");
-          return;
-        }
         if (!this.form.latitude || !this.form.longitude) {
           alert("Coordinates are required");
+          return;
+        }
+        if (!this.form.region_name || !this.form.state_name || !this.form.town_name || !this.form.village_name) {
+          if (this.isGeocoding) {
+            alert("Location details are still being fetched. Please wait a moment and submit again.");
+            return;
+          }
+          alert("Complete location details are required");
           return;
         }
 
@@ -1091,22 +1103,30 @@ export default {
       } catch (error) {
         console.error("Validation Error:", error);
         alert("Something went wrong during validation.");
+      } finally {
+        this.isValidating = false;
       }
     },
     closeConfirmModal(){
-      this.loading = false;
+      if (this.isSubmitting || this.isCheckingAccess) return;
       this.showConfirmModal = false;
     },
 
     // Submit form
     async submitForm() {
+      if (this.isSubmitting) return;
+      this.isSubmitting = true;
+      this.submitStatusMessage = "Checking subscription status...";
+
       const canManage = await this.ensureOwnerCanManageProperties({ redirectIfBlocked: false });
       if (!canManage) {
-        this.loading = false;
+        this.isSubmitting = false;
+        this.submitStatusMessage = "";
         return;
       }
 
       const fd = new FormData();
+      this.submitStatusMessage = "Preparing property payload...";
 
       for (const key in this.form) {
         const value = this.form[key];
@@ -1138,10 +1158,11 @@ export default {
       }
 
       try {
-        this.showConfirmModal = false;
-        const response = await createProperty(fd);
+        this.submitStatusMessage = "Uploading property details...";
+        await createProperty(fd);
         // console.log("Property added successfully:", response);
         sessionStorage.setItem("propertyCreated", true);
+        this.showConfirmModal = false;
         // alert("Property created successfully!");
         this.$router.push("/properties")
       } catch (error) {
@@ -1169,13 +1190,14 @@ export default {
           alert("Something went wrong. Check console.");
         }
       } finally {
-        this.loading = false;
+        this.isSubmitting = false;
+        this.submitStatusMessage = "";
       }
     },
 
     async setAddressFields() {
       if (this.timeoutId) clearTimeout(this.timeoutId);
-      this.loading = true;
+      this.isGeocoding = true;
 
       this.timeoutId = setTimeout(async () => {
         try {
@@ -1188,8 +1210,10 @@ export default {
           this.form.state_name = data.address.state || "";
           this.form.town_name = data.address.city || data.address.town || "";
           this.form.village_name = data.address.village || data.address.suburb || "";
+        } catch (error) {
+          console.warn("Failed to fetch reverse geocoded address", error);
         } finally {
-          this.loading = false;
+          this.isGeocoding = false;
         }
       }, 1000);
     },
@@ -1278,15 +1302,15 @@ export default {
         return;
       }
 
-      this.loading = true;
+      this.isGeocoding = true;
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          this.loading = false;
+          this.isGeocoding = false;
           this.handleLocationSuccess(position);
         },
         () => {
-          this.loading = false;
+          this.isGeocoding = false;
           // Silent fallback — no alert needed
           console.warn("User denied geolocation.");
         }
@@ -1341,12 +1365,19 @@ export default {
     }
   },
   mounted() {
-    this.ensureOwnerCanManageProperties({ redirectIfBlocked: true }).then((canManage) => {
-      if (!canManage) return;
-      this.getAmenities();
-      this.getFacilities();
-      this.getPropertyTypes();
-    });
+    const userInfoRaw = localStorage.getItem("userInfo");
+    if (userInfoRaw) {
+      try {
+        const cached = JSON.parse(userInfoRaw);
+        this.subscriptionState = cached?.subscription || null;
+      } catch (error) {
+        this.subscriptionState = null;
+      }
+    }
+
+    this.getAmenities();
+    this.getFacilities();
+    this.getPropertyTypes();
 
     // Default location: Manila
     const defaultLat = 14.5995;
@@ -1408,6 +1439,11 @@ export default {
       const includedTypes = ['commercial space', 'hotel'];
       return includedTypes.includes(this.selectedPropertyName.toLowerCase());
     },
+    submitButtonText() {
+      if (this.isCheckingAccess) return "Checking access...";
+      if (this.isSubmitting) return "Submitting...";
+      return "Validating...";
+    },
     
     
 
@@ -1422,10 +1458,14 @@ export default {
       }
     },
     "form.latitude"() {
-      this.setAddressFields();
+      if (this.step === 4) {
+        this.setAddressFields();
+      }
     },
     "form.longitude"() {
-      this.setAddressFields();
+      if (this.step === 4) {
+        this.setAddressFields();
+      }
     },
     'form.bed_type': {
       handler(newVal) {

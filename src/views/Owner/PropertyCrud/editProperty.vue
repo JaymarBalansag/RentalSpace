@@ -489,7 +489,7 @@
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0">
           <div>
             <h6 class="mb-0 fw-bold text-primary">Step 4: Property Location</h6>
-            <small v-if="loading" class="text-primary animate__animated animate__pulse animate__infinite">
+            <small v-if="isGeocoding" class="text-primary animate__animated animate__pulse animate__infinite">
               <span class="spinner-border spinner-border-sm me-1"></span> Fetching details...
             </small>
             <small v-else class="text-muted">Pin the exact location of your property.</small>
@@ -499,7 +499,7 @@
             class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm"
             type="button"
             @click="requestCurrentLocation"
-            :disabled="loading"
+            :disabled="isGeocoding || isValidating || isSubmitting"
           >
             <i class="bi bi-geo-alt-fill me-1"></i> My Location
           </button>
@@ -659,10 +659,20 @@
           </div>
         </div>
         <div class="card-footer bg-white py-4 border-0 text-center">
-          <button class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow" @click="validateForm" :disabled="loading">
-            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-            SAVE ALL CHANGES
+          <button
+            class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow"
+            @click="validateForm"
+            :disabled="isValidating || isSubmitting"
+          >
+            <template v-if="isValidating || isSubmitting">
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              {{ submitButtonText }}
+            </template>
+            <template v-else>
+              SAVE ALL CHANGES
+            </template>
           </button>
+          <small v-if="isSubmitting && submitStatusMessage" class="d-block text-muted mt-2">{{ submitStatusMessage }}</small>
         </div>
       </div>
 
@@ -670,6 +680,7 @@
 
     <confirmModal
       :show="showConfirmModal"
+      :loading="isSubmitting"
       title="Save Changes?"
       message="This will update your listing live on RentaHub. Continue?"
       confirm-text="Yes, Update"
@@ -695,7 +706,10 @@ export default {
     return {
       initialLoading: true, 
       frequecyText: "Monthly",
-      loading: false,
+      isValidating: false,
+      isSubmitting: false,
+      isGeocoding: false,
+      submitStatusMessage: "",
       step: 1,
       maxStep: 5,
       showConfirmModal: false,
@@ -773,15 +787,8 @@ export default {
       previewThumbnail: null,
       previewPropertyImages: [],
       timeoutId: null,
-      loading: false,
       maxField : false,
     };
-  },
-  computed: {
-    stepTitle() {
-      const titles = ["Basics", "Details", "Pricing", "Location", "Review"];
-      return titles[this.step - 1];
-    }
   },
   methods: {
     // For Custom Amenity
@@ -950,13 +957,14 @@ export default {
       if (this.step > 1) this.step--; 
     },
     closeConfirmModal(){
-      this.loading = false;
+      if (this.isSubmitting) return;
       this.showConfirmModal = false;
     },
     // Leaflet Logic
     async setAddressFields() {
       if (this.timeoutId) clearTimeout(this.timeoutId);
-      this.loading = true;
+      if (!this.form.latitude || !this.form.longitude) return;
+      this.isGeocoding = true;
 
       this.timeoutId = setTimeout(async () => {
         try {
@@ -969,8 +977,10 @@ export default {
           this.form.state_name = data.address.state || "";
           this.form.town_name = data.address.city || data.address.town || "";
           this.form.village_name = data.address.village || data.address.suburb || "";
+        } catch (error) {
+          console.warn("Failed to fetch reverse geocoded address", error);
         } finally {
-          this.loading = false;
+          this.isGeocoding = false;
         }
       }, 1000);
     },
@@ -1059,15 +1069,15 @@ export default {
         return;
       }
 
-      this.loading = true;
+      this.isGeocoding = true;
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          this.loading = false;
+          this.isGeocoding = false;
           this.handleLocationSuccess(position);
         },
         () => {
-          this.loading = false;
+          this.isGeocoding = false;
           // Silent fallback — no alert needed
           console.warn("User denied geolocation.");
         }
@@ -1076,7 +1086,7 @@ export default {
 
     // Form Action Placeholders
     async validateForm() {
-      this.loading = true;  
+      this.isValidating = true;
       try {
         // Title & Description
         if (!this.form.title || this.form.title.trim() === "") {
@@ -1147,6 +1157,13 @@ export default {
           alert("Coordinates are required");
           return;
         }
+        if (
+          this.isGeocoding &&
+          (!this.form.region_name || !this.form.state_name || !this.form.town_name || !this.form.village_name)
+        ) {
+          alert("Location details are still being fetched. Please wait a moment and submit again.");
+          return;
+        }
 
         // ✅ If all validations pass, proceed to submit
 
@@ -1154,9 +1171,15 @@ export default {
       } catch (error) {
         console.error("Validation Error:", error);
         alert("Something went wrong during validation.");
+      } finally {
+        this.isValidating = false;
       }
     },
     async submitForm() {
+      if (this.isSubmitting) return;
+      this.isSubmitting = true;
+      this.submitStatusMessage = "Preparing update payload...";
+
       const fd = new FormData();
 
       for (const key in this.form) {
@@ -1189,9 +1212,10 @@ export default {
       }
 
       try {
+        this.submitStatusMessage = "Updating property details...";
         this.showConfirmModal = false;
         const id = this.$route.params.id;
-        const response = await updatePropertyData(id, fd);
+        await updatePropertyData(id, fd);
         // console.log("Property added successfully:", response);
         sessionStorage.setItem("propertyUpdate", true);
         // alert("Property created successfully!");
@@ -1210,7 +1234,8 @@ export default {
           alert("Something went wrong. Check console.");
         }
       } finally {
-        this.loading = false;
+        this.isSubmitting = false;
+        this.submitStatusMessage = "";
       }
     },
     fillMaxOccupants(){
@@ -1242,16 +1267,17 @@ export default {
         const data = response.data.property;
         console.log(data)
         this.asignData(data);
-        
-
-        
       } catch (error) {
-        throw error
+        console.error("Failed to fetch property details:", error);
+        alert("Unable to load property details. Please try again.");
+        this.$router.push("/properties");
       } finally{
         this.initialLoading = false;
       }
     },
     asignData(data){
+        this.form.bed_type = [];
+        this.form.bath_type = [];
 
         // Step 1
         // Basic Info
@@ -1324,43 +1350,40 @@ export default {
 
         this.form.latitude = data.latitude;
         this.form.longitude = data.longitude;
+        this.form.region_name = data.region_name || "";
+        this.form.state_name = data.state_name || "";
+        this.form.town_name = data.town_name || "";
+        this.form.village_name = data.village_name || "";
         
 
 
     }
   },
   mounted() {
-    // For now, we manually turn off loading to see the UI
-    setTimeout(() => { this.initialLoading = false; }, 1000);
     this.getAmenities();
     this.getFacilities();
     this.getPropertyTypes();
-
-    // Default location: Manila
-    const defaultLat = 14.5995;
-    const defaultLng = 120.9842;
-
-    this.form.latitude = defaultLat.toFixed(6);
-    this.form.longitude = defaultLng.toFixed(6);
-
-    this.$nextTick(() => {
-      this.getPropertyData();
-    });
+    this.getPropertyData();
 
   },
   watch: {step(newStep) {
       if (newStep === 4) {
+        if (!this.form.latitude || !this.form.longitude) return;
         this.$nextTick(() => {
           this.setMap(this.form.latitude, this.form.longitude);
         });
-        this.setAddressFields()
+        this.setAddressFields();
       }
     },
     "form.latitude"() {
-      this.setAddressFields();
+      if (this.step === 4) {
+        this.setAddressFields();
+      }
     },
     "form.longitude"() {
-      this.setAddressFields();
+      if (this.step === 4) {
+        this.setAddressFields();
+      }
     },
     // 'form.bed_type': {
     //   handler(newVal) {
@@ -1481,6 +1504,14 @@ export default {
     },
   },
   computed: {
+    stepTitle() {
+      const titles = ["Basics", "Details", "Pricing", "Location", "Review"];
+      return titles[this.step - 1];
+    },
+    submitButtonText() {
+      if (this.isSubmitting) return "Saving changes...";
+      return "Validating...";
+    },
     utilitiesList() {
       return [
         { value: 'electricity', label: 'Electricity' },

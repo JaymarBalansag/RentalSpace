@@ -135,6 +135,24 @@
       </div>
 
       <div v-if="tab === 'payments'">
+        <div class="d-flex flex-column flex-md-row align-items-md-end justify-content-between gap-2 mb-3">
+          <div>
+            <label class="form-label small text-muted mb-1">Monthly Scope</label>
+            <select class="form-select" style="min-width: 220px;" v-model="paymentMonthScope">
+              <option value="all">All Months</option>
+              <option value="this_month">This Month</option>
+              <option value="last_month">Last Month</option>
+              <option value="3">Last 3 Months</option>
+              <option value="6">Last 6 Months</option>
+              <option value="12">Last 12 Months</option>
+            </select>
+          </div>
+          <button class="btn btn-outline-primary" :disabled="printingPaymentPdf" @click="printPaymentAnalytics">
+            <i class="bi bi-printer me-2"></i>
+            {{ printingPaymentPdf ? 'Generating PDF...' : 'Print Payment Analytics' }}
+          </button>
+        </div>
+
         <div class="row g-3 mb-3">
           <div class="col-md-4">
             <div class="card border-0 shadow-sm p-3">
@@ -167,10 +185,10 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-if="paymentAnalytics.monthly.length === 0">
+                <tr v-if="filteredPaymentMonthly.length === 0">
                   <td colspan="3" class="text-center text-muted py-4">No payment analytics yet.</td>
                 </tr>
-                <tr v-for="row in paymentAnalytics.monthly" :key="row.month">
+                <tr v-for="row in filteredPaymentMonthly" :key="row.month">
                   <td>{{ row.month }}</td>
                   <td>PHP {{ formatAmount(row.verified_amount) }}</td>
                   <td>{{ row.total_payments }}</td>
@@ -195,10 +213,13 @@ export default {
       loading: false,
       printingTenantPdf: false,
       printingBookingPdf: false,
+      printingPaymentPdf: false,
       tenantStatusFilter: 'all',
       bookingStatusFilter: 'all',
+      paymentMonthScope: 'all',
       tenantPrintAt: null,
       bookingPrintAt: null,
+      paymentPrintAt: null,
       tenantSummary: {
         counts: { total: 0, active: 0, inactive: 0 },
         tenants: [],
@@ -512,6 +533,145 @@ export default {
         this.printingBookingPdf = false;
       }
     },
+    async printPaymentAnalytics() {
+      if (this.printingPaymentPdf) return;
+
+      this.printingPaymentPdf = true;
+      this.paymentPrintAt = new Date();
+
+      try {
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const marginX = 10;
+        const marginTop = 12;
+        const rowsPerPage = 30;
+        const rows = this.filteredPaymentMonthly || [];
+        const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
+        const generatedAt = new Date();
+
+        const columns = [
+          { key: 'month', label: 'Month', width: 55 },
+          { key: 'verified_amount', label: 'Verified Amount', width: 65 },
+          { key: 'total_payments', label: 'Total Payments', width: 60 },
+        ];
+
+        const fitText = (value, maxWidth) => {
+          const text = String(value ?? '-');
+          const lines = pdf.splitTextToSize(text, Math.max(4, maxWidth - 2));
+          return lines?.[0] || '-';
+        };
+
+        const drawPageHeader = () => {
+          let y = marginTop;
+
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(14);
+          pdf.text('Payment Analytics Report', marginX, y);
+
+          y += 6;
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(9);
+          pdf.text(`Scope: ${this.paymentScopeLabel}`, marginX, y);
+          pdf.text(`Generated: ${this.formatDateTime(generatedAt)}`, pageWidth - marginX, y, { align: 'right' });
+
+          y += 5;
+          pdf.text(
+            `Verified Total: PHP ${this.formatAmount(this.paymentAnalytics?.totals?.verified_amount_total)} | Verified This Month: PHP ${this.formatAmount(this.paymentAnalytics?.totals?.verified_amount_this_month)}`,
+            marginX,
+            y
+          );
+
+          y += 5;
+          pdf.text(
+            `Pending: ${this.paymentAnalytics?.totals?.pending_count ?? 0} | Verified: ${this.paymentAnalytics?.totals?.verified_count ?? 0} | Rejected: ${this.paymentAnalytics?.totals?.rejected_count ?? 0}`,
+            marginX,
+            y
+          );
+
+          y += 4;
+          pdf.setDrawColor(220, 225, 235);
+          pdf.line(marginX, y, pageWidth - marginX, y);
+
+          return y + 4;
+        };
+
+        const drawTableHeader = (startY) => {
+          const headerHeight = 8;
+          let x = marginX;
+
+          pdf.setFillColor(244, 247, 252);
+          pdf.rect(marginX, startY, pageWidth - marginX * 2, headerHeight, 'F');
+
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(9);
+          for (const column of columns) {
+            pdf.text(column.label, x + 1.5, startY + 5.3);
+            x += column.width;
+          }
+
+          return startY + headerHeight;
+        };
+
+        const drawFooter = (pageNumber) => {
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(8);
+          pdf.setTextColor(100);
+          pdf.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginX, pageHeight - 6, { align: 'right' });
+          pdf.setTextColor(0);
+        };
+
+        for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+          if (pageIndex > 0) {
+            pdf.addPage();
+          }
+
+          const pageNumber = pageIndex + 1;
+          const pageRows = rows.slice(pageIndex * rowsPerPage, pageIndex * rowsPerPage + rowsPerPage);
+
+          let y = drawPageHeader();
+          y = drawTableHeader(y);
+
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(9);
+
+          const rowHeight = 8;
+          if (pageRows.length === 0) {
+            pdf.text('No payment analytics rows.', marginX + 1.5, y + 5.3);
+          } else {
+            for (const row of pageRows) {
+              let x = marginX;
+              const values = {
+                month: row.month || '-',
+                verified_amount: `PHP ${this.formatAmount(row.verified_amount)}`,
+                total_payments: row.total_payments ?? 0,
+              };
+
+              for (const column of columns) {
+                const text = fitText(values[column.key], column.width);
+                pdf.text(text, x + 1.5, y + 5.3);
+                x += column.width;
+              }
+
+              pdf.setDrawColor(236, 240, 246);
+              pdf.line(marginX, y + rowHeight, pageWidth - marginX, y + rowHeight);
+              y += rowHeight;
+            }
+          }
+
+          drawFooter(pageNumber);
+        }
+
+        const now = new Date();
+        const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+        pdf.save(`payment-analytics-${this.paymentMonthScope}-${stamp}.pdf`);
+      } catch (error) {
+        console.error('Failed to generate payment analytics PDF:', error);
+        alert('Failed to generate PDF. Please try again.');
+      } finally {
+        this.printingPaymentPdf = false;
+      }
+    },
     formatAmount(value) {
       return Number(value || 0).toLocaleString();
     },
@@ -535,6 +695,34 @@ export default {
       if (this.bookingStatusFilter === 'approved') return 'Approved Bookings';
       if (this.bookingStatusFilter === 'rejected') return 'Rejected Bookings';
       return 'All Bookings';
+    },
+    filteredPaymentMonthly() {
+      const rows = this.paymentAnalytics?.monthly || [];
+      if (this.paymentMonthScope === 'all') return rows;
+      if (this.paymentMonthScope === 'this_month') {
+        const now = new Date();
+        const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        return rows.filter((row) => row?.month === monthKey);
+      }
+      if (this.paymentMonthScope === 'last_month') {
+        const now = new Date();
+        const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const monthKey = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+        return rows.filter((row) => row?.month === monthKey);
+      }
+
+      const limit = Number(this.paymentMonthScope);
+      if (!Number.isFinite(limit) || limit <= 0) return rows;
+
+      return rows.slice(-limit);
+    },
+    paymentScopeLabel() {
+      if (this.paymentMonthScope === 'this_month') return 'This Month';
+      if (this.paymentMonthScope === 'last_month') return 'Last Month';
+      if (this.paymentMonthScope === '3') return 'Last 3 Months';
+      if (this.paymentMonthScope === '6') return 'Last 6 Months';
+      if (this.paymentMonthScope === '12') return 'Last 12 Months';
+      return 'All Months';
     },
   },
 };

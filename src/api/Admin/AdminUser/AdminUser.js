@@ -27,3 +27,12 @@ export async function getUserByStatus(status) {
         console.error(error)
     }
 }
+
+export async function getUserDetails(userId) {
+    try {
+        const res = await api.get(`/admin/users/${userId}`);
+        return res;
+    } catch (error) {
+        return error.response;
+    }
+}

@@ -86,7 +86,7 @@
                       class="btn-action approve"
                       title="Verify Owner"
                       :disabled="isActionLoading || normalizeVerificationStatus(owner) === 'verified'"
-                      @click="verifyOwnerAction(owner)"
+                      @click="openVerifyOwnerModal(owner)"
                     >
                       <i class="bi bi-patch-check"></i>
                     </button>
@@ -94,7 +94,7 @@
                       class="btn-action reject"
                       title="Reject Verification"
                       :disabled="isActionLoading || normalizeVerificationStatus(owner) === 'rejected'"
-                      @click="rejectOwnerAction(owner)"
+                      @click="openRejectOwnerModal(owner)"
                     >
                       <i class="bi bi-x-circle"></i>
                     </button>
@@ -133,14 +133,14 @@
                 <button
                   class="btn-mobile-icon approve"
                   :disabled="isActionLoading || normalizeVerificationStatus(owner) === 'verified'"
-                  @click="verifyOwnerAction(owner)"
+                  @click="openVerifyOwnerModal(owner)"
                 >
                   <i class="bi bi-patch-check"></i>
                 </button>
                 <button
                   class="btn-mobile-icon reject"
                   :disabled="isActionLoading || normalizeVerificationStatus(owner) === 'rejected'"
-                  @click="rejectOwnerAction(owner)"
+                  @click="openRejectOwnerModal(owner)"
                 >
                   <i class="bi bi-x-circle"></i>
                 </button>
@@ -204,24 +204,42 @@
           <button
             class="btn btn-success"
             :disabled="isActionLoading || normalizeVerificationStatus(selectedOwner) === 'verified'"
-            @click="verifyOwnerAction(selectedOwner)"
+            @click="openVerifyOwnerModal(selectedOwner)"
           >
             <i class="bi bi-patch-check me-1"></i> Verify
           </button>
           <button
             class="btn btn-outline-danger"
             :disabled="isActionLoading || normalizeVerificationStatus(selectedOwner) === 'rejected'"
-            @click="rejectOwnerAction(selectedOwner)"
+            @click="openRejectOwnerModal(selectedOwner)"
           >
             <i class="bi bi-x-circle me-1"></i> Reject
           </button>
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      :show="showConfirmModal"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      :confirm-text="confirmConfig.confirmText"
+      :variant="confirmConfig.variant"
+      :loading="isActionLoading"
+      :show-input="confirmConfig.showInput"
+      :input-label="confirmConfig.inputLabel"
+      :input-placeholder="confirmConfig.inputPlaceholder"
+      :input-required="confirmConfig.inputRequired"
+      :input-value="confirmInput"
+      @update:inputValue="confirmInput = $event"
+      @cancel="closeConfirmModal"
+      @confirm="handleConfirmAction"
+    />
   </div>
 </template>
 
 <script>
+import ConfirmModal from "@/components/confirmModal.vue";
 import {
   getOwner,
   getOwnerDetails,
@@ -231,6 +249,9 @@ import {
 
 export default {
   name: "ownerList",
+  components: {
+    ConfirmModal,
+  },
   data() {
     return {
       search: "",
@@ -239,6 +260,20 @@ export default {
       showOwnerModal: false,
       selectedOwner: null,
       isActionLoading: false,
+      showConfirmModal: false,
+      confirmInput: "",
+      confirmConfig: {
+        action: null,
+        owner: null,
+        title: "Confirm Action",
+        message: "Are you sure you want to proceed?",
+        confirmText: "Yes",
+        variant: "success",
+        showInput: false,
+        inputLabel: "Reason",
+        inputPlaceholder: "Type here...",
+        inputRequired: false,
+      },
     };
   },
   computed: {
@@ -314,37 +349,62 @@ export default {
       this.showOwnerModal = false;
       this.selectedOwner = null;
     },
-    async verifyOwnerAction(owner) {
-      const confirmed = confirm(`Verify ${owner.first_name} ${owner.last_name} as owner?`);
-      if (!confirmed) return;
-
-      this.isActionLoading = true;
-      try {
-        await verifyOwner(owner.id);
-        await this.fetchOwners();
-        if (this.selectedOwner?.id === owner.id) {
-          await this.openOwnerModal(owner);
-        }
-      } catch (error) {
-        alert(error?.response?.data?.message || "Failed to verify owner.");
-      } finally {
-        this.isActionLoading = false;
-      }
+    openVerifyOwnerModal(owner) {
+      this.confirmInput = "";
+      this.confirmConfig = {
+        action: "verify",
+        owner,
+        title: "Verify Owner",
+        message: `Verify ${owner.first_name} ${owner.last_name} as owner?`,
+        confirmText: "Verify",
+        variant: "success",
+        showInput: false,
+        inputLabel: "Reason",
+        inputPlaceholder: "Type here...",
+        inputRequired: false,
+      };
+      this.showConfirmModal = true;
     },
-    async rejectOwnerAction(owner) {
-      const reason = prompt("Optional rejection reason:", "") || "";
-      const confirmed = confirm(`Reject verification for ${owner.first_name} ${owner.last_name}?`);
-      if (!confirmed) return;
+    openRejectOwnerModal(owner) {
+      this.confirmInput = "";
+      this.confirmConfig = {
+        action: "reject",
+        owner,
+        title: "Reject Owner Verification",
+        message: `Reject verification for ${owner.first_name} ${owner.last_name}?`,
+        confirmText: "Reject",
+        variant: "danger",
+        showInput: true,
+        inputLabel: "Rejection Reason",
+        inputPlaceholder: "Optional reason for rejection...",
+        inputRequired: false,
+      };
+      this.showConfirmModal = true;
+    },
+    closeConfirmModal() {
+      if (this.isActionLoading) return;
+      this.showConfirmModal = false;
+      this.confirmInput = "";
+    },
+    async handleConfirmAction() {
+      const owner = this.confirmConfig.owner;
+      if (!owner || this.isActionLoading) return;
 
       this.isActionLoading = true;
       try {
-        await rejectOwnerVerification(owner.id, reason);
+        if (this.confirmConfig.action === "verify") {
+          await verifyOwner(owner.id);
+        } else {
+          await rejectOwnerVerification(owner.id, this.confirmInput.trim());
+        }
+
+        this.closeConfirmModal();
         await this.fetchOwners();
         if (this.selectedOwner?.id === owner.id) {
           await this.openOwnerModal(owner);
         }
       } catch (error) {
-        alert(error?.response?.data?.message || "Failed to reject owner verification.");
+        alert(error?.response?.data?.message || "Failed to process owner verification action.");
       } finally {
         this.isActionLoading = false;
       }
@@ -357,8 +417,20 @@ export default {
 </script>
 
 <style scoped>
-.admin-view-container { background-color: #f8f9fa; min-height: 100vh; }
-.data-card { background: white; border-radius: 12px; overflow: hidden; }
+.admin-view-container {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 0 0, rgba(226, 240, 255, 0.7), transparent 40%),
+    radial-gradient(circle at 100% 0, rgba(240, 255, 244, 0.45), transparent 35%),
+    #f6f8fc;
+}
+
+.data-card { background: white; border-radius: 14px; overflow: hidden; border: 1px solid #e4eaf4; }
+
+.card {
+  border-radius: 14px;
+  border: 1px solid #e3e9f3 !important;
+}
 
 .custom-admin-table thead th {
   background-color: #f1f4f9;
@@ -415,7 +487,7 @@ export default {
 .avatar-circle {
   width: 35px;
   height: 35px;
-  background: #6c757d;
+  background: linear-gradient(135deg, #475569, #64748b);
   color: white;
   border-radius: 50%;
   display: flex;

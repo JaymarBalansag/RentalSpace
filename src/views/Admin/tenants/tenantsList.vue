@@ -5,8 +5,8 @@
         <h3 class="fw-bold text-dark mb-1">User Management</h3>
         <p class="text-muted small mb-0">Monitor tenant profiles and location data.</p>
       </div>
-      <button class="btn btn-primary shadow-sm px-4">
-        <i class="bi bi-download me-2"></i>Export List
+      <button class="btn btn-outline-secondary shadow-sm px-4" @click="getUsers">
+        <i class="bi bi-arrow-repeat me-2"></i>Refresh
       </button>
     </div>
 
@@ -91,7 +91,7 @@
                 </td>
                 <td class="text-end px-4">
                   <div class="d-flex justify-content-end gap-2">
-                    <button class="btn-action view" title="View Details"><i class="bi bi-eye"></i></button>
+                    <button class="btn-action view" title="View Details" @click="openUserModal(user)"><i class="bi bi-eye"></i></button>
                     <button 
                       class="btn-action" 
                       :class="user.isComplete ? 'approve' : 'reject'"
@@ -134,8 +134,85 @@
             <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
               <span class="small text-muted">ID: #{{ user.id }}</span>
               <div class="d-flex gap-2">
-                <button class="btn-mobile-icon view"><i class="bi bi-eye"></i></button>
+                <button class="btn-mobile-icon view" @click="openUserModal(user)"><i class="bi bi-eye"></i></button>
                 <button class="btn-mobile-icon" :class="user.isComplete ? 'approve' : 'reject'"><i class="bi bi-shield-check"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showUserModal" class="modal-overlay-custom" @click.self="closeUserModal">
+      <div class="modal-body-custom rounded-4 shadow-lg p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">User Details</h5>
+          <button class="btn-close" @click="closeUserModal"></button>
+        </div>
+
+        <div v-if="isUserDetailsLoading" class="py-4 text-center text-muted">
+          Loading user details...
+        </div>
+
+        <div v-else-if="userDetailsError" class="alert alert-danger mb-0">
+          {{ userDetailsError }}
+        </div>
+
+        <div v-else-if="selectedUserDetails">
+          <div class="d-flex align-items-center mb-3">
+            <img
+              :src="selectedUserDetails.user_img_url || avatarFallback(selectedUserDetails)"
+              alt="User image"
+              class="user-img-lg me-3"
+            >
+            <div>
+              <h6 class="fw-bold mb-1">{{ selectedUserDetails.first_name }} {{ selectedUserDetails.last_name }}</h6>
+              <p class="mb-0 text-muted small">{{ selectedUserDetails.email || "N/A" }}</p>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <div class="border rounded p-3 h-100">
+                <p class="mb-1"><strong>User ID:</strong> #{{ selectedUserDetails.id }}</p>
+                <p class="mb-1"><strong>Role:</strong> <span class="text-capitalize">{{ selectedUserDetails.role || "-" }}</span></p>
+                <p class="mb-1"><strong>Phone:</strong> {{ selectedUserDetails.phone_number || "-" }}</p>
+                <p class="mb-0">
+                  <strong>Profile:</strong>
+                  <span :class="selectedUserDetails.isComplete ? 'text-success' : 'text-danger'">
+                    {{ selectedUserDetails.isComplete ? "Complete" : "Incomplete" }}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <div class="border rounded p-3 h-100">
+                <p class="mb-1">
+                  <strong>Email Verified:</strong>
+                  <span :class="selectedUserDetails.email_verified_at ? 'text-success' : 'text-danger'">
+                    {{ selectedUserDetails.email_verified_at ? "Yes" : "No" }}
+                  </span>
+                </p>
+                <p class="mb-1"><strong>Joined:</strong> {{ selectedUserDetails.created_at || "-" }}</p>
+                <p class="mb-0"><strong>Last Updated:</strong> {{ selectedUserDetails.updated_at || "-" }}</p>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="border rounded p-3">
+                <p class="mb-2"><strong>Address</strong></p>
+                <p class="mb-1">{{ selectedUserDetails.streets || "-" }}</p>
+                <p class="mb-1">{{ selectedUserDetails.village_name || "-" }}</p>
+                <p class="mb-1">{{ selectedUserDetails.town_name || "-" }}</p>
+                <p class="mb-0">{{ selectedUserDetails.state_name || "-" }}, {{ selectedUserDetails.region_name || "-" }}</p>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="border rounded p-3">
+                <p class="mb-1"><strong>Coordinates</strong></p>
+                <p class="mb-0">Lat: {{ selectedUserDetails.latitude ?? "-" }}, Lng: {{ selectedUserDetails.longitude ?? "-" }}</p>
               </div>
             </div>
           </div>
@@ -146,7 +223,7 @@
 </template>
 
 <script>
-import { getUsers, getUserByStatus } from '@/api/Admin/AdminUser/AdminUser';
+import { getUsers, getUserByStatus, getUserDetails } from '@/api/Admin/AdminUser/AdminUser';
 
 export default {
   name: "tenantsList",
@@ -155,6 +232,10 @@ export default {
       search: "",
       filterStatus: "all",
       users: [],
+      showUserModal: false,
+      selectedUserDetails: null,
+      isUserDetailsLoading: false,
+      userDetailsError: "",
     };
   },
   computed: {
@@ -191,6 +272,33 @@ export default {
         console.error("Filter Error:", error);
       }
     },
+    avatarFallback(user) {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.first_name || "") + " " + (user?.last_name || ""))}`;
+    },
+    async openUserModal(user) {
+      this.showUserModal = true;
+      this.selectedUserDetails = null;
+      this.userDetailsError = "";
+      this.isUserDetailsLoading = true;
+
+      try {
+        const res = await getUserDetails(user.id);
+        if (res && res.status >= 200 && res.status < 300) {
+          this.selectedUserDetails = res.data?.data || null;
+        } else {
+          this.userDetailsError = res?.data?.message || "Failed to load user details.";
+        }
+      } catch (error) {
+        this.userDetailsError = "Failed to load user details.";
+      } finally {
+        this.isUserDetailsLoading = false;
+      }
+    },
+    closeUserModal() {
+      this.showUserModal = false;
+      this.selectedUserDetails = null;
+      this.userDetailsError = "";
+    },
   },
   mounted() {
     this.getUsers();
@@ -204,8 +312,20 @@ export default {
 </script>
 
 <style scoped>
-.admin-view-container { background-color: #f8f9fa; min-height: 100vh; }
-.data-card { background: white; border-radius: 12px; overflow: hidden; }
+.admin-view-container {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 0 0, rgba(226, 240, 255, 0.7), transparent 40%),
+    radial-gradient(circle at 100% 0, rgba(255, 244, 231, 0.45), transparent 35%),
+    #f6f8fc;
+}
+
+.data-card { background: white; border-radius: 14px; overflow: hidden; border: 1px solid #e4eaf4; }
+
+.card {
+  border-radius: 14px;
+  border: 1px solid #e3e9f3 !important;
+}
 
 /* Desktop Table Styling */
 .custom-admin-table thead th {
@@ -244,6 +364,7 @@ export default {
 .btn-action.view { background: #e7f5ff; color: #228be6; }
 .btn-action.approve { background: #ebfbee; color: #40c057; }
 .btn-action.reject { background: #fff5f5; color: #fa5252; }
+.btn-action:hover { transform: translateY(-1px); }
 
 /* Mobile Card Styling */
 .mobile-user-card { background: white; border-color: #eee !important; }
@@ -261,4 +382,31 @@ export default {
 .btn-mobile-icon.view { background: #e7f5ff; color: #228be6; }
 .btn-mobile-icon.approve { background: #40c057; color: white; }
 .btn-mobile-icon.reject { background: #fa5252; color: white; }
+
+.modal-overlay-custom {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-body-custom {
+  background: #fff;
+  width: 92%;
+  max-width: 760px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.user-img-lg {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
 </style>

@@ -1,10 +1,8 @@
 <template>
   <div class="overview-container">
-    <div class="row mb-4">
-      <div class="col-12">
-        <h3 class="fw-bold text-dark">System Overview</h3>
-        <p class="text-muted">Welcome back, Admin. Here's what's happening today.</p>
-      </div>
+    <div class="hero-panel mb-4">
+      <h3 class="fw-bold text-dark mb-1">System Overview</h3>
+      <p class="text-muted mb-0">Welcome back, Admin. Here's what's happening today.</p>
     </div>
 
     <div class="row g-4 mb-4">
@@ -183,6 +181,21 @@ export default {
 </script>
 
 <style scoped>
+.overview-container {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 0 0, rgba(226, 240, 255, 0.65), transparent 40%),
+    radial-gradient(circle at 100% 0, rgba(255, 245, 230, 0.45), transparent 35%),
+    #f6f8fc;
+}
+
+.hero-panel {
+  padding: 1rem 1.2rem;
+  border-radius: 14px;
+  border: 1px solid #e3e9f3;
+  background: rgba(255, 255, 255, 0.9);
+}
+
 /* Stat Cards */
 .stat-card { border-radius: 16px; transition: transform 0.2s; }
 .stat-card:hover { transform: translateY(-5px); }

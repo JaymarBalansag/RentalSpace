@@ -4,10 +4,16 @@
   <successToast v-if="showSuccess" message="🎉 Login successful, Welcome!" />
   <successToast v-if="subSuccess" message="🎉 You are an owner now!" />
 
-  <div class="search-hero bg-primary-gradient pt-5 pb-4 mb-4">
-    <div class="container text-white">
-      <h2 class="fw-bold mb-3">Find Your Perfect Space</h2>
-      <div class="search-box p-3 bg-white rounded-4 shadow-lg row g-2 align-items-center mx-0">
+  <section class="search-hero pt-5 pb-4 mb-4">
+    <div class="container">
+      <div class="hero-shell">
+        <p class="hero-eyebrow mb-2">Search and Compare</p>
+        <h2 class="hero-title fw-bold mb-2">Discover Spaces Built For Your Needs</h2>
+        <p class="hero-subtitle mb-4">
+          Browse verified listings by type, agreement, and location with map-aware search.
+        </p>
+      </div>
+      <div class="search-box p-3 rounded-4 row g-2 align-items-center mx-0">
         <div class="col-md-3 border-end-md">
           <label class="small text-muted d-block ms-2 fw-bold">Type</label>
           <select class="form-select border-0 shadow-none custom-select" v-model="selectedType">
@@ -51,13 +57,13 @@
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div v-if="showMap" class="container-md container-sm px-0 mb-4 animate-fade-in">
+  <div v-if="showMap" class="container-md container-sm px-0 mb-4 map-shell">
     <MapSection :properties="properties" />
   </div>
 
-  <div class="container my-5">
+  <div class="container my-5 home-shell">
     <div class="row g-4">
       <aside class="col-lg-3 d-none d-lg-block">
         <div class="sticky-top" style="top: 100px; z-index: 10;">
@@ -107,8 +113,8 @@
 
       <!-- Filter button on Mobile -->
       <div class="col-12 d-lg-none mb-3">
-        <button class="btn btn-outline-dark w-100 d-flex justify-content-between align-items-center px-4 py-2 rounded-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileFilters">
-          <span><i class="bi bi-sliders2-vertical me-2"></i> Filters</span>
+        <button class="btn btn-mobile-filter w-100 d-flex justify-content-between align-items-center px-4 py-2 rounded-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileFilters">
+          <span><i class="bi bi-sliders2-vertical me-2"></i> Refine Search</span>
           <i class="bi bi-chevron-right"></i>
         </button>
       </div>
@@ -116,15 +122,18 @@
       <!-- Property Listings -->
       <div class="col-lg-9">
         <!-- Result count -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h5 class="fw-bold mb-0" v-if="!loading">{{ total }} results found</h5>
-          <div v-else class="placeholder col-2"></div>
+        <div class="result-header d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <p class="result-eyebrow mb-1">Available Now</p>
+            <h5 class="fw-bold mb-0" v-if="!loading">{{ total }} results found</h5>
+          </div>
+          <div v-if="loading" class="placeholder col-2"></div>
         </div>
 
         <!-- Loading PlaceHolder -->
         <div class="row g-4">
           <div v-if="loading" class="col-12" v-for="n in 4" :key="'skel-'+n">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden loading-card">
               <div class="row g-0">
                 <div class="col-md-4 bg-light placeholder-glow">
                   <div class="placeholder w-100 h-100" style="min-height: 200px;"></div>
@@ -214,7 +223,7 @@
             <img src="https://cdn-icons-png.flaticon.com/512/6134/6134065.png" alt="No data" style="width: 120px; opacity: 0.5;">
             <h5 class="mt-4 fw-bold text-muted">No Properties Found</h5>
             <p class="text-muted">Try adjusting your filters or search query to find more results.</p>
-            <button @click="resetPriceFilter" class="btn btn-primary rounded-pill px-4 mt-2">Clear All Filters</button>
+            <button @click="resetPriceFilter" class="btn btn-primary rounded-pill px-4 mt-2 fw-bold">Clear All Filters</button>
           </div>
         </div>
 
@@ -504,18 +513,49 @@ export default {
 </script>
 
 <style scoped>
+.home-shell {
+  background: radial-gradient(circle at 20% 0, #edf4ff 0%, #f8fbff 30%, #ffffff 100%);
+}
 
+.search-hero {
+  background:
+    linear-gradient(145deg, rgba(20, 51, 98, 0.84), rgba(38, 90, 168, 0.78)),
+    url("https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=1800&q=80");
+  background-size: cover;
+  background-position: center;
+}
 
-.bg-primary-gradient {
-  background: linear-gradient(135deg, #4780d9 0%, #366ac2 100%);
+.hero-shell {
+  margin-bottom: 1rem;
+}
+
+.hero-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #dce9ff;
+}
+
+.hero-title {
+  color: #ffffff;
+  letter-spacing: -0.015em;
+}
+
+.hero-subtitle {
+  color: rgba(240, 247, 255, 0.9);
+  max-width: 62ch;
 }
 
 .search-box {
-  border-bottom: 4px solid #ffd166;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #dce8fb;
+  box-shadow: 0 12px 24px rgba(23, 54, 99, 0.08);
+  backdrop-filter: blur(3px);
 }
 
 .border-end-md {
-  border-right: 1px solid #eef2f6;
+  border-right: 1px solid #eaf0f9;
 }
 
 .custom-select {
@@ -523,16 +563,62 @@ export default {
   cursor: pointer;
 }
 
+.custom-select:focus,
+input.form-control:focus {
+  box-shadow: none;
+  outline: 2px solid #bfd5ff;
+  outline-offset: 0;
+}
+
+.map-shell {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid #dce8fb;
+  box-shadow: 0 12px 24px rgba(23, 54, 99, 0.08);
+}
+
+.btn-mobile-filter {
+  border: 1px solid #d6e4fb;
+  color: #204884;
+  background: #f7fbff;
+  font-weight: 700;
+}
+
+.btn-mobile-filter:hover {
+  background: #eef5ff;
+}
+
+.filter-card {
+  border: 1px solid #e1ebfb !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 18px rgba(21, 48, 88, 0.05);
+}
+
+.result-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #4a6da5;
+}
+
 .property-horizontal-card {
   cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid #f0f0f0 !important;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.55s ease, border-color 0.55s ease;
+  border: 1px solid #e4ecf8 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
 }
 
 .property-horizontal-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important;
-  border-color: #4780d9 !important;
+  box-shadow: 0 18px 30px rgba(16, 45, 88, 0.12) !important;
+  border-color: #bfd5fb !important;
+}
+
+.loading-card {
+  border: 1px solid #e7eef8 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
 }
 
 .text-truncate-custom {
@@ -549,9 +635,9 @@ export default {
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 600;
-  color: #0f3d88;
-  background: #e8f0ff;
-  border: 1px solid #d4e2ff;
+  color: #1d4d97;
+  background: #edf4ff;
+  border: 1px solid #d5e4ff;
 }
 
 .feature-chip-more {
@@ -568,53 +654,72 @@ export default {
 .scroll-custom::-webkit-scrollbar {
   width: 5px;
 }
+
 .scroll-custom::-webkit-scrollbar-thumb {
-  background: #e0e0e0;
+  background: #d6deea;
   border-radius: 10px;
 }
 
 .custom-pagination .page-link {
-  border: none;
-  color: #666;
+  border: 1px solid #d9e6fb;
+  color: #4b668e;
   margin: 0 5px;
-  border-radius: 8px !important;
+  border-radius: 999px !important;
   padding: 8px 16px;
+  background: #fff;
 }
 
 .custom-pagination .active .page-link {
-  background-color: #4780d9;
-  color: white;
+  background-color: #3f73cb;
+  border-color: #3f73cb;
+  color: #fff;
 }
 
-/* Container for the image to ensure consistent height */
 .property-image-wrapper {
-  height: 250px; /* Set a fixed height for all images */
+  height: 250px;
   width: 100%;
   overflow: hidden;
 }
 
-/* Force the image to cover the area like a background-image */
 .property-image {
   width: 100%;
   height: 100% !important;
-  object-fit: cover; /* This is the secret sauce */
+  object-fit: cover;
   object-position: center;
+  transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Adjustments for mobile: images can be shorter if you prefer */
+.property-horizontal-card:hover .property-image {
+  transform: scale(1.045);
+}
+
+.property-horizontal-card .row.g-0 {
+  align-items: stretch;
+}
+
 @media (max-width: 768px) {
   .property-image-wrapper {
     height: 200px;
   }
+
+  .border-end-md {
+    border-right: none;
+    border-bottom: 1px solid #eef3fb;
+  }
+
+  .search-hero {
+    padding-top: 2rem !important;
+  }
 }
 
-/* Ensure the horizontal card aligns properly */
-.property-horizontal-card .row.g-0 {
-  align-items: stretch; /* Makes sure the text side matches the image height */
-}
-
-@media (max-width: 768px) {
-  .border-end-md { border-right: none; border-bottom: 1px solid #f0f0f0; }
-  .search-hero { padding-top: 2rem !important; }
+@media (prefers-reduced-motion: reduce) {
+  .property-horizontal-card,
+  .property-image,
+  .btn,
+  .card,
+  .pagination .page-link {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 </style>

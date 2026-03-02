@@ -4,7 +4,8 @@
       <nav class="navbar navbar-expand-md px-0">
         
         <RouterLink class="navbar-brand fw-bold text-white d-flex align-items-center" to="/Rentahub">
-          <i class="bi bi-house-heart-fill me-2 fs-3"></i>
+          <!-- <i class="bi bi-house-heart-fill me-2 fs-3"></i> -->
+          <img class="brand-logo" src="/favicon.ico" alt="RentaHub Logo">
           <span class="brand-text">RentaHub</span>
         </RouterLink>
 
@@ -120,6 +121,17 @@ export default {
 }
 
 /* Brand Logo Text */
+.brand-logo {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    margin-right: 0.65rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.12);
+    padding: 4px;
+    flex-shrink: 0;
+}
+
 .brand-text {
     font-size: 1.5rem;
     letter-spacing: -0.5px;
@@ -152,6 +164,18 @@ export default {
         height: 2px;
         background: white;
         border-radius: 10px;
+    }
+}
+
+@media (max-width: 767px) {
+    .brand-logo {
+        width: 32px;
+        height: 32px;
+        margin-right: 0.5rem;
+    }
+
+    .brand-text {
+        font-size: 1.3rem;
     }
 }
 

@@ -1,101 +1,114 @@
 <template>
   <Header />
 
-  <div class="contact-hero text-center py-5">
-    <div class="container py-4">
-      <h1 class="display-4 fw-bold text-white mb-2">Get in Touch</h1>
-      <p class="lead text-white-50 mx-auto" style="max-width: 600px;">
-        Have questions about a listing or our platform? Our team is here to help you every step of the way.
-      </p>
-    </div>
-  </div>
+  <div class="contact-page">
+    <section class="contact-hero">
+      <div class="container py-5 text-center">
+        <p class="hero-eyebrow mb-2">Support and Questions</p>
+        <h1 class="display-5 fw-bold text-white mb-2">Get In Touch</h1>
+        <p class="hero-copy mx-auto mb-0">
+          Have questions about listings or the platform? We are here to help every step of the way.
+        </p>
+      </div>
+    </section>
 
-  <div class="container py-5">
-    <div class="row justify-content-center">
-      <div class="col-lg-11">
-        
-        <RouterLink to="/home" class="btn btn-link text-decoration-none p-0 mb-5 text-muted">
-          <i class="bi bi-arrow-left me-2"></i>Back to Explore
-        </RouterLink>
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-11">
+          <RouterLink to="/home" class="back-link text-decoration-none mb-4 d-inline-flex align-items-center">
+            <i class="bi bi-arrow-left me-2"></i>Back to Explore
+          </RouterLink>
 
-        <div class="row g-5">
-          <div class="col-md-5">
-            <h2 class="fw-bold text-dark mb-4">Contact Information</h2>
-            <p class="text-secondary mb-5">
-              Fill out the form and our team will get back to you within 24 hours.
-            </p>
+          <div class="row g-4">
+            <div class="col-md-5">
+              <section class="panel h-100">
+                <p class="section-eyebrow mb-2">Contact Information</p>
+                <h2 class="fw-bold text-dark mb-2">Let Us Know What You Need</h2>
+                <p class="text-secondary mb-4">Send us your concern and we will respond as soon as possible.</p>
 
-            <div class="contact-info-list">
-              <div class="d-flex align-items-start mb-4">
-                <div class="icon-box bg-primary-subtle text-primary me-3">
-                  <i class="bi bi-telephone-fill"></i>
+                <div class="contact-item d-flex align-items-start mb-4">
+                  <div class="icon-box icon-primary me-3"><i class="bi bi-telephone-fill"></i></div>
+                  <div>
+                    <h6 class="fw-bold mb-1">Phone</h6>
+                    <p class="text-muted mb-0">+63 977 140 5584</p>
+                  </div>
                 </div>
-                <div>
-                  <h6 class="fw-bold mb-0">Phone</h6>
-                  <p class="text-muted">+63 977 140 5584</p>
-                </div>
-              </div>
 
-              <div class="d-flex align-items-start mb-4">
-                <div class="icon-box bg-success-subtle text-success me-3">
-                  <i class="bi bi-envelope-fill"></i>
+                <div class="contact-item d-flex align-items-start mb-4">
+                  <div class="icon-box icon-success me-3"><i class="bi bi-envelope-fill"></i></div>
+                  <div>
+                    <h6 class="fw-bold mb-1">Email</h6>
+                    <p class="text-muted mb-0">support@rentahub.com</p>
+                  </div>
                 </div>
-                <div>
-                  <h6 class="fw-bold mb-0">Email</h6>
-                  <p class="text-muted">support@rentahub.com</p>
-                </div>
-              </div>
 
-              <div class="d-flex align-items-start mb-4">
-                <div class="icon-box bg-danger-subtle text-danger me-3">
-                  <i class="bi bi-geo-alt-fill"></i>
+                <div class="contact-item d-flex align-items-start mb-4">
+                  <div class="icon-box icon-danger me-3"><i class="bi bi-geo-alt-fill"></i></div>
+                  <div>
+                    <h6 class="fw-bold mb-1">Office</h6>
+                    <p class="text-muted mb-0">Abuyog, Leyte, Philippines</p>
+                  </div>
                 </div>
-                <div>
-                  <h6 class="fw-bold mb-0">Office</h6>
-                  <p class="text-muted">Abuyog, Leyte, Philippines</p>
+
+                <div class="social-block mt-4">
+                  <h6 class="fw-bold mb-3">Follow Us</h6>
+                  <div class="d-flex gap-2">
+                    <a href="#" class="social-btn" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+                    <a href="#" class="social-btn" aria-label="Twitter"><i class="bi bi-twitter"></i></a>
+                    <a href="#" class="social-btn" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+                  </div>
                 </div>
-              </div>
+              </section>
             </div>
 
-            <div class="mt-5">
-              <h6 class="fw-bold mb-3">Follow Us</h6>
-              <div class="d-flex gap-3">
-                <a href="#" class="btn btn-outline-primary btn-sm rounded-circle"><i class="bi bi-facebook"></i></a>
-                <a href="#" class="btn btn-outline-primary btn-sm rounded-circle"><i class="bi bi-twitter"></i></a>
-                <a href="#" class="btn btn-outline-primary btn-sm rounded-circle"><i class="bi bi-instagram"></i></a>
-              </div>
-            </div>
-          </div>
+            <div class="col-md-7">
+              <section class="panel form-panel h-100">
+                <p class="section-eyebrow mb-2">Message Form</p>
+                <h4 class="fw-bold mb-4">Send A Message</h4>
 
-          <div class="col-md-7">
-            <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5 contact-card">
-              <h4 class="fw-bold mb-4">Send a Message</h4>
-              
-              <form @submit.prevent="submitForm">
-                <div class="row g-3">
-                  <div class="col-md-12">
-                    <label class="form-label small fw-bold text-muted">Your Name</label>
-                    <input type="text" v-model="form.name" class="form-control rounded-3 custom-input" placeholder="Juan Dela Cruz" required>
+                <form @submit.prevent="submitForm">
+                  <div class="row g-3">
+                    <div class="col-md-12">
+                      <label class="form-label small fw-bold text-muted">Your Name</label>
+                      <input
+                        type="text"
+                        v-model="form.name"
+                        class="form-control rounded-3 custom-input"
+                        placeholder="Juan Dela Cruz"
+                        required
+                      >
+                    </div>
+                    <div class="col-md-12">
+                      <label class="form-label small fw-bold text-muted">Email Address</label>
+                      <input
+                        type="email"
+                        v-model="form.email"
+                        class="form-control rounded-3 custom-input"
+                        placeholder="juan@example.com"
+                        required
+                      >
+                    </div>
+                    <div class="col-md-12">
+                      <label class="form-label small fw-bold text-muted">Message</label>
+                      <textarea
+                        v-model="form.message"
+                        class="form-control rounded-3 custom-input"
+                        rows="5"
+                        placeholder="How can we help you?"
+                        required
+                      ></textarea>
+                    </div>
+                    <div class="col-12 mt-3">
+                      <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold py-3 submit-btn">
+                        <i class="bi bi-send-fill me-2"></i>Send Message
+                      </button>
+                    </div>
                   </div>
-                  <div class="col-md-12">
-                    <label class="form-label small fw-bold text-muted">Email Address</label>
-                    <input type="email" v-model="form.email" class="form-control rounded-3 custom-input" placeholder="juan@example.com" required>
-                  </div>
-                  <div class="col-md-12">
-                    <label class="form-label small fw-bold text-muted">Message</label>
-                    <textarea v-model="form.message" class="form-control rounded-3 custom-input" rows="5" placeholder="How can we help you?" required></textarea>
-                  </div>
-                  <div class="col-12 mt-4">
-                    <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold py-3 shadow-sm submit-btn">
-                      <i class="bi bi-send-fill me-2"></i> Send Message
-                    </button>
-                  </div>
-                </div>
-              </form>
+                </form>
+              </section>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   </div>
@@ -119,7 +132,6 @@ export default {
   },
   methods: {
     submitForm() {
-      // In a real demo, this would call an API
       alert(`Thank you, ${this.form.name}! Your message has been sent to the RentaHub support team.`);
       this.form.name = "";
       this.form.email = "";
@@ -130,32 +142,95 @@ export default {
 </script>
 
 <style scoped>
-/* Branding Hero Gradient */
+.contact-page {
+  background: radial-gradient(circle at 20% 0, #edf4ff 0%, #f8fbff 34%, #ffffff 100%);
+  min-height: 100vh;
+}
+
 .contact-hero {
-  background: linear-gradient(135deg, #4780d9 0%, #2a5298 100%);
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  background:
+    linear-gradient(145deg, rgba(20, 51, 98, 0.84), rgba(38, 90, 168, 0.78)),
+    url("https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=80");
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-eyebrow {
+  color: #dce9ff;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.hero-copy {
+  color: rgba(241, 247, 255, 0.9);
+  max-width: 62ch;
+}
+
+.back-link {
+  color: #4a658f;
+  font-weight: 600;
+}
+
+.panel {
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  border: 1px solid #e3ecfa;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 22px rgba(18, 43, 83, 0.06);
+}
+
+.section-eyebrow {
+  color: #3a64aa;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .icon-box {
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
   flex-shrink: 0;
 }
 
-.contact-card {
-  background: #ffffff;
+.icon-primary {
+  background: #eaf2ff;
+  color: #2f61ae;
+}
+
+.icon-success {
+  background: #eafaf0;
+  color: #1e8a53;
+}
+
+.icon-danger {
+  background: #fff0f0;
+  color: #ce3b3b;
+}
+
+.social-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid #cfe0fb;
+  color: #2f61ae;
+  display: inline-grid;
+  place-items: center;
+  text-decoration: none;
+  background: #f5f9ff;
 }
 
 .custom-input {
   padding: 0.8rem 1rem;
-  border: 1.5px solid #eef2f6;
+  border: 1.4px solid #e2ebf9;
   background-color: #f8fbff;
-  transition: all 0.3s ease;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, background-color 0.35s ease;
 }
 
 .custom-input:focus {
@@ -165,7 +240,7 @@ export default {
 }
 
 .submit-btn {
-  transition: transform 0.3s ease, background-color 0.3s ease;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.35s ease;
 }
 
 .submit-btn:hover {
@@ -173,13 +248,11 @@ export default {
   background-color: #366ac2;
 }
 
-/* Entrance Animation */
-.container {
-  animation: slideUp 0.6s ease-out;
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .submit-btn,
+  .custom-input {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 </style>

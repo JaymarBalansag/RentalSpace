@@ -17,12 +17,25 @@
       <div class="dropdown-header-box px-3 py-2 mb-2">
         <span class="d-block fw-bold text-dark">{{ nameis }}</span>
         <span class="small text-muted text-uppercase fw-bold">{{ roleIs }}</span>
+        <span
+          v-if="roleIs === 'user'"
+          class="small fw-semibold mt-1 d-inline-block"
+          :class="verificationStatusClass"
+        >
+          {{ verificationStatusLabel }}
+        </span>
       </div>
 
       <li><RouterLink class="dropdown-item" to="/profile"><i class="bi bi-person"></i> My Profile</RouterLink></li>
       
-      <template v-if="roleIs === 'user' && isComplete ">
+      <template v-if="roleIs === 'user' && isComplete && isUserVerified">
         <li><button @click="goToPaymentWall" class="dropdown-item text-primary fw-bold"><i class="bi bi-plus-circle"></i> List Property</button></li>
+      </template>
+      <template v-else-if="roleIs === 'user' && !isComplete">
+        <li><RouterLink class="dropdown-item" to="/completion"><i class="bi bi-person-check"></i> Account</RouterLink></li>
+      </template>
+      <template v-else-if="roleIs === 'user' && isComplete && !isUserVerified">
+        <li><RouterLink class="dropdown-item" to="/profile"><i class="bi bi-shield-check"></i> Verify Account</RouterLink></li>
       </template>
       <template v-else-if="roleIs === 'owner'">
         <li><RouterLink class="dropdown-item" to="/Dashboard"><i class="bi bi-speedometer2"></i> Dashboard</RouterLink></li>
@@ -33,9 +46,7 @@
       <template v-else-if="roleIs === 'tenants'">
         <li><RouterLink class="dropdown-item" to="/tenant/dashboard"><i class="bi bi-shield-lock"></i> Tenant Dashboard</RouterLink></li>
       </template>
-      <template v-else>
-        <li><RouterLink class="dropdown-item" to="/completion"><i class="bi bi-person-check"></i> Comeplete Profile</RouterLink></li>
-      </template>
+      <template v-else></template>
 
       <li><hr class="dropdown-divider"></li>
       <li><RouterLink class="dropdown-item" to="/messages"><i class="bi bi-chat"></i> Messages</RouterLink></li>
@@ -52,7 +63,6 @@
 import { RouterLink } from 'vue-router';
 import { logout } from '@/api/auth';
 import { useUserInfo } from '@/store/userInfo';
-import { isSubscribing } from '@/api/property';
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
 
 
@@ -80,6 +90,24 @@ export default {
       const info = useUserInfo();
       return info.isComplete;
     },
+    userVerificationStatus() {
+      return String(useUserInfo().user_verification_status || "unverified").toLowerCase().trim();
+    },
+    isUserVerified() {
+      return this.userVerificationStatus === "verified";
+    },
+    verificationStatusLabel() {
+      if (this.userVerificationStatus === "verified") return "Verified";
+      if (this.userVerificationStatus === "pending") return "Pending Verification";
+      if (this.userVerificationStatus === "rejected") return "Verification Rejected";
+      return "Unverified";
+    },
+    verificationStatusClass() {
+      if (this.userVerificationStatus === "verified") return "text-success";
+      if (this.userVerificationStatus === "pending") return "text-warning";
+      if (this.userVerificationStatus === "rejected") return "text-danger";
+      return "text-secondary";
+    },
   },
   data() {
     return {
@@ -89,6 +117,10 @@ export default {
   },
   methods: {
     goToPaymentWall() {
+      if (!this.isUserVerified) {
+        this.$router.push("/profile");
+        return;
+      }
       this.$router.push("/payment/wall");
     },
     async handleLogout() {

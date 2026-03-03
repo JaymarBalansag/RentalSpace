@@ -190,6 +190,13 @@ export default {
     };
   },
   mounted() {
+    const user = JSON.parse(localStorage.getItem("userInfo") || "{}");
+    const status = String(user?.user_verification_status || "unverified").toLowerCase().trim();
+    if (status !== "verified") {
+      alert("Account verification is required before owner application.");
+      this.$router.push("/profile");
+      return;
+    }
     this.getUserInfo();
   },
   methods: {

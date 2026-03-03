@@ -64,6 +64,7 @@
 
 <script>
   import Header from '@/components/Header.vue';
+  import Swal from "sweetalert2";
 
 export default {
   name: "PaymentWall",
@@ -73,6 +74,24 @@ export default {
   },
   methods: {
     selectPlan(planType) {
+      const user = JSON.parse(localStorage.getItem("userInfo") || "{}");
+      const status = String(user?.user_verification_status || "unverified").toLowerCase().trim();
+      if (status !== "verified") {
+        const text = status === "pending"
+          ? "Your verification is under review. Owner onboarding unlocks once approved."
+          : status === "rejected"
+            ? "Your verification was rejected. Please resubmit a valid government ID in your profile."
+            : "You must verify your account first before applying as owner.";
+        Swal.fire({
+          icon: "warning",
+          title: "Verification required",
+          text,
+          confirmButtonText: "Go to Profile",
+        }).then(() => {
+          this.$router.push("/profile");
+        });
+        return;
+      }
       this.$router.push({ 
         path: '/payment/details',
         query: { plan: planType }

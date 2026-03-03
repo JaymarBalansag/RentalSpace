@@ -31,6 +31,10 @@ onMounted(async () => {
           "isComplete" : userData.isComplete,
           "owner_verification_status" : userData.owner_verification_status || null,
           "owner_verified_at" : userData.owner_verified_at || null,
+          "user_verification_status": userData.user_verification_status || "unverified",
+          "user_verified_at": userData.user_verified_at || null,
+          "user_verification_rejected_reason": userData.user_verification_rejected_reason || null,
+          "user_valid_govt_id_url": userData.user_valid_govt_id_url || null,
         };
         info.hydrateUserInfoFromServer(payload);
       }

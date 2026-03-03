@@ -15,9 +15,27 @@ export const useUserInfo = defineStore("info", {
     subscription: null,
     owner_verification_status: null,
     owner_verified_at: null,
+    user_verification_status: "unverified",
+    user_verified_at: null,
+    user_verification_rejected_reason: null,
+    user_valid_govt_id_url: null,
   }),
   actions: {
-    setUserInfo(first_name, last_name, role, email, profile_photo, email_verified_at, isComplete, owner_verification_status = null, owner_verified_at = null) {
+    setUserInfo(
+      first_name,
+      last_name,
+      role,
+      email,
+      profile_photo,
+      email_verified_at,
+      isComplete,
+      owner_verification_status = null,
+      owner_verified_at = null,
+      user_verification_status = "unverified",
+      user_verified_at = null,
+      user_verification_rejected_reason = null,
+      user_valid_govt_id_url = null
+    ) {
       this.first_name = first_name;
       this.last_name = last_name;
       this.role = role;
@@ -28,6 +46,10 @@ export const useUserInfo = defineStore("info", {
       this.isComplete = isComplete;
       this.owner_verification_status = owner_verification_status;
       this.owner_verified_at = owner_verified_at;
+      this.user_verification_status = user_verification_status || "unverified";
+      this.user_verified_at = user_verified_at;
+      this.user_verification_rejected_reason = user_verification_rejected_reason;
+      this.user_valid_govt_id_url = user_valid_govt_id_url;
 
       localStorage.setItem("userInfo", JSON.stringify(this.$state));
     },
@@ -80,7 +102,11 @@ export const useUserInfo = defineStore("info", {
         payload.email_verified_at,
         payload.isComplete,
         payload.owner_verification_status,
-        payload.owner_verified_at
+        payload.owner_verified_at,
+        payload.user_verification_status || "unverified",
+        payload.user_verified_at || null,
+        payload.user_verification_rejected_reason || null,
+        payload.user_valid_govt_id_url || null
       )
     },
     setLoggedIn(isLoggedIn) {
@@ -109,6 +135,23 @@ export const useUserInfo = defineStore("info", {
       userInfo.owner_verified_at = verifiedAt;
       localStorage.setItem("userInfo", JSON.stringify(userInfo));
     },
+    setUserVerificationStatus(status, verifiedAt = null, rejectedReason = null, validIdUrl = null) {
+      this.user_verification_status = status || "unverified";
+      this.user_verified_at = verifiedAt;
+      this.user_verification_rejected_reason = rejectedReason;
+      if (typeof validIdUrl !== "undefined") {
+        this.user_valid_govt_id_url = validIdUrl;
+      }
+
+      const userInfo = JSON.parse(localStorage.getItem("userInfo")) || {};
+      userInfo.user_verification_status = this.user_verification_status;
+      userInfo.user_verified_at = verifiedAt;
+      userInfo.user_verification_rejected_reason = rejectedReason;
+      if (typeof validIdUrl !== "undefined") {
+        userInfo.user_valid_govt_id_url = validIdUrl;
+      }
+      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+    },
     logout() {
       this.first_name = null;
       this.last_name = null;
@@ -120,6 +163,10 @@ export const useUserInfo = defineStore("info", {
       this.subscription = null;
       this.owner_verification_status = null;
       this.owner_verified_at = null;
+      this.user_verification_status = "unverified";
+      this.user_verified_at = null;
+      this.user_verification_rejected_reason = null;
+      this.user_valid_govt_id_url = null;
       localStorage.removeItem("userInfo");
       localStorage.removeItem("access_token");
     }

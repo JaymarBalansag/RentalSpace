@@ -35,10 +35,20 @@
             <div class="setting-item">
               <div>
                 <p class="item-title">Profile Hub</p>
-                <p class="item-desc">Edit your personal info, location, and preferences.</p>
+                <p class="item-desc">Edit your personal info, location, and preference setup.</p>
               </div>
               <button class="btn btn-sm btn-light border rounded-pill px-3" @click="$router.push('/profile')">
                 Open
+              </button>
+            </div>
+
+            <div class="setting-item">
+              <div>
+                <p class="item-title">Identity Verification</p>
+                <p class="item-desc">Submit or track your government ID review for booking and owner access.</p>
+              </div>
+              <button class="btn btn-sm btn-outline-primary rounded-pill px-3" @click="$router.push('/profile')">
+                Manage
               </button>
             </div>
           </div>
@@ -79,13 +89,13 @@
         <div class="card border-0 shadow-sm rounded-4 h-100">
           <div class="card-body p-4">
             <h6 class="section-title mb-3">
-              <i class="bi bi-eye me-2 text-info"></i>Privacy
+              <i class="bi bi-eye me-2 text-info"></i>Account Visibility
             </h6>
 
             <div class="setting-item">
               <div>
                 <p class="item-title">Profile Visibility</p>
-                <p class="item-desc">Required for booking verification and owner screening.</p>
+                <p class="item-desc">Profile identity fields stay available for booking and admin compliance review.</p>
               </div>
               <div class="locked-pill">
                 <i class="bi bi-lock-fill me-1"></i>Always On

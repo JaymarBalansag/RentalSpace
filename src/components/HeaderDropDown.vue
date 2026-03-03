@@ -14,15 +14,15 @@
     </button>
 
     <ul class="dropdown-menu dropdown-menu-end profile-dropdown shadow-lg border-0 animate slideIn" aria-labelledby="profileDropdown">
-      <div class="dropdown-header-box px-3 py-2 mb-2">
+      <div class="dropdown-header-box px-3 py-2 mb-2 ">
         <span class="d-block fw-bold text-dark">{{ nameis }}</span>
-        <span class="small text-muted text-uppercase fw-bold">{{ roleIs }}</span>
+        <span class="small text-muted text-uppercase fw-bold me-1">{{ roleIs }} </span>
         <span
           v-if="roleIs === 'user'"
           class="small fw-semibold mt-1 d-inline-block"
           :class="verificationStatusClass"
         >
-          {{ verificationStatusLabel }}
+           {{ verificationStatusLabel }}
         </span>
       </div>
 

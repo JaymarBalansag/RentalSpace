@@ -171,11 +171,50 @@
         </div>
 
         <div class="mt-4 rounded-4 overflow-hidden border shadow-sm">
-           <PropertyMap 
+          <div class="route-summary p-3 border-bottom bg-light-subtle">
+            <div class="d-flex align-items-start justify-content-between gap-3">
+              <div>
+                <p class="route-title mb-1">Route to this property</p>
+                <p class="route-message mb-0">{{ mapRouteMessage }}</p>
+              </div>
+              <span class="route-status-pill" :class="`status-${mapRouteStatus}`">
+                {{ mapRouteStatus === "ready" ? "Ready" : mapRouteStatus === "routing" ? "Routing" : mapRouteStatus === "resolving-location" ? "Locating" : mapRouteStatus === "route-error" ? "Route Error" : "Property Only" }}
+              </span>
+            </div>
+            <div v-if="mapRouteStatus === 'ready'" class="d-flex flex-wrap gap-2 mt-2">
+              <span class="route-chip"><i class="bi bi-signpost-split me-1"></i>{{ formatDistance(routeSummary.distanceMeters) }}</span>
+              <span class="route-chip"><i class="bi bi-clock-history me-1"></i>{{ formatDuration(routeSummary.durationSeconds) }}</span>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+              <span class="route-chip route-source-chip"><i class="bi bi-geo-alt me-1"></i>{{ routeSourceLabel }}</span>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary rounded-pill route-action-btn"
+                :disabled="mapRouteStatus === 'resolving-location' || mapRouteStatus === 'routing'"
+                @click="useCurrentLocationRoute"
+              >
+                Use My Current Location
+              </button>
+              <button
+                v-if="canResetToSavedLocation"
+                type="button"
+                class="btn btn-sm btn-outline-secondary rounded-pill route-action-btn"
+                @click="useSavedProfileLocation"
+              >
+                Use Saved Location
+              </button>
+            </div>
+          </div>
+          <PropertyMap
             v-if="property.latitude && property.longitude"
-            :lat="parseFloat(this.property.latitude)" 
-            :lng="parseFloat(this.property.longitude)" 
-            :title="this.property.title" 
+            :lat="parseFloat(property.latitude)"
+            :lng="parseFloat(property.longitude)"
+            :title="property.title"
+            :user-lat="userCoords.lat"
+            :user-lng="userCoords.lng"
+            :auto-route="true"
+            @route-ready="onRouteReady"
+            @route-error="onRouteError"
           />
         </div>
       </div>
@@ -386,7 +425,7 @@ import { getPropertyById, getPropertyByType, recordView, getPropertyReviews, sub
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
 import { submitAgreement } from "@/api/Owner/bookings.js";
 import { initiateConversation } from "@/api/messages";
-import { getAuthUserId } from "@/api/user";
+import { getAuthUserId, getUserProfile } from "@/api/user";
 import { useUserInfo } from '@/store/userInfo';
 import confirmModal from "@/components/confirmModal.vue";
 import Header from "@/components/Header.vue";
@@ -422,6 +461,22 @@ export default {
         rating: 0,
         comment: "",
       },
+      userCoords: {
+        lat: null,
+        lng: null,
+      },
+      mapRouteStatus: "idle",
+      mapRouteMessage: "We will try to map your route to this property.",
+      routeSummary: {
+        distanceMeters: null,
+        durationSeconds: null,
+      },
+      routeSource: "none",
+      savedProfileCoords: {
+        lat: null,
+        lng: null,
+      },
+      routeGuardTimer: null,
       agreement: {
         occupant_num: null,
         lease_duration: null,
@@ -434,6 +489,187 @@ export default {
     };
   },
   methods: {
+    normalizeCoordinate(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    },
+    isValidLatLng(lat, lng) {
+      const parsedLat = Number(lat);
+      const parsedLng = Number(lng);
+      if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLng)) return false;
+      if (parsedLat < -90 || parsedLat > 90) return false;
+      if (parsedLng < -180 || parsedLng > 180) return false;
+      if (Math.abs(parsedLat) < 0.000001 && Math.abs(parsedLng) < 0.000001) return false;
+      return true;
+    },
+    async requestBrowserLocation() {
+      if (!("geolocation" in navigator)) {
+        return null;
+      }
+
+      return await new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              lat: Number(position.coords.latitude),
+              lng: Number(position.coords.longitude),
+            });
+          },
+          () => {
+            resolve(null);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000,
+          }
+        );
+      });
+    },
+    async loadSavedProfileCoords() {
+      const info = useUserInfo();
+      if (!info.isLoggedIn) {
+        this.savedProfileCoords = { lat: null, lng: null };
+        return null;
+      }
+
+      try {
+        const response = await getUserProfile();
+        const profilePayload = response?.data?.user;
+        const profile = Array.isArray(profilePayload) ? profilePayload[0] || {} : (profilePayload || response?.data || {});
+        const lat = this.normalizeCoordinate(profile.latitude);
+        const lng = this.normalizeCoordinate(profile.longitude);
+
+        if (this.isValidLatLng(lat, lng)) {
+          this.savedProfileCoords = { lat, lng };
+          return { lat, lng };
+        }
+      } catch (error) {
+        console.error("Unable to fetch profile location:", error);
+      }
+
+      this.savedProfileCoords = { lat: null, lng: null };
+      return null;
+    },
+    applyRouteSource(coords, source, message) {
+      if (this.routeGuardTimer) {
+        clearTimeout(this.routeGuardTimer);
+        this.routeGuardTimer = null;
+      }
+      this.userCoords = { lat: coords.lat, lng: coords.lng };
+      this.routeSource = source;
+      this.mapRouteStatus = "routing";
+      this.mapRouteMessage = message;
+      this.routeSummary = { distanceMeters: null, durationSeconds: null };
+
+      // Guard against unresolved route fetches so UI never stays stuck on "Routing".
+      this.routeGuardTimer = setTimeout(() => {
+        if (this.mapRouteStatus === "routing") {
+          this.onRouteError();
+        }
+      }, 15000);
+    },
+    async useCurrentLocationRoute() {
+      this.mapRouteStatus = "resolving-location";
+      this.mapRouteMessage = "Fetching your current location...";
+      const browserCoords = await this.requestBrowserLocation();
+
+      if (this.isValidLatLng(browserCoords?.lat, browserCoords?.lng)) {
+        this.applyRouteSource(
+          { lat: browserCoords.lat, lng: browserCoords.lng },
+          "live",
+          "Calculating route from your current location..."
+        );
+        return;
+      }
+
+      if (this.isValidLatLng(this.savedProfileCoords.lat, this.savedProfileCoords.lng)) {
+        this.applyRouteSource(
+          { ...this.savedProfileCoords },
+          "saved",
+          "Current location unavailable. Reverted to your saved profile location."
+        );
+        return;
+      }
+
+      this.routeSource = "none";
+      this.mapRouteStatus = "no-location";
+      this.mapRouteMessage = "Current location is unavailable. Showing property location only.";
+      this.routeSummary = { distanceMeters: null, durationSeconds: null };
+    },
+    useSavedProfileLocation() {
+      if (!this.isValidLatLng(this.savedProfileCoords.lat, this.savedProfileCoords.lng)) return;
+      this.applyRouteSource(
+        { ...this.savedProfileCoords },
+        "saved",
+        "Calculating route from your saved profile location..."
+      );
+    },
+    async resolveUserLocationForRoute() {
+      this.userCoords = { lat: null, lng: null };
+      this.routeSummary = { distanceMeters: null, durationSeconds: null };
+      this.routeSource = "none";
+      this.mapRouteStatus = "resolving-location";
+      this.mapRouteMessage = "Resolving your location for route preview...";
+      const savedCoords = await this.loadSavedProfileCoords();
+      if (this.isValidLatLng(savedCoords?.lat, savedCoords?.lng)) {
+        this.applyRouteSource(savedCoords, "saved", "Calculating route from your saved profile location...");
+        return;
+      }
+
+      const browserCoords = await this.requestBrowserLocation();
+      if (this.isValidLatLng(browserCoords?.lat, browserCoords?.lng)) {
+        this.applyRouteSource(
+          { lat: browserCoords.lat, lng: browserCoords.lng },
+          "live",
+          "Saved location is not set. Calculating route from your current location..."
+        );
+        return;
+      }
+
+      this.routeSource = "none";
+      this.mapRouteStatus = "no-location";
+      this.mapRouteMessage = "Location access denied or unavailable. Showing property location only.";
+    },
+    onRouteReady(payload) {
+      if (this.routeGuardTimer) {
+        clearTimeout(this.routeGuardTimer);
+        this.routeGuardTimer = null;
+      }
+      this.routeSummary = {
+        distanceMeters: Number(payload?.distanceMeters || 0),
+        durationSeconds: Number(payload?.durationSeconds || 0),
+      };
+      this.mapRouteStatus = "ready";
+      this.mapRouteMessage = this.routeSource === "live"
+        ? "Route preview is ready from your current location."
+        : "Route preview is ready from your saved profile location.";
+    },
+    onRouteError() {
+      if (this.routeGuardTimer) {
+        clearTimeout(this.routeGuardTimer);
+        this.routeGuardTimer = null;
+      }
+      this.routeSummary = { distanceMeters: null, durationSeconds: null };
+      this.mapRouteStatus = "route-error";
+      this.mapRouteMessage = "Unable to calculate route right now. Showing map markers only.";
+    },
+    formatDistance(meters) {
+      const safeMeters = Number(meters || 0);
+      if (!Number.isFinite(safeMeters) || safeMeters <= 0) return "-";
+      if (safeMeters >= 1000) return `${(safeMeters / 1000).toFixed(1)} km`;
+      return `${Math.round(safeMeters)} m`;
+    },
+    formatDuration(seconds) {
+      const safeSeconds = Number(seconds || 0);
+      if (!Number.isFinite(safeSeconds) || safeSeconds <= 0) return "-";
+
+      const totalMinutes = Math.round(safeSeconds / 60);
+      if (totalMinutes < 60) return `${totalMinutes} min`;
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return minutes === 0 ? `${hours} hr` : `${hours} hr ${minutes} min`;
+    },
     normalizeReviews(payload) {
       const reviewList = Array.isArray(payload?.reviews)
         ? payload.reviews
@@ -564,6 +800,7 @@ export default {
         this.property_type = response.data.property.type_name;
         this.property_type_id = response.data.property.type_id;
         this.propertyImages = response.data.property.images;
+        await this.resolveUserLocationForRoute();
         
         const related = await getPropertyByType(this.property_type_id, id);
         this.relatedProperties = related.data.properties;
@@ -662,8 +899,22 @@ export default {
     this.isLoggedIn = !!token && token !== "null";
     if (this.isLoggedIn) this.getAuthId();
   },
+  beforeUnmount() {
+    if (this.routeGuardTimer) {
+      clearTimeout(this.routeGuardTimer);
+      this.routeGuardTimer = null;
+    }
+  },
   computed: {
     isOwner() { return useUserInfo().role; },
+    routeSourceLabel() {
+      if (this.routeSource === "saved") return "Saved location";
+      if (this.routeSource === "live") return "Current location";
+      return "No source";
+    },
+    canResetToSavedLocation() {
+      return this.routeSource === "live" && this.isValidLatLng(this.savedProfileCoords.lat, this.savedProfileCoords.lng);
+    },
     allAmenities() {
       const base = this.normalizeList(this.property?.amenities);
       const custom = this.normalizeList(this.property?.custom_amenities);
@@ -859,6 +1110,88 @@ export default {
   background-color: rgba(0,0,0,0.5);
   border-radius: 50%;
   padding: 1.5rem;
+}
+
+.route-summary {
+  background: linear-gradient(180deg, #f8fbff 0%, #f4f7fc 100%);
+}
+
+.route-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #3d5a80;
+}
+
+.route-message {
+  font-size: 0.86rem;
+  color: #516079;
+}
+
+.route-status-pill {
+  border-radius: 999px;
+  padding: 0.32rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.status-ready {
+  color: #0f6d5b;
+  background: #ddf8f0;
+  border-color: #b9efe0;
+}
+
+.status-routing,
+.status-resolving-location {
+  color: #1f4fa8;
+  background: #e2ecff;
+  border-color: #c8d9ff;
+}
+
+.status-no-location {
+  color: #6b7280;
+  background: #f0f2f5;
+  border-color: #e5e7eb;
+}
+
+.status-route-error {
+  color: #a11f2a;
+  background: #ffe9ec;
+  border-color: #ffcfd6;
+}
+
+.route-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #dbe4f0;
+  border-radius: 999px;
+  padding: 0.28rem 0.68rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #314260;
+  background: #fff;
+}
+
+.route-source-chip {
+  background: #eef5ff;
+  color: #274777;
+  border-color: #cfe1ff;
+}
+
+.route-action-btn {
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.28rem 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-status-pill,
+  .route-chip {
+    transition: none !important;
+  }
 }
 </style>
 

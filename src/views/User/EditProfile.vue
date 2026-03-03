@@ -1,46 +1,49 @@
 <template>
   <Header />
 
-  <div class="container py-4" style="max-width: 800px;">
-    <!-- Back Button -->
-    <RouterLink to="/profile" class="btn btn-outline-secondary mb-3">
+  <div class="edit-profile-page container py-4" style="max-width: 900px;">
+    <RouterLink to="/profile" class="btn btn-outline-secondary rounded-pill px-3 mb-3">
       <i class="bi bi-arrow-left me-1"></i> Back
     </RouterLink>
 
-    <div class="card shadow border-0 rounded-4">
-      <div class="card-body p-4">
-        <h3 class="fw-bold mb-4">Edit Profile</h3>
+    <section class="profile-hero rounded-4 p-4 p-md-5 mb-4 shadow-sm">
+      <p class="small text-uppercase mb-1 hero-kicker">Account Center</p>
+      <h3 class="fw-bold mb-2">Update Profile</h3>
+      <p class="mb-0 text-muted">Keep your profile accurate for smoother booking, messaging, and recommendations.</p>
+    </section>
 
-        <!-- ================= BASIC INFO ================= -->
-        <h5 class="fw-bold mb-3">Basic Information</h5>
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-body p-4 p-md-5">
+        <h5 class="section-title mb-3">Basic Information</h5>
+
         <div class="row g-3 mb-4">
           <div class="col-md-6">
-            <label class="form-label">First Name</label>
-            <input class="form-control" v-model="form.first_name" />
+            <label class="form-label fw-semibold small text-uppercase text-muted">First Name</label>
+            <input class="form-control input-modern" v-model="form.first_name" />
             <small v-if="errors.first_name" class="text-danger">
               {{ errors.first_name }}
             </small>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label">Last Name</label>
-            <input class="form-control" v-model="form.last_name" />
+            <label class="form-label fw-semibold small text-uppercase text-muted">Last Name</label>
+            <input class="form-control input-modern" v-model="form.last_name" />
             <small v-if="errors.last_name" class="text-danger">
               {{ errors.last_name }}
             </small>
           </div>
 
           <div class="col-md-12">
-            <label class="form-label">Email</label>
-            <input class="form-control" v-model="form.email" disabled />
+            <label class="form-label fw-semibold small text-uppercase text-muted">Email</label>
+            <input class="form-control input-modern bg-light" v-model="form.email" disabled />
           </div>
 
           <div class="col-md-12">
-            <label class="form-label">Phone Number</label>
-            <div class="input-group">
+            <label class="form-label fw-semibold small text-uppercase text-muted">Phone Number</label>
+            <div class="input-group input-modern-group">
               <span class="input-group-text bg-light"><i class="bi bi-phone"></i></span>
               <input 
-                class="form-control" 
+                class="form-control input-modern" 
                 v-model="form.phone_number" 
                 placeholder="09123456789"
                 inputmode="numeric"
@@ -52,33 +55,33 @@
           </div>
         </div>
 
-        <!-- ================= PROFILE PICTURE ================= -->
-        <h5 class="fw-bold mb-3">Profile Picture</h5>
-        <div class="text-center mb-4">
-          <img
-            v-if="previewImg"
-            :src="previewImg"
-            class="rounded-circle mb-3"
-            style="width:120px;height:120px;object-fit:cover"
-          />
-          <i v-else class="bi bi-person-circle fs-1 text-secondary"></i>
+        <div class="profile-picture-shell rounded-4 p-4 mb-4">
+          <h5 class="section-title mb-3">Profile Picture</h5>
+          <div class="text-center">
+            <img
+              v-if="previewImg"
+              :src="previewImg"
+              class="rounded-circle mb-3 profile-preview"
+            />
+            <i v-else class="bi bi-person-circle fs-1 text-secondary"></i>
 
-          <input
-            type="file"
-            class="form-control mt-3"
-            accept="image/png,image/jpeg"
-            @change="handleImageUpload"
-          />
+            <input
+              type="file"
+              class="form-control mt-3"
+              accept="image/png,image/jpeg"
+              @change="handleImageUpload"
+            />
 
-          <small v-if="errors.user_img" class="text-danger d-block mt-2">
-            {{ errors.user_img }}
-          </small>
+            <small class="d-block text-muted small mt-2">Accepted file types: JPG, PNG (max 2MB)</small>
+            <small v-if="errors.user_img" class="text-danger d-block mt-2">
+              {{ errors.user_img }}
+            </small>
+          </div>
         </div>
 
-        <!-- ================= SAVE BUTTON ================= -->
-        <div class="text-end">
+        <div class="d-flex justify-content-end">
           <button
-            class="btn btn-success"
+            class="btn btn-primary rounded-pill px-4 fw-semibold"
             :disabled="loading || !isFormValid || !isFormChanged"
             @click="updateProfile"
           >
@@ -296,3 +299,60 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.edit-profile-page {
+  background: radial-gradient(circle at top right, rgba(71, 128, 217, 0.08) 0%, rgba(255, 255, 255, 0) 55%);
+}
+
+.profile-hero {
+  border: 1px solid #e7eefb;
+  background: linear-gradient(180deg, #f8fbff 0%, #f3f7ff 100%);
+}
+
+.hero-kicker {
+  color: #4871b3;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #2a3c5f;
+}
+
+.input-modern {
+  border: 1px solid #dbe5f5;
+  border-radius: 12px;
+  min-height: 46px;
+}
+
+.input-modern:focus {
+  border-color: #4c82de;
+  box-shadow: 0 0 0 0.2rem rgba(76, 130, 222, 0.16);
+}
+
+.input-modern-group .input-group-text {
+  border-color: #dbe5f5;
+  border-radius: 12px 0 0 12px;
+}
+
+.input-modern-group .input-modern {
+  border-left: 0;
+  border-radius: 0 12px 12px 0;
+}
+
+.profile-picture-shell {
+  border: 1px solid #e7edf8;
+  background: #fafcff;
+}
+
+.profile-preview {
+  width: 122px;
+  height: 122px;
+  object-fit: cover;
+  border: 4px solid #fff;
+  box-shadow: 0 10px 24px rgba(44, 84, 150, 0.18);
+}
+</style>

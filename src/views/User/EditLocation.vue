@@ -1,9 +1,10 @@
 <template>
   <Header />
-  <div class="container py-5">
+  <div class="edit-location-page container py-4 py-lg-5">
     <div class="row justify-content-center">
       <div class="col-lg-10">
-        <div class="d-flex align-items-center justify-content-between mb-4">
+        <section class="location-hero rounded-4 shadow-sm p-4 p-md-5 mb-4">
+          <div class="d-flex align-items-center justify-content-between">
           <div>
             <nav aria-label="breadcrumb">
               <ol class="breadcrumb mb-1">
@@ -11,12 +12,14 @@
                 <li class="breadcrumb-item active">Edit Location</li>
               </ol>
             </nav>
-            <h2 class="fw-bold text-dark">Update Address</h2>
+            <h2 class="fw-bold text-dark mb-1">Update Address</h2>
+            <p class="text-muted small mb-0">Pin your exact location for better nearby recommendations and map routing.</p>
           </div>
           <button class="btn btn-outline-secondary rounded-pill px-4" @click="this.$router.push('/profile')">
             Cancel
           </button>
         </div>
+        </section>
 
         <div class="row g-4">
           <div class="col-md-7">
@@ -221,14 +224,24 @@ export default {
 </script>
 
 <style scoped>
+.edit-location-page {
+  background: radial-gradient(circle at top right, rgba(71, 128, 217, 0.08) 0%, rgba(255, 255, 255, 0) 55%);
+}
+
+.location-hero {
+  border: 1px solid #e7eefb;
+  background: linear-gradient(180deg, #f8fbff 0%, #f3f7ff 100%);
+}
+
 .custom-input {
   border: 1.5px solid #eef2f6;
   padding: 0.75rem 1rem;
   transition: all 0.2s;
+  border-radius: 12px;
 }
 .custom-input:focus {
-  border-color: #4780d9;
-  box-shadow: 0 0 0 3px rgba(71, 128, 217, 0.1);
+  border-color: #4c82de;
+  box-shadow: 0 0 0 0.2rem rgba(76, 130, 222, 0.16);
 }
 .letter-spacing-1 { letter-spacing: 1px; }
 </style>

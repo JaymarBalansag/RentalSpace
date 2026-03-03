@@ -113,24 +113,25 @@
       <div class="col-lg-4">
         <div class="profile-card card border-0 shadow-sm rounded-4 p-4 h-100">
           <div class="card-head d-flex justify-content-between align-items-center">
-            <h6 class="fw-bold text-uppercase small mb-0"><i class="bi bi-shield-check me-2 text-success"></i>Security</h6>
-            <span class="small text-muted">Account</span>
+            <h6 class="fw-bold text-uppercase small mb-0"><i class="bi bi-person-check me-2 text-success"></i>Account Snapshot</h6>
+            <span class="small text-muted">Profile</span>
           </div>
           <div class="mt-3 d-grid gap-3">
-            <div class="security-tile">
-              <small>Email Verification</small>
-              <p class="mb-0">{{ email ? "Verified Email" : "Email Missing" }}</p>
+            <div class="snapshot-tile">
+              <small>Profile Progress</small>
+              <p class="mb-0">{{ completionPercent }}% completed</p>
             </div>
-            <div class="security-tile">
-              <small>Password</small>
-              <p class="mb-0">Keep your account secure with regular updates.</p>
+            <div class="snapshot-tile">
+              <small>Contact Status</small>
+              <p class="mb-0">{{ user.phone_number ? "Phone number added" : "Phone number missing" }}</p>
             </div>
-            <RouterLink to="/change-pass" class="btn btn-outline-primary rounded-pill fw-semibold">
-              <i class="bi bi-key me-2"></i>Change Password
-            </RouterLink>
-            <RouterLink to="/setting" class="btn btn-light rounded-pill fw-semibold border">
-              <i class="bi bi-gear me-2"></i>Account Settings
-            </RouterLink>
+            <div class="snapshot-tile">
+              <small>Location Pin</small>
+              <p class="mb-0">{{ hasValidLocation ? "Saved location available" : "No saved location yet" }}</p>
+            </div>
+            <p class="small text-muted mb-0">
+              Profile actions are managed here. Security and app preferences are in the <strong>Settings</strong> menu from the header dropdown.
+            </p>
           </div>
         </div>
       </div>
@@ -443,14 +444,14 @@ export default {
   color: #1f2a44;
 }
 
-.security-tile {
+.snapshot-tile {
   border: 1px solid #e8edf7;
   border-radius: 14px;
   padding: 0.75rem 0.9rem;
   background: #f9fbff;
 }
 
-.security-tile small {
+.snapshot-tile small {
   display: block;
   color: #64748b;
   font-size: 0.76rem;

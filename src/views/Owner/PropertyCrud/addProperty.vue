@@ -1,6 +1,9 @@
 <template>
-  <div>
-    <h4>🏠 Add Property</h4>
+  <div class="property-wizard-shell">
+    <div class="wizard-page-header mb-3">
+      <h4 class="mb-1">Add Property</h4>
+      <p class="mb-0 text-muted small">Create a listing with complete details and documents.</p>
+    </div>
 
     <div v-if="subscriptionState?.is_expiring_soon" class="alert alert-warning py-2 px-3 mt-2 mb-3">
       {{ subscriptionState.message || `Your subscription will expire in ${subscriptionState.days_left} day(s).` }}
@@ -14,9 +17,33 @@
       <small><span class="text-danger">*</span> denotes required fields</small>
     </div>
 
+    <div v-if="validationSummary.length" ref="validationSummary" class="wizard-validation-summary mb-3">
+      <div class="alert alert-danger border-0 shadow-sm mb-0 py-2">
+        <p class="mb-1 fw-semibold small">Please fix {{ validationSummary.length }} issue(s) before continuing.</p>
+        <ul class="mb-0 ps-3 small">
+          <li v-for="(item, idx) in validationSummary" :key="`validation-${idx}`">{{ item }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="wizard-step-rail mb-3">
+      <div
+        v-for="s in stepsMeta"
+        :key="`step-meta-${s.step}`"
+        class="wizard-step-pill"
+        :class="stepStatusClass(s.step)"
+      >
+        <span class="wizard-step-index">{{ s.step }}</span>
+        <div class="wizard-step-copy">
+          <p class="mb-0 fw-semibold small">{{ s.label }}</p>
+          <small class="text-muted">{{ stepStatusText(s.step) }}</small>
+        </div>
+      </div>
+    </div>
+
     <!-- Step Navigation -->
-    <div class="mb-3">
-      <button class="btn btn-outline-dark me-2" @click="prevStep" :disabled="step === 1">
+    <div class="mb-3 wizard-nav-row">
+      <button class="btn btn-outline-dark me-2 rounded-pill px-3" @click="prevStep" :disabled="step === 1">
         <i class="bi bi-arrow-left"></i> Previous
       </button>
     </div>
@@ -38,6 +65,7 @@
             placeholder="e.g. Modern 2-Bedroom Apartment"
             required 
           />
+          <small v-if="errors.title" class="field-error-text">{{ errors.title }}</small>
         </div>
 
         <div class="mb-4">
@@ -49,6 +77,7 @@
             placeholder="Describe the features, amenities, and neighborhood..."
             required
           ></textarea>
+          <small v-if="errors.description" class="field-error-text">{{ errors.description }}</small>
         </div>
 
         <div class="row g-4">
@@ -104,10 +133,27 @@
                 <p class="mb-0 small fw-medium">Upload business permit (JPG, PNG, or PDF)</p>
               </div>
               <div v-else>
-                <p class="mb-0 small fw-semibold">{{ previewBusinessPermitName }}</p>
+                <p class="mb-2 small fw-semibold">{{ previewBusinessPermitName }}</p>
+                <img
+                  v-if="previewBusinessPermitType === 'image' && previewBusinessPermitUrl"
+                  :src="previewBusinessPermitUrl"
+                  alt="Business permit preview"
+                  class="img-fluid rounded border shadow-sm"
+                  style="max-height: 220px;"
+                />
+                <iframe
+                  v-else-if="previewBusinessPermitType === 'pdf' && previewBusinessPermitUrl"
+                  :src="previewBusinessPermitUrl"
+                  title="Business permit PDF preview"
+                  class="w-100 rounded border bg-white"
+                  style="height: 220px;"
+                ></iframe>
+                <p v-else class="mb-0 text-muted small">Preview unavailable for this file type.</p>
               </div>
             </div>
           </div>
+          <small class="d-block text-muted mt-1" style="font-size:0.75rem;">Accepted: JPG, PNG, PDF (max 5MB)</small>
+          <small v-if="errors.business_permit" class="field-error-text">{{ errors.business_permit }}</small>
         </div>
       </div>
     </div>
@@ -130,6 +176,7 @@
                   <option value="rental">Rental</option>
                   <option disabled value="lease">Lease </option>
                 </select>
+                <small v-if="errors.agreement_type" class="field-error-text">{{ errors.agreement_type }}</small>
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label fw-bold small">Property Type</label>
@@ -139,6 +186,7 @@
                     {{ type.type_name }}
                   </option>
                 </select>
+                <small v-if="errors.property_type_id" class="field-error-text">{{ errors.property_type_id }}</small>
               </div>
             </div>
 
@@ -409,6 +457,7 @@
                   required
                 />
               </div>
+              <small v-if="errors.price" class="field-error-text">{{ errors.price }}</small>
             </div>
 
             <div class="col-12">
@@ -543,6 +592,9 @@
                 <input type="number" v-model="form.longitude" class="form-control bg-light border-0 shadow-none" id="lng" placeholder="Lng" readonly />
                 <label for="lng" class="small text-muted">Longitude</label>
               </div>
+            </div>
+            <div class="col-12">
+              <small v-if="errors.latitude || errors.location" class="field-error-text">{{ errors.latitude || errors.location }}</small>
             </div>
 
             <div class="col-12 mt-2">
@@ -855,6 +907,8 @@ export default {
       previewThumbnail: null,
       previewPropertyImages: [],
       previewBusinessPermitName: "",
+      previewBusinessPermitUrl: "",
+      previewBusinessPermitType: "",
       timeoutId: null,
       isValidating: false,
       isSubmitting: false,
@@ -863,6 +917,15 @@ export default {
       submitStatusMessage: "",
       maxField : false,
       subscriptionState: null,
+      errors: {},
+      validationSummary: [],
+      stepsMeta: [
+        { step: 1, label: "Basics" },
+        { step: 2, label: "Details" },
+        { step: 3, label: "Pricing" },
+        { step: 4, label: "Location" },
+        { step: 5, label: "Review" },
+      ],
     };
   },
   components: {
@@ -954,92 +1017,147 @@ export default {
     },
     handleBusinessPermit(event) {
       const file = event.target.files[0];
+      if (this.previewBusinessPermitUrl) {
+        URL.revokeObjectURL(this.previewBusinessPermitUrl);
+      }
       this.form.business_permit = file || null;
       this.previewBusinessPermitName = file ? file.name : "";
+      this.previewBusinessPermitUrl = file ? URL.createObjectURL(file) : "";
+      this.previewBusinessPermitType = file
+        ? file.type.startsWith("image/")
+          ? "image"
+          : file.type === "application/pdf"
+            ? "pdf"
+            : ""
+        : "";
     },
 
-    // Navigation
-    nextStep() {
+    resetValidation() {
+      this.errors = {};
+      this.validationSummary = [];
+    },
+    pushValidation(field, message) {
+      if (!this.errors[field]) {
+        this.errors[field] = message;
+      }
+      if (!this.validationSummary.includes(message)) {
+        this.validationSummary.push(message);
+      }
+    },
+    scrollToValidationSummary() {
+      this.$nextTick(() => {
+        const target = this.$refs.validationSummary;
+        if (target && typeof target.scrollIntoView === "function") {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    },
+    stepStatusClass(step) {
+      if (step < this.step) return "is-completed";
+      if (step === this.step) return "is-active";
+      return "is-upcoming";
+    },
+    stepStatusText(step) {
+      if (step < this.step) return "Completed";
+      if (step === this.step) {
+        return this.validationSummary.length ? "Needs attention" : "In progress";
+      }
+      return "Pending";
+    },
+    validateStep(step) {
+      let hasError = false;
 
-      if(this.step === 1) {
-        // Title & Description
+      if (step === 1) {
         if (!this.form.title || this.form.title.trim() === "") {
-          alert("Title is required");
-          return;
+          this.pushValidation("title", "Property title is required.");
+          hasError = true;
         }
         if (!this.form.description || this.form.description.trim() === "") {
-          alert("Description is required");
-          return;
+          this.pushValidation("description", "Property description is required.");
+          hasError = true;
         }
         if (!this.form.business_permit) {
-          alert("Business permit is required before listing this property.");
-          return;
+          this.pushValidation("business_permit", "Business permit is required before listing this property.");
+          hasError = true;
         }
       }
-      if(this.step === 2) {
-        // Agreement Type
+
+      if (step === 2) {
         if (!this.form.agreement_type) {
-          alert("Agreement type is required");
-          return;
+          this.pushValidation("agreement_type", "Agreement type is required.");
+          hasError = true;
         }
-
-        // Property Type
         if (!this.form.property_type_id) {
-          alert("Property type is required");
-          return;
+          this.pushValidation("property_type_id", "Property type is required.");
+          hasError = true;
         }
 
-        if(this.selectedPropertyName !== "Commercial Space"){
-
-          const bath = this.form.bath_type
-          const bed = this.form.bed_type
-          if(bed.length <= 0){
-            alert("Select atleast one bed type")
-            return
+        if (this.selectedPropertyName !== "Commercial Space") {
+          const bath = this.form.bath_type || [];
+          const bed = this.form.bed_type || [];
+          if (bed.length <= 0) {
+            this.pushValidation("bed_type", "Select at least one bed type.");
+            hasError = true;
           }
-          if(bath.length <= 0){
-            alert("Select atleast one bath type")
-            return
+          if (bath.length <= 0) {
+            this.pushValidation("bath_type", "Select at least one bath type.");
+            hasError = true;
           }
 
-          
-          const single_bed = this.form.single_bed
-          const double_bed = this.form.double_bed
-          const pub_bath = this.form.public_bath
-          const priv_bath = this.form.private_bath
-
-          if(single_bed <= 0 && double_bed <= 0){
-            alert("Include atleast 1 bed")
-            return
+          if ((this.form.single_bed || 0) <= 0 && (this.form.double_bed || 0) <= 0) {
+            this.pushValidation("single_bed", "Include at least 1 bed.");
+            hasError = true;
           }
-          if(pub_bath <= 0 && priv_bath <= 0){
-            alert("Include atleast 1 bed")
-            return
+          if ((this.form.public_bath || 0) <= 0 && (this.form.private_bath || 0) <= 0) {
+            this.pushValidation("public_bath", "Include at least 1 bathroom.");
+            hasError = true;
           }
         }
 
-        if(this.selectedPropertyName === "Commercial Space"){
-          if(this.form.floor_area <= 0){
-            alert("Atleast specify floor area greater than 0 for Commercial Spaces")
-            return
+        if (this.selectedPropertyName === "Commercial Space") {
+          if ((this.form.floor_area || 0) <= 0) {
+            this.pushValidation("floor_area", "Specify floor area greater than 0 for Commercial Space.");
+            hasError = true;
           }
-          if(this.form.lot_area <= 0){
-            alert("Atleast specify lot area greater than 0 for Commercial Spaces")
-            return
+          if ((this.form.lot_area || 0) <= 0) {
+            this.pushValidation("lot_area", "Specify lot area greater than 0 for Commercial Space.");
+            hasError = true;
           }
-        }
-
-      }
-
-      if(this.step === 3){
-        if(this.form.price <= 0){
-          alert("Price must be greater than 0")
-          return
         }
       }
 
+      if (step === 3) {
+        if (!this.form.price || this.form.price <= 0) {
+          this.pushValidation("price", "Price must be greater than 0.");
+          hasError = true;
+        }
+      }
+
+      if (step === 4) {
+        if (!this.form.latitude || !this.form.longitude) {
+          this.pushValidation("latitude", "Property coordinates are required.");
+          hasError = true;
+        }
+        if (!this.form.region_name || !this.form.state_name || !this.form.town_name || !this.form.village_name) {
+          if (this.isGeocoding) {
+            this.pushValidation("location", "Location details are still being fetched. Please wait and try again.");
+          } else {
+            this.pushValidation("location", "Complete location details are required.");
+          }
+          hasError = true;
+        }
+      }
+
+      return !hasError;
+    },
+    // Navigation
+    nextStep() {
+      this.resetValidation();
+      if (!this.validateStep(this.step)) {
+        this.scrollToValidationSummary();
+        return;
+      }
       if (this.step < this.maxStep) this.step++;
-
     },
     prevStep() {
       if (this.step > 1) this.step--;
@@ -1048,88 +1166,56 @@ export default {
     async validateForm() {
       this.isValidating = true;
       try {
-        // Title & Description
-        if (!this.form.title || this.form.title.trim() === "") {
-          alert("Title is required");
-          return;
-        }
-        if (!this.form.description || this.form.description.trim() === "") {
-          alert("Description is required");
+        this.resetValidation();
+        const stepsToValidate = [1, 2, 3, 4];
+        let firstInvalidStep = null;
+
+        stepsToValidate.forEach((step) => {
+          const stepIsValid = this.validateStep(step);
+          if (!stepIsValid && firstInvalidStep === null) {
+            firstInvalidStep = step;
+          }
+        });
+
+        if (firstInvalidStep !== null) {
+          this.step = firstInvalidStep;
+          this.scrollToValidationSummary();
           return;
         }
 
-        // Agreement Type
-        if (!this.form.agreement_type) {
-          alert("Agreement type is required");
-          return;
-        }
-
-        // Property Type
-        if (!this.form.property_type_id) {
-          alert("Property type is required");
-          return;
-        }
-
-        // Price
-        if (!this.form.price || this.form.price <= 0) {
-          alert("Price must be greater than 0");
-          return;
-        }
-
-        // Rental-specific validations
         if (this.form.agreement_type === "rental") {
           if (this.form.advance_payment_months < 0) {
-            alert("Advance payment months cannot be negative");
-            return;
+            this.pushValidation("advance_payment_months", "Advance payment months cannot be negative.");
           }
           if (this.form.deposit_required < 0) {
-            alert("Deposit required cannot be negative");
-            return;
+            this.pushValidation("deposit_required", "Deposit required cannot be negative.");
           }
           if (!this.form.payment_frequency) {
-            alert("Payment frequency is required for rentals");
-            return;
+            this.pushValidation("payment_frequency", "Payment frequency is required for rentals.");
           }
         }
 
-        // Lease-specific validations
         if (this.form.agreement_type === "lease") {
           if (!this.form.lease_term_months || this.form.lease_term_months <= 0) {
-            alert("Lease term must be greater than 0");
-            return;
+            this.pushValidation("lease_term_months", "Lease term must be greater than 0.");
           }
           if (!this.form.renewal_option) {
-            alert("Renewal option is required");
-            return;
+            this.pushValidation("renewal_option", "Renewal option is required.");
           }
           if (this.form.notice_period < 0) {
-            alert("Notice period cannot be negative");
-            return;
+            this.pushValidation("notice_period", "Notice period cannot be negative.");
           }
         }
-
-        // Location
-        if (!this.form.latitude || !this.form.longitude) {
-          alert("Coordinates are required");
+        if (this.validationSummary.length) {
+          this.scrollToValidationSummary();
           return;
         }
-        if (!this.form.region_name || !this.form.state_name || !this.form.town_name || !this.form.village_name) {
-          if (this.isGeocoding) {
-            alert("Location details are still being fetched. Please wait a moment and submit again.");
-            return;
-          }
-          alert("Complete location details are required");
-          return;
-        }
-
-        // ✅ If all validations pass, proceed to submit
 
         this.showConfirmModal = true;
-        // await this.submitForm();
-
       } catch (error) {
         console.error("Validation Error:", error);
-        alert("Something went wrong during validation.");
+        this.pushValidation("form", "Something went wrong during validation.");
+        this.scrollToValidationSummary();
       } finally {
         this.isValidating = false;
       }
@@ -1205,13 +1291,18 @@ export default {
         }
 
         if (error.response && error.response.status === 422) {
-          const errors = error.response.data.errors;
-          let message = "";
-          for (const field in errors) {
-            message += `${field}: ${errors[field].join(", ")}\n`;
-          }
-          alert(`Validation Errors:\n${message}`);
-          console.error("Validation Errors:", errors);
+          const backendErrors = error.response.data.errors || {};
+          this.resetValidation();
+          Object.keys(backendErrors).forEach((field) => {
+            const message = Array.isArray(backendErrors[field]) ? backendErrors[field][0] : String(backendErrors[field]);
+            this.pushValidation(field, `${field}: ${message}`);
+          });
+          if (["title", "description", "business_permit", "thumbnail"].some((f) => this.errors[f])) this.step = 1;
+          else if (["agreement_type", "property_type_id", "bed_type", "bath_type", "single_bed", "public_bath", "floor_area", "lot_area"].some((f) => this.errors[f])) this.step = 2;
+          else if (["price", "payment_frequency", "advance_payment_months", "deposit_required", "lease_term_months", "renewal_option", "notice_period"].some((f) => this.errors[f])) this.step = 3;
+          else if (["latitude", "longitude", "location", "region_name", "state_name", "town_name", "village_name"].some((f) => this.errors[f])) this.step = 4;
+          this.scrollToValidationSummary();
+          console.error("Validation Errors:", backendErrors);
         } else {
           console.error("Error submitting property:", error);
           alert("Something went wrong. Check console.");
@@ -1389,6 +1480,11 @@ export default {
       } catch (error) {
         console.log(`Property Type`)
       }
+    }
+  },
+  beforeUnmount() {
+    if (this.previewBusinessPermitUrl) {
+      URL.revokeObjectURL(this.previewBusinessPermitUrl);
     }
   },
   mounted() {
@@ -1618,6 +1714,103 @@ export default {
 
 <style scoped>
 /* Add custom styles here for better UX */
+.property-wizard-shell {
+  background:
+    radial-gradient(1200px 500px at -10% -20%, rgba(13, 110, 253, 0.08), transparent 55%),
+    radial-gradient(800px 380px at 110% -10%, rgba(25, 135, 84, 0.08), transparent 60%);
+  border-radius: 1.1rem;
+}
+
+.wizard-page-header {
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 1rem;
+  backdrop-filter: blur(6px);
+  padding: 0.9rem 1rem;
+}
+
+.wizard-step-rail {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.wizard-step-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #dbe5f2;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.45rem 0.65rem;
+  min-height: 58px;
+}
+
+.wizard-step-pill.is-active {
+  border-color: rgba(13, 110, 253, 0.5);
+  box-shadow: 0 8px 22px rgba(13, 110, 253, 0.14);
+}
+
+.wizard-step-pill.is-completed {
+  border-color: rgba(25, 135, 84, 0.35);
+  background: rgba(25, 135, 84, 0.08);
+}
+
+.wizard-step-index {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: #eaf1ff;
+  color: #0d6efd;
+}
+
+.wizard-step-pill.is-completed .wizard-step-index {
+  background: #e9f8ef;
+  color: #198754;
+}
+
+.wizard-step-copy {
+  min-width: 0;
+}
+
+.wizard-step-copy p,
+.wizard-step-copy small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wizard-nav-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.field-error-text {
+  color: #b42318;
+  font-size: 0.78rem;
+  display: block;
+  margin-top: 0.35rem;
+}
+
+@media (max-width: 992px) {
+  .wizard-step-rail {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wizard-step-pill,
+  .upload-placeholder,
+  .card {
+    transition: none !important;
+  }
+}
 
 /* Custom styling for Step 4 */
 .smaller {

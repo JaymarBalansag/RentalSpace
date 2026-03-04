@@ -102,6 +102,32 @@
               </div>
             </div>
           </div>
+
+          <div class="mt-4">
+            <label class="form-label fw-semibold small text-uppercase">Business Permit</label>
+            <div class="upload-container position-relative">
+              <input type="file" class="file-input-overlay" @change="handleBusinessPermit" accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf" />
+              <div class="upload-placeholder border-dashed rounded-3 p-4 text-center">
+                <div v-if="!previewBusinessPermitName && !businessPermitUrl">
+                  <i class="bi bi-file-earmark-check fs-2 text-primary"></i>
+                  <p class="mb-0 small fw-medium">Upload or replace business permit (JPG, PNG, PDF)</p>
+                </div>
+                <div v-else>
+                  <p v-if="previewBusinessPermitName" class="mb-1 small fw-semibold">{{ previewBusinessPermitName }}</p>
+                  <a
+                    v-else-if="businessPermitUrl"
+                    :href="businessPermitUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="small fw-semibold text-decoration-none"
+                    @click.stop
+                  >
+                    View current business permit
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -782,10 +808,13 @@ export default {
         property_amenities: [],
         rules: "",
         thumbnail: null,
+        business_permit: null,
         images: [],
       },
       previewThumbnail: null,
       previewPropertyImages: [],
+      businessPermitUrl: "",
+      previewBusinessPermitName: "",
       timeoutId: null,
       maxField : false,
     };
@@ -874,6 +903,11 @@ export default {
       const files = Array.from(event.target.files);
       this.form.images = files;
       this.previewPropertyImages = files.map((f) => URL.createObjectURL(f));
+    },
+    handleBusinessPermit(event) {
+      const file = event.target.files[0];
+      this.form.business_permit = file || null;
+      this.previewBusinessPermitName = file ? file.name : "";
     },
     // UI Navigation
     nextStep() {
@@ -1287,7 +1321,10 @@ export default {
         this.previewThumbnail = data.thumbnail_url; 
         this.previewPropertyImages = data.images;
         this.form.thumbnail = null; 
+        this.form.business_permit = null;
         this.form.images = [];
+        this.businessPermitUrl = data.business_permit_url || "";
+        this.previewBusinessPermitName = "";
 
         // Step 2
         this.form.agreement_type = data.agreement_type

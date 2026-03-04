@@ -93,6 +93,22 @@
             </div>
           </div>
         </div>
+
+        <div class="mt-4">
+          <label class="form-label fw-semibold small text-uppercase">Business Permit <span class="text-danger">*</span></label>
+          <div class="upload-container position-relative">
+            <input type="file" class="file-input-overlay" @change="handleBusinessPermit" accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf" />
+            <div class="upload-placeholder border-dashed rounded-3 p-4 text-center">
+              <div v-if="!previewBusinessPermitName">
+                <i class="bi bi-file-earmark-check fs-2 text-primary"></i>
+                <p class="mb-0 small fw-medium">Upload business permit (JPG, PNG, or PDF)</p>
+              </div>
+              <div v-else>
+                <p class="mb-0 small fw-semibold">{{ previewBusinessPermitName }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -833,10 +849,12 @@ export default {
         property_amenities: [],
         rules: "",
         thumbnail: null,
+        business_permit: null,
         images: [],
       },
       previewThumbnail: null,
       previewPropertyImages: [],
+      previewBusinessPermitName: "",
       timeoutId: null,
       isValidating: false,
       isSubmitting: false,
@@ -934,6 +952,11 @@ export default {
       this.form.images = files;
       this.previewPropertyImages = files.map((f) => URL.createObjectURL(f));
     },
+    handleBusinessPermit(event) {
+      const file = event.target.files[0];
+      this.form.business_permit = file || null;
+      this.previewBusinessPermitName = file ? file.name : "";
+    },
 
     // Navigation
     nextStep() {
@@ -946,6 +969,10 @@ export default {
         }
         if (!this.form.description || this.form.description.trim() === "") {
           alert("Description is required");
+          return;
+        }
+        if (!this.form.business_permit) {
+          alert("Business permit is required before listing this property.");
           return;
         }
       }

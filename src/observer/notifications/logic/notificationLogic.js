@@ -2,6 +2,7 @@ const ICON_MAP = {
   message_received: "bi bi-chat-dots text-primary",
   tenant_reviewed_property: "bi bi-star-fill text-warning",
   booking_pending: "bi bi-calendar-check text-success",
+  owner_verification_feedback: "bi bi-shield-exclamation text-info",
   default: "bi bi-bell text-primary",
 };
 
@@ -9,6 +10,7 @@ const TAB_MAP = {
   message_received: "system",
   tenant_reviewed_property: "system",
   booking_pending: "bookings",
+  owner_verification_feedback: "system",
 };
 
 function safeDateToMs(value) {
@@ -41,6 +43,10 @@ export function resolveNotificationTitle(raw, type) {
   if (type === "booking_pending") {
     const propertyName = raw?.property_name || "your property";
     return `You have a pending booking request for ${propertyName}.`;
+  }
+
+  if (type === "owner_verification_feedback") {
+    return raw?.title || "Admin review update for your owner verification.";
   }
 
   return "You have a new notification.";

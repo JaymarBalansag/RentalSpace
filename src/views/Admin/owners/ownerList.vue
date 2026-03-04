@@ -83,6 +83,14 @@
                       <i class="bi bi-eye"></i>
                     </button>
                     <button
+                      class="btn-action notify"
+                      title="Notify Owner"
+                      :disabled="isActionLoading"
+                      @click="openNotifyOwnerModal(owner)"
+                    >
+                      <i class="bi bi-bell"></i>
+                    </button>
+                    <button
                       class="btn-action approve"
                       title="Verify Owner"
                       :disabled="isActionLoading || normalizeVerificationStatus(owner) === 'verified'"
@@ -131,6 +139,13 @@
               <div class="d-flex gap-2">
                 <button class="btn-mobile-icon view" @click="openOwnerModal(owner)"><i class="bi bi-eye"></i></button>
                 <button
+                  class="btn-mobile-icon notify"
+                  :disabled="isActionLoading"
+                  @click="openNotifyOwnerModal(owner)"
+                >
+                  <i class="bi bi-bell"></i>
+                </button>
+                <button
                   class="btn-mobile-icon approve"
                   :disabled="isActionLoading || normalizeVerificationStatus(owner) === 'verified'"
                   @click="openVerifyOwnerModal(owner)"
@@ -161,46 +176,64 @@
           <button class="btn-close" @click="closeOwnerModal"></button>
         </div>
 
-        <div class="mb-3">
-          <p class="mb-1"><strong>Name:</strong> {{ selectedOwner.first_name }} {{ selectedOwner.last_name }}</p>
-          <p class="mb-1"><strong>Email:</strong> {{ selectedOwner.email }}</p>
-          <p class="mb-0"><strong>Verification:</strong> {{ verificationLabel(selectedOwner) }}</p>
-        </div>
-
         <div class="row g-3">
-          <div class="col-12 col-md-6">
-            <div class="border rounded p-3 h-100">
-              <p class="fw-semibold small mb-2">Business Permit</p>
-              <a
-                v-if="permitUrl(selectedOwner)"
-                class="btn btn-sm btn-outline-primary"
-                :href="permitUrl(selectedOwner)"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                View Document
-              </a>
-              <p v-else class="small text-muted mb-0">No permit uploaded.</p>
+          <div class="col-12">
+            <div class="info-card border rounded p-3">
+              <p class="fw-semibold small mb-2 text-uppercase text-muted">User Info</p>
+              <p class="mb-1"><strong>Name:</strong> {{ selectedOwner.first_name }} {{ selectedOwner.last_name }}</p>
+              <p class="mb-1"><strong>Email:</strong> {{ selectedOwner.email || "-" }}</p>
+              <p class="mb-1"><strong>Phone:</strong> {{ selectedOwner.user_phone_number || "-" }}</p>
+              <p class="mb-0">
+                <strong>Valid ID:</strong>
+                <button
+                  v-if="selectedOwner.user_valid_govt_id_url"
+                  type="button"
+                  class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                  @click="openIdPreview(selectedOwner.user_valid_govt_id_url)"
+                >
+                  View uploaded ID
+                </button>
+                <span v-else class="text-muted ms-1">No uploaded user valid ID</span>
+              </p>
             </div>
           </div>
-          <div class="col-12 col-md-6">
-            <div class="border rounded p-3 h-100">
-              <p class="fw-semibold small mb-2">Government ID</p>
-              <a
-                v-if="validIdUrl(selectedOwner)"
-                class="btn btn-sm btn-outline-primary"
-                :href="validIdUrl(selectedOwner)"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                View Document
-              </a>
-              <p v-else class="small text-muted mb-0">No government ID uploaded.</p>
+
+          <div class="col-12">
+            <div class="info-card border rounded p-3">
+              <p class="fw-semibold small mb-2 text-uppercase text-muted">Owner Info</p>
+              <p class="mb-1"><strong>Verification:</strong> {{ verificationLabel(selectedOwner) }}</p>
+              <p class="mb-1"><strong>Owner Phone:</strong> {{ selectedOwner.owner_phone_number || selectedOwner.phone_number || "-" }}</p>
+              <p class="mb-1"><strong>Payment Type:</strong> {{ selectedOwner.owner_payment_type || selectedOwner.paymentType || "-" }}</p>
+              <p class="mb-1"><strong>Owner Status:</strong> {{ selectedOwner.owner_status || selectedOwner.status || "-" }}</p>
+              <p class="mb-0"><strong>Rejected Reason:</strong> {{ selectedOwner.owner_verification_rejected_reason || "-" }}</p>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="info-card border rounded p-3">
+              <p class="fw-semibold small mb-2 text-uppercase text-muted">Subscription Info</p>
+              <template v-if="selectedOwner.subscription_info">
+                <p class="mb-1"><strong>Plan:</strong> {{ selectedOwner.subscription_info.plan_name || "-" }}</p>
+                <p class="mb-1"><strong>Amount:</strong> {{ formatCurrency(selectedOwner.subscription_info.amount) }}</p>
+                <p class="mb-1"><strong>Billing Cycle:</strong> {{ selectedOwner.subscription_info.billing_cycle || "-" }}</p>
+                <p class="mb-1"><strong>Status:</strong> {{ selectedOwner.subscription_info.status || "-" }}</p>
+                <p class="mb-1"><strong>Start:</strong> {{ selectedOwner.subscription_info.start_date || "-" }}</p>
+                <p class="mb-1"><strong>End:</strong> {{ selectedOwner.subscription_info.end_date || "-" }}</p>
+                <p class="mb-0"><strong>Listing Limit:</strong> {{ selectedOwner.subscription_info.listing_limit ?? "-" }}</p>
+              </template>
+              <p v-else class="small text-muted mb-0">No subscription record found.</p>
             </div>
           </div>
         </div>
 
-        <div class="d-flex justify-content-end gap-2 mt-4">
+        <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+          <button
+            class="btn btn-outline-primary"
+            :disabled="isActionLoading"
+            @click="openNotifyOwnerModal(selectedOwner)"
+          >
+            <i class="bi bi-bell me-1"></i> Notify Owner
+          </button>
           <button
             class="btn btn-success"
             :disabled="isActionLoading || normalizeVerificationStatus(selectedOwner) === 'verified'"
@@ -215,6 +248,36 @@
           >
             <i class="bi bi-x-circle me-1"></i> Reject
           </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showIdPreviewModal" class="modal-overlay-custom" @click.self="closeIdPreviewModal">
+      <div class="modal-body-custom rounded-4 shadow-lg p-4 id-preview-modal">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Valid ID Preview</h5>
+          <button class="btn-close" @click="closeIdPreviewModal"></button>
+        </div>
+
+        <div class="id-preview-frame border rounded-3 overflow-hidden bg-light">
+          <img
+            v-if="idPreviewType === 'image'"
+            :src="idPreviewUrl"
+            alt="Valid ID Preview"
+            class="img-fluid w-100 h-100 object-fit-contain"
+          />
+          <iframe
+            v-else
+            :src="idPreviewUrl"
+            title="Valid ID PDF Preview"
+            class="w-100 h-100 border-0"
+          ></iframe>
+        </div>
+
+        <div class="d-flex justify-content-end mt-3">
+          <a :href="idPreviewUrl" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary">
+            Open in new tab
+          </a>
         </div>
       </div>
     </div>
@@ -243,6 +306,7 @@ import ConfirmModal from "@/components/confirmModal.vue";
 import {
   getOwner,
   getOwnerDetails,
+  notifyOwner,
   verifyOwner,
   rejectOwnerVerification,
 } from "@/api/Admin/AdminOwner/AdminOwner";
@@ -258,6 +322,9 @@ export default {
       filterStatus: "",
       owners: [],
       showOwnerModal: false,
+      showIdPreviewModal: false,
+      idPreviewUrl: "",
+      idPreviewType: "pdf",
       selectedOwner: null,
       isActionLoading: false,
       showConfirmModal: false,
@@ -318,6 +385,11 @@ export default {
     validIdUrl(owner) {
       return owner?.valid_id_url || owner?.government_id_url || owner?.valid_id || null;
     },
+    formatCurrency(value) {
+      const amount = Number(value ?? 0);
+      if (!Number.isFinite(amount)) return "-";
+      return `PHP ${amount.toLocaleString("en-PH", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    },
     resetFilter() {
       this.search = "";
       this.filterStatus = "";
@@ -348,6 +420,21 @@ export default {
     closeOwnerModal() {
       this.showOwnerModal = false;
       this.selectedOwner = null;
+    },
+    openIdPreview(url) {
+      const safeUrl = String(url || "").trim();
+      if (!safeUrl) return;
+
+      const lower = safeUrl.toLowerCase();
+      const isImage = /\.(jpg|jpeg|png|webp|gif)(\?|#|$)/.test(lower);
+      this.idPreviewType = isImage ? "image" : "pdf";
+      this.idPreviewUrl = safeUrl;
+      this.showIdPreviewModal = true;
+    },
+    closeIdPreviewModal() {
+      this.showIdPreviewModal = false;
+      this.idPreviewUrl = "";
+      this.idPreviewType = "pdf";
     },
     openVerifyOwnerModal(owner) {
       this.confirmInput = "";
@@ -381,6 +468,22 @@ export default {
       };
       this.showConfirmModal = true;
     },
+    openNotifyOwnerModal(owner) {
+      this.confirmInput = "";
+      this.confirmConfig = {
+        action: "notify",
+        owner,
+        title: "Notify Owner",
+        message: `Send review feedback to ${owner.first_name} ${owner.last_name}?`,
+        confirmText: "Send Notification",
+        variant: "primary",
+        showInput: true,
+        inputLabel: "Message to Owner",
+        inputPlaceholder: "Example: Please update your phone number to match your profile records.",
+        inputRequired: true,
+      };
+      this.showConfirmModal = true;
+    },
     closeConfirmModal() {
       if (this.isActionLoading) return;
       this.showConfirmModal = false;
@@ -394,6 +497,13 @@ export default {
       try {
         if (this.confirmConfig.action === "verify") {
           await verifyOwner(owner.id);
+        } else if (this.confirmConfig.action === "notify") {
+          if (!this.confirmInput.trim()) {
+            alert("Please enter the feedback message for the owner.");
+            this.isActionLoading = false;
+            return;
+          }
+          await notifyOwner(owner.id, this.confirmInput.trim());
         } else {
           await rejectOwnerVerification(owner.id, this.confirmInput.trim());
         }
@@ -466,6 +576,7 @@ export default {
   transition: all 0.2s;
 }
 .btn-action.view { background: #e7f5ff; color: #228be6; }
+.btn-action.notify { background: #eef2ff; color: #4f46e5; }
 .btn-action.approve { background: #ebfbee; color: #40c057; }
 .btn-action.reject { background: #fff5f5; color: #fa5252; }
 .btn-action:hover { transform: translateY(-2px); filter: brightness(0.95); }
@@ -481,8 +592,13 @@ export default {
   justify-content: center;
 }
 .btn-mobile-icon.view { background: #e7f5ff; color: #228be6; }
+.btn-mobile-icon.notify { background: #eef2ff; color: #4f46e5; }
 .btn-mobile-icon.approve { background: #198754; color: white; }
 .btn-mobile-icon.reject { background: #dc3545; color: white; }
+
+.info-card p {
+  font-size: 0.9rem;
+}
 
 .avatar-circle {
   width: 35px;
@@ -517,5 +633,13 @@ export default {
   max-width: 650px;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+.id-preview-modal {
+  max-width: 900px;
+}
+
+.id-preview-frame {
+  height: min(70vh, 680px);
 }
 </style>

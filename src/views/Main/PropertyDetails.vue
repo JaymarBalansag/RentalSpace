@@ -361,18 +361,6 @@
             </div>
           </div>
 
-          <div class="mt-3">
-            <label class="form-label small fw-bold">Valid ID (Required)</label>
-            <input
-              type="file"
-              accept=".jpg,.jpeg,.png,.pdf"
-              class="form-control rounded-3"
-              @change="onValidIdChange"
-              required
-            />
-            <small class="text-muted">Accepted: JPG, PNG, PDF (max 5MB)</small>
-          </div>
-
           <!-- <div v-else-if="property_type === 'Commercial Space'" class="d-grid gap-3">
             <div>
               <label class="form-label small fw-bold">Lease Duration (Months)</label>
@@ -484,7 +472,6 @@ export default {
         room_preference: null,
         notes: "",
         agreement: false,
-        valid_id: null,
       },
     };
   },
@@ -773,6 +760,10 @@ export default {
     isProfileComplete(value) {
       return value === true || value === 1 || value === "1";
     },
+    normalizeUserVerificationStatus(value) {
+      const status = String(value || "unverified").toLowerCase().trim();
+      return ["unverified", "pending", "verified", "rejected"].includes(status) ? status : "unverified";
+    },
     async ensureProfileCompletedOrRedirect() {
       const info = useUserInfo();
       if (this.isProfileComplete(info.isComplete)) return true;
@@ -784,6 +775,28 @@ export default {
         confirmButtonText: "Go to Profile",
       });
       this.$router.push("/completion");
+      return false;
+    },
+    async ensureUserVerifiedForBooking() {
+      const info = useUserInfo();
+      const status = this.normalizeUserVerificationStatus(info.user_verification_status);
+
+      if (status === "verified") return true;
+
+      let text = "Verify your account first to book this property.";
+      if (status === "pending") {
+        text = "Your identity verification is under review. Booking will unlock after approval.";
+      } else if (status === "rejected") {
+        text = "Your verification was rejected. Please resubmit your valid government ID in your profile.";
+      }
+
+      await Swal.fire({
+        icon: status === "pending" ? "info" : "warning",
+        title: "Verification required",
+        text,
+        confirmButtonText: "Go to Profile",
+      });
+      this.$router.push("/profile");
       return false;
     },
     BackToPrevPage() {
@@ -821,6 +834,8 @@ export default {
 
       const canProceed = await this.ensureProfileCompletedOrRedirect();
       if (!canProceed) return;
+      const isVerified = await this.ensureUserVerifiedForBooking();
+      if (!isVerified) return;
 
       this.agreement = {
         occupant_num: null,
@@ -829,25 +844,17 @@ export default {
         room_preference: null,
         notes: "",
         agreement: false,
-        valid_id: null,
       };
       this.showUserAgreementModal = true;
     },
     closeAgreementModal() {
        this.showUserAgreementModal = false; 
     },
-    onValidIdChange(event) {
-      const file = event.target?.files?.[0] || null;
-      this.agreement.valid_id = file;
-    },
     validateAgreement() {
-      const { agreement, valid_id } = this.agreement;
+      const { agreement } = this.agreement;
 
       if (!agreement) {
         return alert("Please check the agreement box.");
-      }
-      if (!valid_id) {
-        return alert("Please upload a valid ID.");
       }
 
       // If all checks pass:

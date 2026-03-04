@@ -33,6 +33,10 @@
                   <i class="bi me-1" :class="isComplete ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'"></i>
                   {{ isComplete ? 'Profile Complete' : 'Profile Incomplete' }}
                 </span>
+                <span class="badge rounded-pill py-2 px-3 border status-badge" :class="verificationBadgeClass">
+                  <i class="bi me-1" :class="verificationIcon"></i>
+                  {{ verificationLabel }}
+                </span>
                 <span class="badge rounded-pill py-2 px-3 border role-badge">
                   <i class="bi bi-person-badge me-1"></i>{{ userRole }}
                 </span>
@@ -77,6 +81,22 @@
               <RouterLink v-if="!isComplete" to="/completion" class="btn btn-warning rounded-pill fw-semibold text-dark">
                 <i class="bi bi-check2-square me-2"></i>Complete Profile
               </RouterLink>
+              <button
+                v-if="isComplete && userVerificationStatus !== 'verified'"
+                class="btn btn-warning rounded-pill fw-semibold text-dark"
+                :disabled="verificationUploading || userVerificationStatus === 'pending'"
+                @click="triggerVerificationUpload"
+              >
+                <i class="bi bi-shield-check me-2"></i>
+                {{ userVerificationStatus === 'pending' ? 'Verification Under Review' : 'Submit Valid Government ID' }}
+              </button>
+              <input
+                ref="verificationInput"
+                type="file"
+                class="d-none"
+                accept=".jpg,.jpeg,.png,.pdf"
+                @change="onVerificationFileChange"
+              />
             </div>
           </div>
         </div>
@@ -129,6 +149,13 @@
               <small>Location Pin</small>
               <p class="mb-0">{{ hasValidLocation ? "Saved location available" : "No saved location yet" }}</p>
             </div>
+            <div class="snapshot-tile">
+              <small>Identity Verification</small>
+              <p class="mb-0">{{ verificationLabel }}</p>
+            </div>
+            <p v-if="userVerificationStatus === 'rejected' && userVerificationRejectedReason" class="small text-danger mb-0">
+              Rejected reason: {{ userVerificationRejectedReason }}
+            </p>
             <p class="small text-muted mb-0">
               Profile actions are managed here. Security and app preferences are in the <strong>Settings</strong> menu from the header dropdown.
             </p>
@@ -194,13 +221,14 @@
 
 <script>
 import { RouterLink } from "vue-router";
-import { getUserPreferences, getUserProfile } from "@/api/user";
+import { getUserPreferences, getUserProfile, submitUserVerification } from "@/api/user";
 import L from "leaflet";
 import { useUserInfo } from "@/store/userInfo";
 import Header from "@/components/Header.vue";
 import 'leaflet/dist/leaflet.css';
 import { nextTick } from "vue";
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
+import Swal from "sweetalert2";
 
 // Fix for Leaflet default marker icons not appearing in some builds
 delete L.Icon.Default.prototype._getIconUrl;
@@ -230,6 +258,9 @@ export default {
       map: null,
       amenities: [],
       propertyTypes: [],
+      userVerificationStatus: "unverified",
+      userVerificationRejectedReason: null,
+      verificationUploading: false,
     };
   },
   computed: {
@@ -261,6 +292,24 @@ export default {
       const doneCount = this.completionChecklist.filter((item) => item.done).length;
       return Math.round((doneCount / this.completionChecklist.length) * 100);
     },
+    verificationLabel() {
+      if (this.userVerificationStatus === "verified") return "Verified User";
+      if (this.userVerificationStatus === "pending") return "Verification Pending";
+      if (this.userVerificationStatus === "rejected") return "Verification Rejected";
+      return "Unverified User";
+    },
+    verificationIcon() {
+      if (this.userVerificationStatus === "verified") return "bi-patch-check-fill";
+      if (this.userVerificationStatus === "pending") return "bi-hourglass-split";
+      if (this.userVerificationStatus === "rejected") return "bi-x-octagon-fill";
+      return "bi-shield";
+    },
+    verificationBadgeClass() {
+      if (this.userVerificationStatus === "verified") return "bg-success-subtle text-success border-success-subtle";
+      if (this.userVerificationStatus === "pending") return "bg-warning-subtle text-warning-emphasis border-warning-subtle";
+      if (this.userVerificationStatus === "rejected") return "bg-danger-subtle text-danger border-danger-subtle";
+      return "bg-secondary-subtle text-secondary border-secondary-subtle";
+    },
   },
   mounted() {
     this.fetchUserProfile();
@@ -288,6 +337,14 @@ export default {
         });
 
         this.isComplete = data.isComplete;
+        this.userVerificationStatus = String(data.user_verification_status || "unverified").toLowerCase().trim();
+        this.userVerificationRejectedReason = data.user_verification_rejected_reason || null;
+        useUserInfo().setUserVerificationStatus(
+          this.userVerificationStatus,
+          data.user_verified_at || null,
+          this.userVerificationRejectedReason,
+          data.user_valid_govt_id_url || null
+        );
 
         await nextTick();
         this.initMap();
@@ -327,6 +384,45 @@ export default {
         this.propertyTypes = response.data.property_types;
       } catch (error) {
         console.error("Error fetching preferences:", error);
+      }
+    },
+    triggerVerificationUpload() {
+      if (!this.isComplete) {
+        this.$router.push("/completion");
+        return;
+      }
+      if (this.userVerificationStatus === "pending") {
+        return;
+      }
+      this.$refs.verificationInput?.click();
+    },
+    async onVerificationFileChange(event) {
+      const file = event?.target?.files?.[0] || null;
+      if (!file) return;
+
+      const fd = new FormData();
+      fd.append("valid_id", file);
+      this.verificationUploading = true;
+
+      try {
+        const response = await submitUserVerification(fd);
+        this.userVerificationStatus = "pending";
+        this.userVerificationRejectedReason = null;
+        useUserInfo().setUserVerificationStatus("pending", null, null, response?.data?.user_valid_govt_id_url || null);
+        await Swal.fire({
+          icon: "success",
+          title: "Verification Submitted",
+          text: "Your valid government ID was submitted and is now under admin review.",
+        });
+      } catch (error) {
+        await Swal.fire({
+          icon: "error",
+          title: "Submission Failed",
+          text: error?.response?.data?.message || "Unable to submit verification document.",
+        });
+      } finally {
+        this.verificationUploading = false;
+        if (event?.target) event.target.value = "";
       }
     }
   },

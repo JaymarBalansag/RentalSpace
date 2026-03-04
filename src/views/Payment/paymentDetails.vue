@@ -6,7 +6,6 @@
       <div class="row justify-content-center">
         <div class="col-lg-10">
           <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-            
             <div class="card-header bg-primary text-white d-flex align-items-center py-3">
               <RouterLink to="/payment/wall" class="text-white text-decoration-none">
                 <i class="bi bi-arrow-left fs-4 me-2"></i> Back
@@ -16,9 +15,7 @@
 
             <div class="card-body p-4 p-md-5">
               <div class="row g-4">
-                
                 <div class="col-md-7 border-end">
-                  
                   <div v-if="!isProcessingPayment" class="animate-fade-in">
                     <h5 class="fw-bold mb-3 text-primary">Owner Verification</h5>
                     <p class="text-muted small mb-4">Please provide your details to verify your account and receive payments.</p>
@@ -35,17 +32,14 @@
                       <div class="col-12 d-flex gap-3 border-top pt-2">
                         <div class="form-check">
                           <input class="form-check-input" v-model="paymentType" value="gcash" type="radio" name="radioDefault" id="radioDefault1" checked>
-                          <label class="form-check-label" for="radioDefault1">
-                            Gcash
-                          </label>
+                          <label class="form-check-label" for="radioDefault1">GCash</label>
                         </div>
                         <div class="form-check">
-                          <input class="form-check-input" v-model="paymentType" value="paymaya" type="radio" name="radioDefault" id="radioDefault2" >
-                          <label class="form-check-label" for="radioDefault2">
-                            Paymaya
-                          </label>
+                          <input class="form-check-input" v-model="paymentType" value="paymaya" type="radio" name="radioDefault" id="radioDefault2">
+                          <label class="form-check-label" for="radioDefault2">PayMaya</label>
                         </div>
                       </div>
+
                       <div class="col-12 border-bottom pb-2">
                         <label class="form-label fw-semibold">Contact Number (GCash/Maya)</label>
                         <div class="input-group">
@@ -55,18 +49,25 @@
                         <small class="text-muted">Required for receiving payments from tenants.</small>
                       </div>
 
-                      <div class="col-md-6">
-                        <label class="form-label fw-semibold">Business Permit</label>
-                        <input type="file" @change="handleFileUpload($event, 'permit')" class="form-control form-control-sm" accept="image/*,.pdf">
-                        <div v-if="permitPreview" class="mt-2 border rounded p-1 bg-white text-center shadow-sm">
-                          <img :src="permitPreview" class="img-fluid rounded" style="max-height: 80px;">
+                      <div class="col-12">
+                        <div class="alert alert-warning border-warning-subtle mb-0 small">
+                          <strong>Compliance reminder:</strong>
+                          Before listing any rental property, you must hold a valid business permit and provide truthful property information.
+                          Non-compliant listings may be rejected or removed.
                         </div>
                       </div>
-                      <div class="col-md-6">
-                        <label class="form-label fw-semibold">Valid Government ID</label>
-                        <input type="file" @change="handleFileUpload($event, 'id')" class="form-control form-control-sm" accept="image/*,.pdf">
-                        <div v-if="idPreview" class="mt-2 border rounded p-1 bg-white text-center shadow-sm">
-                          <img :src="idPreview" class="img-fluid rounded" style="max-height: 80px;">
+
+                      <div class="col-12">
+                        <div class="form-check">
+                          <input
+                            id="permitAcknowledge"
+                            class="form-check-input"
+                            type="checkbox"
+                            v-model="permitAcknowledged"
+                          >
+                          <label class="form-check-label small" for="permitAcknowledge">
+                            I acknowledge that I am responsible for having valid permit/compliance documents before publishing listings.
+                          </label>
                         </div>
                       </div>
                     </div>
@@ -79,7 +80,7 @@
                   <div v-else class="text-center animate-fade-in py-2">
                     <h4 class="fw-bold text-success mb-2">Scan QR Ph to Pay</h4>
                     <p class="text-muted small">Open GCash, Maya, or any Banking App to scan.</p>
-                    
+
                     <div v-if="qrCodeUrl" class="my-4">
                       <div class="d-inline-block p-3 border rounded-4 bg-white shadow-sm">
                         <img :src="qrCodeUrl" alt="QR Ph" class="img-fluid" style="max-width: 240px;">
@@ -88,7 +89,7 @@
                         <i class="bi bi-clock-history me-1"></i> Waiting for your payment...
                       </p>
                     </div>
-                    
+
                     <div v-else class="py-5">
                       <div class="spinner-border text-primary" role="status"></div>
                       <p class="mt-2 text-primary fw-medium">Generating Secure QR Ph...</p>
@@ -103,7 +104,7 @@
                 <div class="col-md-5">
                   <div class="p-4 rounded-4 bg-primary bg-opacity-10 border border-primary-subtle shadow-sm h-100">
                     <h5 class="fw-bold text-primary mb-4">Subscription Summary</h5>
-                    
+
                     <div class="d-flex justify-content-between mb-2">
                       <span class="text-muted">Selected Plan:</span>
                       <span class="fw-bold">{{ selectedPlan }}</span>
@@ -112,12 +113,12 @@
                       <span class="text-muted">Billing Cycle:</span>
                       <span class="fw-bold text-capitalize">{{ planBilling }}</span>
                     </div>
-                    
+
                     <hr class="border-primary opacity-25">
-                    
+
                     <div class="d-flex justify-content-between align-items-center mb-4">
                       <span class="h5 mb-0">Total Amount:</span>
-                      <span class="h3 mb-0 fw-bold text-primary">₱{{ planPrice.toLocaleString() }}</span>
+                      <span class="h3 mb-0 fw-bold text-primary">PHP {{ planPrice.toLocaleString() }}</span>
                     </div>
 
                     <div class="bg-white p-3 rounded-3 shadow-sm mb-0">
@@ -130,7 +131,6 @@
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
 
@@ -164,32 +164,29 @@ export default {
   components: { Header, ConfirmModal },
   data() {
     return {
-      // Logic Control
       isProcessingPayment: false,
       showConfirmModal: false,
       qrCodeUrl: null,
       subscriptionId: null,
       checkStatusInterval: null,
-
-      // User Info
       name: "",
       email: "",
       paymentType: "gcash",
       phoneNumber: "",
-      
-      // Files & Previews
-      businessPermit: null,
-      validId: null,
-      permitPreview: null,
-      idPreview: null,
-
-      // Plan Details
+      permitAcknowledged: false,
       selectedPlan: this.$route.query.plan || 'Monthly',
       planPrice: this.$route.query.plan === 'Annual' ? 2000 : 200,
       planBilling: this.$route.query.plan === 'Annual' ? 'per year' : 'per month'
     };
   },
   mounted() {
+    const user = JSON.parse(localStorage.getItem("userInfo") || "{}");
+    const status = String(user?.user_verification_status || "unverified").toLowerCase().trim();
+    if (status !== "verified") {
+      alert("Account verification is required before owner application.");
+      this.$router.push("/profile");
+      return;
+    }
     this.getUserInfo();
   },
   methods: {
@@ -200,24 +197,15 @@ export default {
         this.email = userInfo.email;
       }
     },
-    handleFileUpload(event, type) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      if (type === 'permit') {
-        this.businessPermit = file;
-        this.permitPreview = URL.createObjectURL(file);
-      } else {
-        this.validId = file;
-        this.idPreview = URL.createObjectURL(file);
-      }
-    },
     validatedPayment() {
       const phPhoneRegex = /^09\d{9}$/;
-      if (!phPhoneRegex.test(this.phoneNumber)) return alert("⚠ Please enter a valid 09XXXXXXXXX phone number.");
-      if (!this.businessPermit) return alert("⚠ Please upload your Business Permit.");
-      if (!this.validId) return alert("⚠ Please upload a valid Government ID.");
-      
+      if (!phPhoneRegex.test(this.phoneNumber)) {
+        return alert("Please enter a valid 09XXXXXXXXX phone number.");
+      }
+      if (!this.permitAcknowledged) {
+        return alert("Please acknowledge the compliance reminder before continuing.");
+      }
+
       this.showConfirmModal = true;
     },
     async confirmPayment() {
@@ -228,20 +216,18 @@ export default {
         const fd = new FormData();
         fd.append('plan', this.selectedPlan);
         fd.append('amount', this.planPrice);
-        fd.append('paymentType', this.paymentType)
+        fd.append('paymentType', this.paymentType);
         fd.append('phone', this.phoneNumber);
-        fd.append('permit', this.businessPermit);
-        fd.append('valid_id', this.validId);
+        fd.append('permit_acknowledged', this.permitAcknowledged ? '1' : '0');
 
-        // API Call to your Laravel Backend
         const response = await api.post('/paymongo/create-payment', fd);
-        
+
         this.qrCodeUrl = response.data.qr_code;
         this.subscriptionId = response.data.subscription_id;
 
         const info = useUserInfo();
         info.setOwnerVerificationStatus("pending", null);
-        
+
         this.startPolling();
       } catch (error) {
         this.isProcessingPayment = false;
@@ -268,9 +254,8 @@ export default {
     }
   },
   watch: {
-    'phoneNumber'(val) {
+    phoneNumber(val) {
       if (!val) return;
-      // alert(this.paymentType)
       let cleaned = val.replace(/\D/g, '');
       if (cleaned.length > 0 && !cleaned.startsWith('09')) {
         cleaned = cleaned.startsWith('9') ? '0' + cleaned : '09';

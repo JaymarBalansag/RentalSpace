@@ -111,13 +111,13 @@ const routes = [
     path: "/payment/wall",
     name: "paymentWall",
     component: () => import('@/views/Payment/paymentWall.vue'),
-    meta: { requiresAuth: true, isUser: true, isVerified: true },
+    meta: { requiresAuth: true, isUser: true, isVerified: true, requiresUserVerification: true },
   },
   {
     path: '/payment/details',
     name: "paymentDetails",
     component: () => import('@/views/Payment/paymentDetails.vue'),
-    meta: { requiresAuth: true, isUser: true, isVerified: true },
+    meta: { requiresAuth: true, isUser: true, isVerified: true, requiresUserVerification: true },
   },
   {
     path: '/payment/checkout',
@@ -202,6 +202,7 @@ router.beforeEach(async (to, from, next) => {
   const role = user?.role || "guest";
   const email_verified_at = user?.email_verified_at;
   const isComplete = user?.isComplete;
+  const userVerificationStatus = String(user?.user_verification_status || "unverified").toLowerCase().trim();
 
   // Verification Lock
   if (isLoggedIn && !email_verified_at && to.path !== "/reverify-email" && to.path !== "/logout") {
@@ -259,6 +260,10 @@ router.beforeEach(async (to, from, next) => {
   // Completion Lock
   if (to.path === "/completion" && (isComplete === 1 || isComplete === true)) {
     return next("/home");
+  }
+
+  if (to.meta.requiresUserVerification && userVerificationStatus !== "verified") {
+    return next("/profile");
   }
 
   next();

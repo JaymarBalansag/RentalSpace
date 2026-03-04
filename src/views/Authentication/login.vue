@@ -143,6 +143,10 @@ export default {
             res.isComplete,
             res.owner_verification_status || userData.owner_verification_status || null,
             res.owner_verified_at || userData.owner_verified_at || null,
+            res.user_verification_status || userData.user_verification_status || "unverified",
+            res.user_verified_at || userData.user_verified_at || null,
+            res.user_verification_rejected_reason || userData.user_verification_rejected_reason || null,
+            userData.user_valid_govt_id_url || null,
           );
 
           if (res.role === "owner") {

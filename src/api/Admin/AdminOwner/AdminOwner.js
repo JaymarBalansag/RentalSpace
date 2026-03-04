@@ -27,3 +27,9 @@ export async function rejectOwnerVerification(ownerId, reason = "") {
     reason,
   });
 }
+
+export async function notifyOwner(ownerId, message) {
+  return api.post(`/admin/owner/${ownerId}/notify`, {
+    message,
+  });
+}

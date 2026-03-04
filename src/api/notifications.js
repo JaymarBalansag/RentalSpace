@@ -17,3 +17,19 @@ export async function markAllNotificationsAsRead(type = null) {
   const payload = buildReadAllNotificationsRequest(type);
   return api.post("/notifications/read-all", payload);
 }
+
+export async function deleteNotification(notificationId) {
+  return api.delete(`/notifications/${notificationId}`);
+}
+
+export async function deleteNotifications(ids = []) {
+  return api.delete("/notifications", {
+    data: { ids },
+  });
+}
+
+export async function deleteNotificationsByTab(type) {
+  return api.delete("/notifications/tab", {
+    data: { type },
+  });
+}

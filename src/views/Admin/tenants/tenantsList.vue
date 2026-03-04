@@ -26,9 +26,11 @@
           </div>
           <div class="col-md-3">
             <select v-model="filterStatus" class="form-select">
-              <option value="all">All Status</option>
-              <option value="complete">Complete Profile</option>
-              <option value="incomplete">Incomplete Profile</option>
+              <option value="all">All Verification</option>
+              <option value="pending">Pending Review</option>
+              <option value="verified">Verified Users</option>
+              <option value="rejected">Rejected Users</option>
+              <option value="unverified">Unverified Users</option>
             </select>
           </div>
           <div class="col-md-3 text-md-end">
@@ -56,6 +58,7 @@
               <th>Location (Muni/Brgy)</th>
               <th>Joined Date</th>
               <th>Profile</th>
+              <th>Verification</th>
               <th class="text-end px-4">Action</th>
             </tr>
           </thead>
@@ -89,22 +92,36 @@
                     {{ user.isComplete ? 'Complete' : 'Incomplete' }}
                   </span>
                 </td>
+                <td>
+                  <span class="badge-modern" :class="verificationBadgeClass(user.user_verification_status)">
+                    {{ verificationLabel(user.user_verification_status) }}
+                  </span>
+                </td>
                 <td class="text-end px-4">
                   <div class="d-flex justify-content-end gap-2">
                     <button class="btn-action view" title="View Details" @click="openUserModal(user)"><i class="bi bi-eye"></i></button>
                     <button 
-                      class="btn-action" 
-                      :class="user.isComplete ? 'approve' : 'reject'"
-                      title="Profile Status"
+                      v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
+                      class="btn-action approve"
+                      title="Approve Verification"
+                      @click="handleVerificationAction(user, 'verified')"
                     >
-                      <i :class="user.isComplete ? 'bi bi-patch-check' : 'bi bi-exclamation-circle'"></i>
+                      <i class="bi bi-patch-check"></i>
+                    </button>
+                    <button
+                      v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
+                      class="btn-action reject"
+                      title="Reject Verification"
+                      @click="handleVerificationAction(user, 'rejected')"
+                    >
+                      <i class="bi bi-x-octagon"></i>
                     </button>
                   </div>
                 </td>
               </tr>
             </template>
             <tr v-else>
-              <td colspan="7" class="text-center py-5">
+              <td colspan="8" class="text-center py-5">
                 <i class="bi bi-person-x fs-1 text-muted opacity-25"></i>
                 <p class="text-muted mt-2">No users found.</p>
               </td>
@@ -135,7 +152,20 @@
               <span class="small text-muted">ID: #{{ user.id }}</span>
               <div class="d-flex gap-2">
                 <button class="btn-mobile-icon view" @click="openUserModal(user)"><i class="bi bi-eye"></i></button>
-                <button class="btn-mobile-icon" :class="user.isComplete ? 'approve' : 'reject'"><i class="bi bi-shield-check"></i></button>
+                <button
+                  v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
+                  class="btn-mobile-icon approve"
+                  @click="handleVerificationAction(user, 'verified')"
+                >
+                  <i class="bi bi-check2"></i>
+                </button>
+                <button
+                  v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
+                  class="btn-mobile-icon reject"
+                  @click="handleVerificationAction(user, 'rejected')"
+                >
+                  <i class="bi bi-x-lg"></i>
+                </button>
               </div>
             </div>
           </div>
@@ -183,6 +213,12 @@
                     {{ selectedUserDetails.isComplete ? "Complete" : "Incomplete" }}
                   </span>
                 </p>
+                <p class="mb-0 mt-1">
+                  <strong>Verification:</strong>
+                  <span class="ms-1 badge-modern" :class="verificationBadgeClass(selectedUserDetails.user_verification_status)">
+                    {{ verificationLabel(selectedUserDetails.user_verification_status) }}
+                  </span>
+                </p>
               </div>
             </div>
 
@@ -215,6 +251,24 @@
                 <p class="mb-0">Lat: {{ selectedUserDetails.latitude ?? "-" }}, Lng: {{ selectedUserDetails.longitude ?? "-" }}</p>
               </div>
             </div>
+            <div class="col-12" v-if="selectedUserDetails.user_valid_govt_id_url">
+              <div class="border rounded p-3">
+                <p class="mb-2"><strong>Submitted Government ID</strong></p>
+                <a :href="selectedUserDetails.user_valid_govt_id_url" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary rounded-pill">
+                  View Uploaded ID
+                </a>
+              </div>
+            </div>
+            <div class="col-12" v-if="selectedUserDetails.user_verification_status === 'pending'">
+              <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-success btn-sm rounded-pill px-3" @click="handleVerificationAction(selectedUserDetails, 'verified')">
+                  Approve Verification
+                </button>
+                <button class="btn btn-danger btn-sm rounded-pill px-3" @click="handleVerificationAction(selectedUserDetails, 'rejected')">
+                  Reject Verification
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -223,7 +277,11 @@
 </template>
 
 <script>
-import { getUsers, getUserByStatus, getUserDetails } from '@/api/Admin/AdminUser/AdminUser';
+import {
+  getUserVerifications,
+  getUserVerificationDetails,
+  updateUserVerification,
+} from '@/api/Admin/AdminUser/AdminUser';
 
 export default {
   name: "tenantsList",
@@ -258,7 +316,7 @@ export default {
     },
     async getUsers() {
       try {
-        const res = await getUsers();
+        const res = await getUserVerifications(this.filterStatus);
         this.users = res.data.data || res.data;
       } catch (error) {
         console.error("Fetch Error:", error);
@@ -266,10 +324,43 @@ export default {
     },
     async getToggleUserStatus(status) {
       try {
-        let res = status === "all" ? await getUsers() : await getUserByStatus(status);
+        const res = await getUserVerifications(status);
         this.users = res.data.data || res.data;
       } catch (error) {
         console.error("Filter Error:", error);
+      }
+    },
+    verificationLabel(statusRaw) {
+      const status = String(statusRaw || "unverified").toLowerCase().trim();
+      if (status === "verified") return "Verified";
+      if (status === "pending") return "Pending";
+      if (status === "rejected") return "Rejected";
+      return "Unverified";
+    },
+    verificationBadgeClass(statusRaw) {
+      const status = String(statusRaw || "unverified").toLowerCase().trim();
+      if (status === "verified") return "complete";
+      if (status === "pending") return "pending";
+      if (status === "rejected") return "incomplete";
+      return "neutral";
+    },
+    async handleVerificationAction(user, status) {
+      if (!user?.id) return;
+      let reason = "";
+      if (status === "rejected") {
+        reason = window.prompt("Enter rejection reason:") || "";
+        if (!reason.trim()) return;
+      }
+
+      try {
+        await updateUserVerification(user.id, status, reason.trim());
+        await this.getToggleUserStatus(this.filterStatus);
+        if (this.showUserModal && this.selectedUserDetails?.id === user.id) {
+          const detailsRes = await getUserVerificationDetails(user.id);
+          this.selectedUserDetails = detailsRes?.data?.data || null;
+        }
+      } catch (error) {
+        alert(error?.response?.data?.message || "Failed to update verification status.");
       }
     },
     avatarFallback(user) {
@@ -282,7 +373,7 @@ export default {
       this.isUserDetailsLoading = true;
 
       try {
-        const res = await getUserDetails(user.id);
+        const res = await getUserVerificationDetails(user.id);
         if (res && res.status >= 200 && res.status < 300) {
           this.selectedUserDetails = res.data?.data || null;
         } else {
@@ -349,6 +440,8 @@ export default {
 }
 .badge-modern.complete { background: #e6fcf5; color: #0ca678; }
 .badge-modern.incomplete { background: #fff5f5; color: #fa5252; }
+.badge-modern.pending { background: #fff9db; color: #e67700; }
+.badge-modern.neutral { background: #f1f3f5; color: #495057; }
 
 /* Action Buttons */
 .btn-action {

@@ -28,9 +28,6 @@ export async function submitAgreement(agreement, property_id) {
         payload.append("notes", agreement.notes);
     }
     payload.append("agreement", agreement.agreement ? "1" : "0");
-    if (agreement.valid_id) {
-        payload.append("valid_id", agreement.valid_id);
-    }
 
     try {
         return await api.post("/bookings/submit_booking", payload, {

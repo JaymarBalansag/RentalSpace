@@ -8,7 +8,7 @@
             <div>
               <p class="small text-uppercase mb-1 hero-kicker">Onboarding</p>
               <h2 class="fw-bold text-primary mb-1">Complete Your Profile</h2>
-              <p class="text-muted mb-0 small">Finish these steps to unlock booking and owner messaging.</p>
+              <p class="text-muted mb-0 small">Finish these steps to unlock identity verification. Booking and owner access require verification approval.</p>
             </div>
             <RouterLink to="/profile" class="btn btn-link text-muted text-decoration-none">
             <i class="bi bi-x-lg"></i> Cancel

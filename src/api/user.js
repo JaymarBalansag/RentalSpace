@@ -76,6 +76,20 @@ export async function getUserPreferencesForEdit() {
   return response;
 }
 
+export async function submitUserVerification(formData) {
+  const response = await api.post("/user/verification/submit", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data"
+    }
+  });
+  return response;
+}
+
+export async function getUserVerificationStatus() {
+  const response = await api.get("/user/verification/status");
+  return response;
+}
+
 export async function verifyCurrentPassword(currentPassword) {
   const response = await api.post("/verify-password", {
     current_password: currentPassword,

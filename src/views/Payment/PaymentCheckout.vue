@@ -37,7 +37,11 @@ export default {
     }
   },
   mounted() {
-    this.generatePayment();
+    const plan = this.$route.query.plan || "Monthly";
+    this.$router.replace({
+      path: "/payment/details",
+      query: { plan }
+    });
   },
   methods: {
     async generatePayment() {

@@ -485,19 +485,36 @@
       </div>
 
       <div v-if="step === 3" class="card border-0 shadow-sm rounded-4 animate__animated animate__fadeIn">
-         <div class="card-header bg-white py-3 border-bottom-0">
+        <div class="card-header bg-white py-3 border-bottom-0">
           <h6 class="mb-0 fw-bold text-primary">
             <i class="bi bi-tags-fill me-2"></i>
             {{ form.agreement_type === 'rental' ? 'Rental Pricing' : 'Lease Details' }}
           </h6>
-          <small class="text-muted">Set your rates and contract terms.</small>
+          <small class="text-muted">Set clear pricing and contract terms before publishing.</small>
         </div>
 
         <div class="card-body p-3 p-md-4">
-          
-          <div v-if="form.agreement_type === 'rental'" class="animate__animated animate__fadeIn">
+          <div class="step3-checklist mb-3">
+            <div class="d-flex flex-wrap gap-2">
+              <button
+                v-for="item in step3Checklist"
+                :key="item.key"
+                type="button"
+                class="btn step3-chip"
+                :class="`is-${item.status}`"
+                @click="scrollToStep3Anchor(item.anchor)"
+              >
+                <span class="dot"></span>
+                <span>{{ item.label }}</span>
+                <small class="text-muted">{{ item.statusLabel }}</small>
+              </button>
+            </div>
+          </div>
+
+          <div ref="step3CorePricingField" class="step3-pane mb-3">
+            <h6 class="fw-bold mb-1">Core Pricing</h6>
+            <small class="text-muted d-block mb-3">Set how renters will be billed and your base rate.</small>
             <div class="row g-3">
-              
               <div class="col-12 col-md-6">
                 <label class="form-label fw-semibold small text-uppercase">Payment Frequency</label>
                 <select v-model="form.payment_frequency" class="form-select border-2 shadow-none">
@@ -508,6 +525,7 @@
                   <option value="per_day">Per Day</option>
                   <option value="weekly">Weekly</option>
                 </select>
+                <small v-if="errors.payment_frequency" class="field-error-text">{{ errors.payment_frequency }}</small>
               </div>
 
               <div class="col-12 col-md-6">
@@ -515,60 +533,70 @@
                   Base Price <small class="text-primary fw-bold">({{ frequecyText }})</small>
                 </label>
                 <div class="input-group">
-                  <span class="input-group-text bg-primary text-white border-primary">â‚±</span>
-                <input
-                  v-model="form.price"
+                  <span class="input-group-text bg-primary text-white border-primary">PHP</span>
+                  <input
+                    v-model="form.price"
                     type="number"
                     min="1"
                     class="form-control border-2 shadow-none"
                     placeholder="0.00"
-                  required
-                />
-              </div>
-              <small v-if="errors.price" class="field-error-text">{{ errors.price }}</small>
-            </div>
-
-              <div class="col-12">
-                <div class="p-3 rounded-3 bg-light border">
-                  <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                      <label class="form-label fw-semibold small text-uppercase">Advance Payment</label>
-                      <div class="input-group">
-                        <span class="input-group-text border-2">â‚±</span>
-                        <input
-                          v-model="form.advance_payment_months"
-                          type="number"
-                          min="0"
-                          class="form-control border-2 shadow-none"
-                          placeholder="Amount"
-                        />
-                      </div>
-                      <small class="text-muted mt-1 d-block">Initial payment amount</small>
-                    </div>
-
-                    <div class="col-12 col-md-6">
-                      <label class="form-label fw-semibold small text-uppercase">Security Deposit</label>
-                      <div class="input-group">
-                        <span class="input-group-text border-2">â‚±</span>
-                        <input
-                          v-model="form.deposit_required"
-                          type="number"
-                          min="0"
-                          class="form-control border-2 shadow-none"
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <small class="text-muted mt-1 d-block">Refundable deposit amount</small>
-                    </div>
-                  </div>
+                    required
+                  />
                 </div>
+                <small v-if="errors.price" class="field-error-text">{{ errors.price }}</small>
               </div>
             </div>
           </div>
 
-          <div v-if="form.agreement_type === 'lease'" class="animate__animated animate__fadeIn">
-            <div class="row g-4">
-              
+          <div
+            v-if="form.agreement_type === 'rental'"
+            ref="step3RentalTermsField"
+            class="step3-pane animate__animated animate__fadeIn"
+          >
+            <h6 class="fw-bold mb-1">Rental Terms</h6>
+            <small class="text-muted d-block mb-3">Define upfront payment expectations for tenants.</small>
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold small text-uppercase">Advance Payment</label>
+                <div class="input-group">
+                  <span class="input-group-text border-2">PHP</span>
+                  <input
+                    v-model="form.advance_payment_months"
+                    type="number"
+                    min="0"
+                    class="form-control border-2 shadow-none"
+                    placeholder="Amount"
+                  />
+                </div>
+                <small class="text-muted d-block mt-1">Initial payment amount</small>
+                <small v-if="errors.advance_payment_months" class="field-error-text">{{ errors.advance_payment_months }}</small>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold small text-uppercase">Security Deposit</label>
+                <div class="input-group">
+                  <span class="input-group-text border-2">PHP</span>
+                  <input
+                    v-model="form.deposit_required"
+                    type="number"
+                    min="0"
+                    class="form-control border-2 shadow-none"
+                    placeholder="0.00"
+                  />
+                </div>
+                <small class="text-muted d-block mt-1">Refundable deposit amount</small>
+                <small v-if="errors.deposit_required" class="field-error-text">{{ errors.deposit_required }}</small>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-if="form.agreement_type === 'lease'"
+            ref="step3LeaseTermsField"
+            class="step3-pane animate__animated animate__fadeIn"
+          >
+            <h6 class="fw-bold mb-1">Lease Terms</h6>
+            <small class="text-muted d-block mb-3">Provide contract duration and notice details.</small>
+            <div class="row g-3">
               <div class="col-12 col-md-4">
                 <label class="form-label fw-semibold small text-uppercase">Lease Term</label>
                 <div class="input-group">
@@ -580,8 +608,8 @@
                   />
                   <span class="input-group-text border-2 bg-white text-muted">months</span>
                 </div>
+                <small v-if="errors.lease_term_months" class="field-error-text">{{ errors.lease_term_months }}</small>
               </div>
-
               <div class="col-12 col-md-4">
                 <label class="form-label fw-semibold small text-uppercase">Renewal Option</label>
                 <select v-model="form.renewal_option" class="form-select border-2 shadow-none">
@@ -589,8 +617,8 @@
                   <option value="manual">Manual Renewal</option>
                   <option value="auto">Auto Renewal</option>
                 </select>
+                <small v-if="errors.renewal_option" class="field-error-text">{{ errors.renewal_option }}</small>
               </div>
-
               <div class="col-12 col-md-4">
                 <label class="form-label fw-semibold small text-uppercase">Notice Period</label>
                 <div class="input-group">
@@ -603,88 +631,111 @@
                   <span class="input-group-text border-2 bg-white text-muted">days</span>
                 </div>
                 <small class="text-muted d-block mt-1">Days before move-out notice</small>
+                <small v-if="errors.notice_period" class="field-error-text">{{ errors.notice_period }}</small>
               </div>
-
             </div>
           </div>
-
         </div>
       </div>
 
       <div v-if="step === 4" class="card border-0 shadow-sm overflow-hidden">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0">
-          <div>
-            <h6 class="mb-0 fw-bold text-primary">Step 4: Property Location</h6>
-            <small v-if="isGeocoding" class="text-primary animate__animated animate__pulse animate__infinite">
-              <span class="spinner-border spinner-border-sm me-1"></span> Fetching details...
-            </small>
-            <small v-else class="text-muted">Pin the exact location of your property.</small>
+        <div class="card-header bg-white py-3 border-bottom-0">
+          <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+            <div>
+              <h6 class="mb-0 fw-bold text-primary">Step 4: Property Location</h6>
+              <small class="text-muted">Pin your exact map location and confirm address details.</small>
+            </div>
+            <button
+              class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm"
+              type="button"
+              @click="requestCurrentLocation"
+              :disabled="isGeocoding || isValidating || isSubmitting"
+            >
+              <i class="bi bi-geo-alt-fill me-1"></i> My Location
+            </button>
           </div>
 
-          <button
-            class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm"
-            type="button"
-            @click="requestCurrentLocation"
-            :disabled="isGeocoding || isValidating || isSubmitting"
-          >
-            <i class="bi bi-geo-alt-fill me-1"></i> My Location
-          </button>
+          <div class="step4-checklist mt-3">
+            <div class="d-flex flex-wrap gap-2">
+              <button
+                v-for="item in step4Checklist"
+                :key="item.key"
+                type="button"
+                class="btn step4-chip"
+                :class="`is-${item.status}`"
+                @click="scrollToStep4Anchor(item.anchor)"
+              >
+                <span class="dot"></span>
+                <span>{{ item.label }}</span>
+                <small class="text-muted">{{ item.statusLabel }}</small>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div class="card-body p-0 p-md-3">
-          <div class="position-relative">
+        <div class="card-body p-3">
+          <div ref="step4MapField" class="step4-map-shell mb-3">
+            <div class="step-status-badge mb-2">
+              <span v-if="isGeocoding">
+                <span class="spinner-border spinner-border-sm me-1"></span>
+                Resolving address...
+              </span>
+              <span v-else>
+                <i class="bi bi-info-circle me-1"></i>
+                Drag marker or click map to set location
+              </span>
+            </div>
             <div
-              class="property-map border-top border-bottom border-md rounded-md-3"
+              class="property-map rounded-3"
               ref="propertyMap"
               style="height: 45vh; min-height: 350px;"
             ></div>
-            
-            <div class="position-absolute bottom-0 start-0 w-100 p-2 pointer-events-none">
-              <div class="badge bg-dark bg-opacity-75 text-wrap w-100 py-2 fw-normal">
-                <i class="bi bi-info-circle me-1"></i> Drag marker or click map to set location
-              </div>
-            </div>
           </div>
 
-          <div class="p-3">
+          <div ref="step4CoordsField" class="step4-pane mb-3">
+            <h6 class="fw-bold mb-2">Coordinates</h6>
             <div class="row g-2">
               <div class="col-6">
-                <div class="form-floating mb-2">
+                <div class="form-floating mb-0">
                   <input type="number" v-model="form.latitude" class="form-control bg-light border-0 shadow-none" id="lat" placeholder="Lat" readonly />
                   <label for="lat" class="small text-muted">Latitude</label>
                 </div>
               </div>
-            <div class="col-6">
-              <div class="form-floating mb-2">
-                <input type="number" v-model="form.longitude" class="form-control bg-light border-0 shadow-none" id="lng" placeholder="Lng" readonly />
-                <label for="lng" class="small text-muted">Longitude</label>
+              <div class="col-6">
+                <div class="form-floating mb-0">
+                  <input type="number" v-model="form.longitude" class="form-control bg-light border-0 shadow-none" id="lng" placeholder="Lng" readonly />
+                  <label for="lng" class="small text-muted">Longitude</label>
+                </div>
               </div>
             </div>
-            <div class="col-12">
-              <small v-if="errors.latitude || errors.location" class="field-error-text">{{ errors.latitude || errors.location }}</small>
-            </div>
+            <small v-if="errors.latitude || errors.location" class="field-error-text">{{ errors.latitude || errors.location }}</small>
+          </div>
 
-              <div class="col-12 mt-2">
-                <div class="card bg-light border-0 rounded-3 p-2">
-                  <div class="row g-2">
-                    <div class="col-6 col-md-3">
-                      <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Region</label>
-                      <input type="text" v-model="form.region_name" class="form-control-plaintext py-0 fw-semibold" readonly />
-                    </div>
-                    <div class="col-6 col-md-3">
-                      <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">State</label>
-                      <input type="text" v-model="form.state_name" class="form-control-plaintext py-0 fw-semibold" readonly />
-                    </div>
-                    <div class="col-6 col-md-3 border-top border-md-top-0 pt-2 pt-md-0">
-                      <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Town</label>
-                      <input type="text" v-model="form.town_name" class="form-control-plaintext py-0 fw-semibold" readonly />
-                    </div>
-                    <div class="col-6 col-md-3 border-top border-md-top-0 pt-2 pt-md-0">
-                      <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Village</label>
-                      <input type="text" v-model="form.village_name" class="form-control-plaintext py-0 fw-semibold" readonly />
-                    </div>
-                  </div>
-                </div>
+          <div ref="step4AddressField" class="step4-address-card">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+              <h6 class="fw-bold mb-0">Address Summary</h6>
+              <small class="text-muted">
+                <span v-if="isGeocoding">Address lookup in progress...</span>
+                <span v-else-if="form.region_name || form.state_name || form.town_name || form.village_name">Address resolved</span>
+                <span v-else>Address details are still missing</span>
+              </small>
+            </div>
+            <div class="row g-2">
+              <div class="col-6 col-md-3">
+                <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Region</label>
+                <input type="text" v-model="form.region_name" class="form-control-plaintext py-0 fw-semibold" readonly />
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">State</label>
+                <input type="text" v-model="form.state_name" class="form-control-plaintext py-0 fw-semibold" readonly />
+              </div>
+              <div class="col-6 col-md-3 border-top border-md-top-0 pt-2 pt-md-0">
+                <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Town</label>
+                <input type="text" v-model="form.town_name" class="form-control-plaintext py-0 fw-semibold" readonly />
+              </div>
+              <div class="col-6 col-md-3 border-top border-md-top-0 pt-2 pt-md-0">
+                <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Village</label>
+                <input type="text" v-model="form.village_name" class="form-control-plaintext py-0 fw-semibold" readonly />
               </div>
             </div>
           </div>
@@ -713,7 +764,7 @@
                 <tr>
                   <td class="ps-4 small text-muted text-uppercase fw-bold">Pricing</td>
                   <td class="pe-4">
-                    <span class="text-success fw-bold">â‚±{{ form.price?.toLocaleString() }}</span>
+                    <span class="text-success fw-bold">PHP {{ form.price?.toLocaleString() }}</span>
                     <span class="text-muted small"> / {{ form.payment_frequency }}</span>
                   </td>
                 </tr>
@@ -1070,6 +1121,22 @@ export default {
         }
       });
     },
+    scrollToStep3Anchor(anchorRef) {
+      this.$nextTick(() => {
+        const target = this.$refs[anchorRef];
+        if (target && typeof target.scrollIntoView === "function") {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+    },
+    scrollToStep4Anchor(anchorRef) {
+      this.$nextTick(() => {
+        const target = this.$refs[anchorRef];
+        if (target && typeof target.scrollIntoView === "function") {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+    },
     stepStatusClass(step) {
       if (step < this.step) return "is-completed";
       if (step === this.step) return "is-active";
@@ -1227,14 +1294,14 @@ export default {
           return;
         }
 
-        // ðŸ§¹ Destroy existing map if it exists
+        // Ã°Å¸Â§Â¹ Destroy existing map if it exists
         if (this.map) {
           this.map.remove();
           this.map = null;
           this.marker = null;
         }
 
-        // ðŸ—ºï¸ Initialize map again
+        // Ã°Å¸â€”ÂºÃ¯Â¸Â Initialize map again
         this.map = L.map(mapContainer).setView([lat, lng], 15);
 
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -1244,14 +1311,14 @@ export default {
 
         this.marker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
 
-        // âœ… Update coordinates when dragging
+        // Ã¢Å“â€¦ Update coordinates when dragging
         this.marker.on("dragend", (e) => {
           const { lat, lng } = e.target.getLatLng();
           this.form.latitude = lat.toFixed(6);
           this.form.longitude = lng.toFixed(6);
         });
 
-        // âœ… Update coordinates when clicking
+        // Ã¢Å“â€¦ Update coordinates when clicking
         this.map.on("click", (e) => {
           const { lat, lng } = e.latlng;
           this.marker.setLatLng([lat, lng]);
@@ -1295,7 +1362,7 @@ export default {
         },
         () => {
           this.isGeocoding = false;
-          // Silent fallback â€” no alert needed
+          // Silent fallback Ã¢â‚¬â€ no alert needed
           console.warn("User denied geolocation.");
         }
       );
@@ -1780,6 +1847,49 @@ export default {
         { key: "rules", label: "Rules or Curfew", anchor: "step2RulesField", status: hasRulesSetup ? "complete" : "required", statusLabel: hasRulesSetup ? labels.complete : labels.required },
       ];
     },
+    step3Checklist() {
+      const labels = { complete: "Complete", missing: "Missing", required: "Required" };
+      const hasFrequency = !!this.form.payment_frequency;
+      const hasPrice = (this.form.price || 0) > 0;
+      const isRental = this.form.agreement_type === "rental";
+      const isLease = this.form.agreement_type === "lease";
+      const hasRentalTerms =
+        (this.form.advance_payment_months || 0) >= 0 &&
+        (this.form.deposit_required || 0) >= 0;
+      const hasLeaseTerms =
+        (this.form.lease_term_months || 0) > 0 &&
+        !!this.form.renewal_option &&
+        (this.form.notice_period || 0) >= 0;
+
+      return [
+        { key: "payment_frequency", label: "Payment Frequency", anchor: "step3CorePricingField", status: hasFrequency ? "complete" : "required", statusLabel: hasFrequency ? labels.complete : labels.required },
+        { key: "base_price", label: "Base Price", anchor: "step3CorePricingField", status: hasPrice ? "complete" : "required", statusLabel: hasPrice ? labels.complete : labels.required },
+        { key: "rental_terms", label: "Advance & Deposit", anchor: "step3RentalTermsField", status: !isRental ? "required" : (hasRentalTerms ? "complete" : "missing"), statusLabel: !isRental ? labels.required : (hasRentalTerms ? labels.complete : labels.missing) },
+        { key: "lease_terms", label: "Lease Terms", anchor: "step3LeaseTermsField", status: !isLease ? "required" : (hasLeaseTerms ? "complete" : "missing"), statusLabel: !isLease ? labels.required : (hasLeaseTerms ? labels.complete : labels.missing) },
+      ];
+    },
+    step4Checklist() {
+      const labels = { complete: "Complete", missing: "Missing", required: "Required" };
+      const hasPin = this.form.latitude !== null && this.form.longitude !== null;
+      const hasCoords = !Number.isNaN(Number(this.form.latitude)) && !Number.isNaN(Number(this.form.longitude));
+      const hasAddress =
+        !!(this.form.region_name || "").trim() ||
+        !!(this.form.state_name || "").trim() ||
+        !!(this.form.town_name || "").trim() ||
+        !!(this.form.village_name || "").trim();
+      const hasRegionSet =
+        !!(this.form.region_name || "").trim() &&
+        !!(this.form.state_name || "").trim() &&
+        !!(this.form.town_name || "").trim() &&
+        !!(this.form.village_name || "").trim();
+
+      return [
+        { key: "map_pin", label: "Map Pin", anchor: "step4MapField", status: hasPin ? "complete" : "required", statusLabel: hasPin ? labels.complete : labels.required },
+        { key: "coords", label: "Coordinates", anchor: "step4CoordsField", status: hasCoords ? "complete" : "missing", statusLabel: hasCoords ? labels.complete : labels.missing },
+        { key: "address_resolution", label: "Address Resolution", anchor: "step4AddressField", status: hasAddress ? "complete" : "missing", statusLabel: hasAddress ? labels.complete : labels.missing },
+        { key: "region_setup", label: "Region/State/Town/Village", anchor: "step4AddressField", status: hasRegionSet ? "complete" : "required", statusLabel: hasRegionSet ? labels.complete : labels.required },
+      ];
+    },
     stepTitle() {
       const titles = ["Basics", "Details", "Pricing", "Location", "Review"];
       return titles[this.step - 1];
@@ -2052,6 +2162,92 @@ export default {
   padding: 0 0.45rem;
 }
 
+.step3-checklist,
+.step4-checklist {
+  border: 1px solid #e7eef9;
+  border-radius: 0.9rem;
+  background: #f8fbff;
+  padding: 0.8rem;
+}
+
+.step3-chip,
+.step4-chip {
+  border: 1px solid #d4deeb;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.3rem 0.68rem;
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #2e4057;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  transition: all 0.18s ease;
+}
+
+.step3-chip:hover,
+.step4-chip:hover {
+  border-color: #8cb5ef;
+  color: #0d6efd;
+}
+
+.step3-chip .dot,
+.step4-chip .dot {
+  width: 0.46rem;
+  height: 0.46rem;
+  border-radius: 50%;
+  background: #c2cad6;
+}
+
+.step3-chip.is-complete .dot,
+.step4-chip.is-complete .dot {
+  background: #20a36a;
+}
+
+.step3-chip.is-missing .dot,
+.step4-chip.is-missing .dot {
+  background: #dc3545;
+}
+
+.step3-chip.is-required .dot,
+.step4-chip.is-required .dot {
+  background: #fd7e14;
+}
+
+.step3-pane,
+.step4-pane {
+  border: 1px solid #e6edf7;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 1rem;
+}
+
+.step4-map-shell {
+  border: 1px solid #dde7f5;
+  border-radius: 0.95rem;
+  background: #f9fbff;
+  padding: 0.75rem;
+}
+
+.step-status-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d7e4f6;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #355070;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.7rem;
+}
+
+.step4-address-card {
+  border: 1px solid #e6edf7;
+  border-radius: 0.9rem;
+  background: rgba(248, 251, 255, 0.9);
+  padding: 1rem;
+}
+
 .upload-card {
   border: 1px solid #e6edf7;
   border-radius: 0.9rem;
@@ -2179,6 +2375,7 @@ button:focus {
 .animate-fade-in { animation: fadeIn 0.4s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
+
 
 
 

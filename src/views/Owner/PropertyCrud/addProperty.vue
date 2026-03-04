@@ -190,11 +190,28 @@
       </div>
 
       <div class="card-body p-3 p-md-4">
+        <div class="step2-checklist mb-4">
+          <p class="mb-2 fw-semibold small text-uppercase text-muted">Step 2 Checklist</p>
+          <div class="d-flex flex-wrap gap-2">
+            <button
+              v-for="item in step2Checklist"
+              :key="`step2-check-${item.key}`"
+              type="button"
+              class="step2-chip"
+              :class="`is-${item.status}`"
+              @click="scrollToStep2Anchor(item.anchor)"
+            >
+              <span class="dot"></span>
+              {{ item.label }}: {{ item.statusLabel }}
+            </button>
+          </div>
+        </div>
         <div class="row g-4">
           
           <div class="col-12 col-lg-7">
             
-            <div class="row g-3 mb-4">
+            <div ref="step2AgreementField" class="step2-pane mb-3">
+            <div class="row g-3">
               <div class="col-12 col-md-6">
                 <label class="form-label fw-bold small">Agreement Type <span class="text-danger">*</span></label>
                 <select v-model="form.agreement_type" class="form-select border-2">
@@ -214,13 +231,15 @@
                 <small v-if="errors.property_type_id" class="field-error-text">{{ errors.property_type_id }}</small>
               </div>
             </div>
+            </div>
 
-            <div class="accordion border rounded-3" id="propertyDetailsAccordion">
+            <div ref="step2FeaturesAccordion" class="accordion step2-accordion border rounded-3" id="propertyDetailsAccordion">
               
               <div class="accordion-item border-0 border-bottom">
                 <h2 class="accordion-header">
-                  <button class="accordion-button bg-light-subtle fw-bold shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUtils">
-                    Utilities
+                  <button class="accordion-button bg-light-subtle fw-bold shadow-none d-flex justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUtils">
+                    <span>Utilities</span>
+                    <span class="step2-count-badge">{{ form.utilities.length + form.custom_utilities.length }}</span>
                   </button>
                 </h2>
                 <div id="collapseUtils" class="accordion-collapse collapse show" data-bs-parent="#propertyDetailsAccordion">
@@ -252,8 +271,9 @@
 
               <div class="accordion-item border-0 border-bottom">
                 <h2 class="accordion-header">
-                  <button class="accordion-button collapsed bg-light-subtle fw-bold shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAmen">
-                    Amenities
+                  <button class="accordion-button collapsed bg-light-subtle fw-bold shadow-none d-flex justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAmen">
+                    <span>Amenities</span>
+                    <span class="step2-count-badge">{{ form.property_amenities.length + form.custom_amenities.length }}</span>
                   </button>
                 </h2>
                 <div id="collapseAmen" class="accordion-collapse collapse" data-bs-parent="#propertyDetailsAccordion">
@@ -284,8 +304,9 @@
 
               <div class="accordion-item border-0">
                 <h2 class="accordion-header">
-                  <button class="accordion-button collapsed bg-light-subtle fw-bold shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFac">
-                    Facilities
+                  <button class="accordion-button collapsed bg-light-subtle fw-bold shadow-none d-flex justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFac">
+                    <span>Facilities</span>
+                    <span class="step2-count-badge">{{ form.property_facilities.length + form.custom_facilities.length }}</span>
                   </button>
                 </h2>
                 <div id="collapseFac" class="accordion-collapse collapse" data-bs-parent="#propertyDetailsAccordion">
@@ -318,7 +339,8 @@
 
           <div class="col-12 col-lg-5">
             
-            <div class="mb-4">
+            <div ref="step2SpecsField" class="step2-pane d-flex flex-column gap-3">
+            <div class="step2-subcard">
               <label class="form-label fw-bold small">Furnishing</label>
               <select v-model="form.furnishing" class="form-select border-2">
                 <option value="fully-furnished">Furnished</option>
@@ -327,7 +349,7 @@
               </select>
             </div>
 
-            <div v-if="showBedrooms" class="card shadow-sm mb-3">
+            <div v-if="showBedrooms" class="step2-subcard">
               <div class="card-header bg-light d-flex align-items-center">
                 <label class="mb-0 me-2 small fw-bold">Bedrooms:</label>
                 <input type="number" min="1" v-model="form.bedrooms" @input="fillMaxOccupants" class="form-control form-control-sm w-25" />
@@ -342,6 +364,7 @@
                     </div>
                   </div>
                 </div>
+                <small v-if="errors.bed_type" class="field-error-text">{{ errors.bed_type }}</small>
                 <div class="row g-2 mt-2">
                   <div v-if="form.bed_type.includes('Single Bed')" class="col-6">
                     <label class="small text-muted">Single Beds</label>
@@ -352,10 +375,11 @@
                     <input type="number" v-model="form.double_bed" @input="fillMaxOccupants" class="form-control form-control-sm" />
                   </div>
                 </div>
+                <small v-if="errors.single_bed" class="field-error-text">{{ errors.single_bed }}</small>
               </div>
             </div>
 
-            <div v-if="showBathrooms" class="card shadow-sm mb-3">
+            <div v-if="showBathrooms" class="step2-subcard">
               <div class="card-header bg-light py-2"><label class="mb-0 fw-bold small">Bathrooms</label></div>
               <div class="card-body">
                 <div class="row g-2 mb-2">
@@ -366,6 +390,7 @@
                     </div>
                   </div>
                 </div>
+                <small v-if="errors.bath_type" class="field-error-text">{{ errors.bath_type }}</small>
                 <div class="row g-2 mt-2">
                   <div v-if="form.bath_type.includes('Private')" class="col-6">
                     <label class="small text-muted">Private</label>
@@ -376,10 +401,11 @@
                     <input type="number" v-model="form.public_bath" class="form-control form-control-sm" />
                   </div>
                 </div>
+                <small v-if="errors.public_bath" class="field-error-text">{{ errors.public_bath }}</small>
               </div>
             </div>
 
-            <div class="bg-light p-3 rounded-3 border mb-3">
+            <div class="step2-subcard">
               <div v-if="showBedSpace" class="mb-3">
                 <label class="form-label small fw-bold">Max Occupants (Bed Space)</label>
                 <input type="number" disabled v-model="form.bed_space" class="form-control" />
@@ -391,15 +417,17 @@
                   <label class="form-label small fw-bold">Floor Area (sqm)</label>
                   <div class="input-group input-group-sm">
                     <input type="number" v-model="form.floor_area" class="form-control" />
-                    <span class="input-group-text">m²</span>
+                    <span class="input-group-text">m2</span>
                   </div>
+                  <small v-if="errors.floor_area" class="field-error-text">{{ errors.floor_area }}</small>
                 </div>
                 <div class="col-6">
                   <label class="form-label small fw-bold">Lot Area (sqm)</label>
                   <div class="input-group input-group-sm">
                     <input type="number" v-model="form.lot_area" class="form-control" />
-                    <span class="input-group-text">m²</span>
+                    <span class="input-group-text">m2</span>
                   </div>
+                  <small v-if="errors.lot_area" class="field-error-text">{{ errors.lot_area }}</small>
                 </div>
                 <div class="col-12 mt-3">
                   <label class="form-label small fw-bold">Maximum Occupants</label>
@@ -407,8 +435,9 @@
                 </div>
               </div>
             </div>
+            </div>
 
-            <div class="card shadow-sm border-0 bg-white shadow-sm p-3">
+            <div ref="step2RulesField" class="step2-pane mt-3">
               <h6 class="fw-bold mb-3">Other Rules</h6>
               <div class="mb-3">
                 <label class="form-label small">House Rules</label>
@@ -472,7 +501,7 @@
                 Base Price <small class="text-primary fw-bold">({{ frequecyText }})</small>
               </label>
               <div class="input-group">
-                <span class="input-group-text bg-primary text-white border-primary">₱</span>
+                <span class="input-group-text bg-primary text-white border-primary">â‚±</span>
                 <input
                   v-model="form.price"
                   type="number"
@@ -491,7 +520,7 @@
                   <div class="col-12 col-md-6">
                     <label class="form-label fw-semibold small text-uppercase">Advance Payment</label>
                     <div class="input-group">
-                      <span class="input-group-text border-2">₱</span>
+                      <span class="input-group-text border-2">â‚±</span>
                       <input
                         v-model="form.advance_payment_months"
                         type="number"
@@ -506,7 +535,7 @@
                   <div class="col-12 col-md-6">
                     <label class="form-label fw-semibold small text-uppercase">Security Deposit</label>
                     <div class="input-group">
-                      <span class="input-group-text border-2">₱</span>
+                      <span class="input-group-text border-2">â‚±</span>
                       <input
                         v-model="form.deposit_required"
                         type="number"
@@ -690,7 +719,7 @@
               <tr>
                 <th class="ps-4 small text-uppercase text-muted">Pricing</th>
                 <td class="pe-4">
-                  <span class="h6 mb-0 fw-bold text-success">₱{{ form.price?.toLocaleString() }}</span>
+                  <span class="h6 mb-0 fw-bold text-success">â‚±{{ form.price?.toLocaleString() }}</span>
                   <small class="text-muted"> / {{ form.payment_frequency }}</small>
                 </td>
               </tr>
@@ -702,7 +731,7 @@
                 </tr>
                 <tr>
                   <th class="ps-4 small text-uppercase text-muted">Deposit Required</th>
-                  <td class="pe-4">₱{{ form.deposit_required?.toLocaleString() || 0 }}</td>
+                  <td class="pe-4">â‚±{{ form.deposit_required?.toLocaleString() || 0 }}</td>
                 </tr>
               </template>
 
@@ -1085,6 +1114,14 @@ export default {
         }
       });
     },
+    scrollToStep2Anchor(anchorRef) {
+      this.$nextTick(() => {
+        const target = this.$refs[anchorRef];
+        if (target && typeof target.scrollIntoView === "function") {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+    },
     stepStatusClass(step) {
       if (step < this.step) return "is-completed";
       if (step === this.step) return "is-active";
@@ -1394,14 +1431,14 @@ export default {
           return;
         }
 
-        // 🧹 Destroy existing map if it exists
+        // ðŸ§¹ Destroy existing map if it exists
         if (this.map) {
           this.map.remove();
           this.map = null;
           this.marker = null;
         }
 
-        // 🗺️ Initialize map again
+        // ðŸ—ºï¸ Initialize map again
         this.map = L.map(mapContainer).setView([lat, lng], 15);
 
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -1411,14 +1448,14 @@ export default {
 
         this.marker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
 
-        // ✅ Update coordinates when dragging
+        // âœ… Update coordinates when dragging
         this.marker.on("dragend", (e) => {
           const { lat, lng } = e.target.getLatLng();
           this.form.latitude = lat.toFixed(6);
           this.form.longitude = lng.toFixed(6);
         });
 
-        // ✅ Update coordinates when clicking
+        // âœ… Update coordinates when clicking
         this.map.on("click", (e) => {
           const { lat, lng } = e.latlng;
           this.marker.setLatLng([lat, lng]);
@@ -1462,7 +1499,7 @@ export default {
         },
         () => {
           this.isGeocoding = false;
-          // Silent fallback — no alert needed
+          // Silent fallback â€” no alert needed
           console.warn("User denied geolocation.");
         }
       );
@@ -1591,6 +1628,43 @@ export default {
           status: this.form.business_permit ? "complete" : "required",
           statusLabel: this.form.business_permit ? "Complete" : "Required",
         },
+      ];
+    },
+    step2Checklist() {
+      const hasAgreement = !!this.form.agreement_type;
+      const hasPropertyType = !!this.form.property_type_id;
+      const hasFeatures =
+        this.form.utilities.length > 0 ||
+        this.form.property_amenities.length > 0 ||
+        this.form.property_facilities.length > 0 ||
+        this.form.custom_utilities.length > 0 ||
+        this.form.custom_amenities.length > 0 ||
+        this.form.custom_facilities.length > 0;
+      const isCommercial = (this.selectedPropertyName || "").toLowerCase() === "commercial space";
+      const hasResidentialSpec =
+        this.form.bed_type.length > 0 &&
+        this.form.bath_type.length > 0 &&
+        ((this.form.single_bed || 0) > 0 || (this.form.double_bed || 0) > 0) &&
+        ((this.form.public_bath || 0) > 0 || (this.form.private_bath || 0) > 0);
+      const hasCommercialSpec = (this.form.floor_area || 0) > 0 && (this.form.lot_area || 0) > 0;
+      const hasRulesSetup =
+        (this.form.rules && this.form.rules.trim().length > 0) ||
+        this.form.has_curfew !== null;
+
+      const specStatus = !hasPropertyType
+        ? "required"
+        : isCommercial
+          ? (hasCommercialSpec ? "complete" : "missing")
+          : (hasResidentialSpec ? "complete" : "missing");
+
+      const labels = { complete: "Complete", missing: "Missing", required: "Required" };
+
+      return [
+        { key: "agreement", label: "Agreement Type", anchor: "step2AgreementField", status: hasAgreement ? "complete" : "required", statusLabel: hasAgreement ? labels.complete : labels.required },
+        { key: "property_type", label: "Property Type", anchor: "step2AgreementField", status: hasPropertyType ? "complete" : "required", statusLabel: hasPropertyType ? labels.complete : labels.required },
+        { key: "features", label: "Features", anchor: "step2FeaturesAccordion", status: hasFeatures ? "complete" : "missing", statusLabel: hasFeatures ? labels.complete : labels.missing },
+        { key: "specs", label: "Specs Setup", anchor: "step2SpecsField", status: specStatus, statusLabel: labels[specStatus] },
+        { key: "rules", label: "Rules or Curfew", anchor: "step2RulesField", status: hasRulesSetup ? "complete" : "required", statusLabel: hasRulesSetup ? labels.complete : labels.required },
       ];
     },
     utilitiesList() {
@@ -1915,6 +1989,101 @@ export default {
   background: #fd7e14;
 }
 
+.step2-checklist {
+  border: 1px solid #e7eef9;
+  border-radius: 0.9rem;
+  background: #f8fbff;
+  padding: 0.8rem;
+}
+
+.step2-chip {
+  border: 1px solid #d4deeb;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.3rem 0.68rem;
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #2e4057;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  transition: all 0.18s ease;
+}
+
+.step2-chip:hover {
+  border-color: #8cb5ef;
+  color: #0d6efd;
+}
+
+.step2-chip .dot {
+  width: 0.46rem;
+  height: 0.46rem;
+  border-radius: 50%;
+  background: #c2cad6;
+}
+
+.step2-chip.is-complete .dot {
+  background: #20a36a;
+}
+
+.step2-chip.is-missing .dot {
+  background: #dc3545;
+}
+
+.step2-chip.is-required .dot {
+  background: #fd7e14;
+}
+
+.step2-pane {
+  border: 1px solid #e6edf7;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 1rem;
+}
+
+.step2-subcard {
+  border: 1px solid #e8eff8;
+  border-radius: 0.75rem;
+  background: rgba(248, 251, 255, 0.8);
+  padding: 0.85rem;
+}
+
+.step2-accordion .accordion-item {
+  background: transparent;
+}
+
+.step2-accordion .accordion-button {
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.step2-accordion .accordion-button:not(.collapsed) {
+  background: #eef5ff;
+  color: #0d6efd;
+}
+
+.step2-accordion .accordion-body {
+  max-height: 360px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.step2-count-badge {
+  margin-left: auto;
+  min-width: 1.7rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: #e6f0ff;
+  border: 1px solid #b7d1fa;
+  color: #0d6efd;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.45rem;
+}
+
 .upload-card {
   border: 1px solid #e6edf7;
   border-radius: 0.9rem;
@@ -1932,6 +2101,8 @@ export default {
   }
 
   .step1-pane,
+  .step2-pane,
+  .step2-subcard,
   .upload-card {
     padding: 0.85rem;
   }
@@ -1939,6 +2110,8 @@ export default {
 
 @media (prefers-reduced-motion: reduce) {
   .wizard-step-pill,
+  .step2-chip,
+  .step2-accordion .accordion-button,
   .upload-placeholder,
   .card {
     transition: none !important;
@@ -2032,3 +2205,4 @@ button:focus {
   overflow-y: auto;
 }
 </style>
+

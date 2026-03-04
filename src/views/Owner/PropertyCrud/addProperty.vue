@@ -56,104 +56,129 @@
       </div>
 
       <div class="card-body p-3 p-md-4">
-        <div class="mb-4">
-          <label class="form-label fw-semibold small text-uppercase">Property Name <span class="text-muted">(Title)</span></label>
-          <input 
-            type="text" 
-            v-model="form.title" 
-            class="form-control form-control-lg shadow-none border-2" 
-            placeholder="e.g. Modern 2-Bedroom Apartment"
-            required 
-          />
-          <small v-if="errors.title" class="field-error-text">{{ errors.title }}</small>
-        </div>
-
-        <div class="mb-4">
-          <label class="form-label fw-semibold small text-uppercase">Description <span class="text-danger">*</span></label>
-          <textarea 
-            v-model="form.description" 
-            class="form-control shadow-none border-2" 
-            rows="4"
-            placeholder="Describe the features, amenities, and neighborhood..."
-            required
-          ></textarea>
-          <small v-if="errors.description" class="field-error-text">{{ errors.description }}</small>
+        <div class="step1-checklist mb-4">
+          <p class="mb-2 fw-semibold small text-uppercase text-muted">Step 1 Checklist</p>
+          <div class="d-flex flex-wrap gap-2">
+            <button
+              v-for="item in step1Checklist"
+              :key="`step1-check-${item.key}`"
+              type="button"
+              class="step1-chip"
+              :class="`is-${item.status}`"
+              @click="scrollToStep1Anchor(item.anchor)"
+            >
+              <span class="dot"></span>
+              {{ item.label }}: {{ item.statusLabel }}
+            </button>
+          </div>
         </div>
 
         <div class="row g-4">
-          <div class="col-12 col-md-6">
-            <label class="form-label fw-semibold small text-uppercase">Main Thumbnail <span class="text-danger">*</span></label>
-            <div class="upload-container position-relative">
-              <input type="file" class="file-input-overlay" @change="handleThumbnail" accept="image/*" />
-              <div class="upload-placeholder border-dashed rounded-3 p-4 text-center">
-                <div v-if="!previewThumbnail">
-                  <i class="bi bi-cloud-arrow-up fs-2 text-primary"></i>
-                  <p class="mb-0 small fw-medium">Click to upload main image</p>
-                </div>
-                <div v-else class="position-relative">
-                  <img :src="previewThumbnail" alt="Preview" class="img-fluid rounded-2 shadow-sm" style="max-height: 180px;" />
-                  <div class="upload-badge">Main Photo</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-12 col-md-6">
-            <label class="form-label fw-semibold small text-uppercase">Gallery Images</label>
-            <div class="upload-container position-relative">
-              <input type="file" class="file-input-overlay" multiple @change="handlePropertyImages" accept="image/*" />
-              <div class="upload-placeholder border-dashed rounded-3 p-4 text-center h-100">
-                <i class="bi bi-images fs-2 text-muted"></i>
-                <p class="mb-0 small fw-medium">Add more photos</p>
-                
-                <div v-if="previewPropertyImages.length > 0" class="row g-2 mt-2">
-                  <div v-for="(img, idx) in previewPropertyImages.slice(0, 4)" :key="idx" class="col-3">
-                    <div class="ratio ratio-1x1">
-                      <img :src="img" class="object-fit-cover rounded border" />
-                    </div>
-                  </div>
-                  <div v-if="previewPropertyImages.length > 4" class="col-3">
-                    <div class="ratio ratio-1x1 bg-dark rounded d-flex align-items-center justify-content-center text-white small">
-                      +{{ previewPropertyImages.length - 4 }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-4">
-          <label class="form-label fw-semibold small text-uppercase">Business Permit <span class="text-danger">*</span></label>
-          <div class="upload-container position-relative">
-            <input type="file" class="file-input-overlay" @change="handleBusinessPermit" accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf" />
-            <div class="upload-placeholder border-dashed rounded-3 p-4 text-center">
-              <div v-if="!previewBusinessPermitName">
-                <i class="bi bi-file-earmark-check fs-2 text-primary"></i>
-                <p class="mb-0 small fw-medium">Upload business permit (JPG, PNG, or PDF)</p>
-              </div>
-              <div v-else>
-                <p class="mb-2 small fw-semibold">{{ previewBusinessPermitName }}</p>
-                <img
-                  v-if="previewBusinessPermitType === 'image' && previewBusinessPermitUrl"
-                  :src="previewBusinessPermitUrl"
-                  alt="Business permit preview"
-                  class="img-fluid rounded border shadow-sm"
-                  style="max-height: 220px;"
+          <div class="col-12 col-lg-6">
+            <div class="step1-pane h-100">
+              <div ref="step1TitleField" class="mb-4">
+                <label class="form-label fw-semibold small text-uppercase">Property Name <span class="text-muted">(Title)</span></label>
+                <input 
+                  type="text" 
+                  v-model="form.title" 
+                  class="form-control form-control-lg shadow-none border-2" 
+                  placeholder="e.g. Modern 2-Bedroom Apartment"
+                  required 
                 />
-                <iframe
-                  v-else-if="previewBusinessPermitType === 'pdf' && previewBusinessPermitUrl"
-                  :src="previewBusinessPermitUrl"
-                  title="Business permit PDF preview"
-                  class="w-100 rounded border bg-white"
-                  style="height: 220px;"
-                ></iframe>
-                <p v-else class="mb-0 text-muted small">Preview unavailable for this file type.</p>
+                <small v-if="errors.title" class="field-error-text">{{ errors.title }}</small>
+              </div>
+
+              <div ref="step1DescriptionField" class="mb-0">
+                <label class="form-label fw-semibold small text-uppercase">Description <span class="text-danger">*</span></label>
+                <textarea 
+                  v-model="form.description" 
+                  class="form-control shadow-none border-2" 
+                  rows="8"
+                  placeholder="Describe the features, amenities, and neighborhood..."
+                  required
+                ></textarea>
+                <small class="text-muted d-block mt-2">Tip: include nearby landmarks, transport access, and house rules.</small>
+                <small v-if="errors.description" class="field-error-text">{{ errors.description }}</small>
               </div>
             </div>
           </div>
-          <small class="d-block text-muted mt-1" style="font-size:0.75rem;">Accepted: JPG, PNG, PDF (max 5MB)</small>
-          <small v-if="errors.business_permit" class="field-error-text">{{ errors.business_permit }}</small>
+
+          <div class="col-12 col-lg-6">
+            <div class="step1-pane h-100 d-flex flex-column gap-3">
+              <div ref="step1ThumbnailField" class="upload-card">
+                <label class="form-label fw-semibold small text-uppercase">Main Thumbnail <span class="text-danger">*</span></label>
+                <div class="upload-container position-relative">
+                  <input type="file" class="file-input-overlay" @change="handleThumbnail" accept="image/*" />
+                  <div class="upload-placeholder border-dashed rounded-3 p-4 text-center">
+                    <div v-if="!previewThumbnail">
+                      <i class="bi bi-cloud-arrow-up fs-2 text-primary"></i>
+                      <p class="mb-0 small fw-medium">Upload main cover image</p>
+                    </div>
+                    <div v-else class="position-relative">
+                      <img :src="previewThumbnail" alt="Preview" class="img-fluid rounded-2 shadow-sm" style="max-height: 170px;" />
+                      <div class="upload-badge">Main Photo</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="upload-card">
+                <label class="form-label fw-semibold small text-uppercase">Gallery Images</label>
+                <div class="upload-container position-relative">
+                  <input type="file" class="file-input-overlay" multiple @change="handlePropertyImages" accept="image/*" />
+                  <div class="upload-placeholder border-dashed rounded-3 p-4 text-center h-100">
+                    <i class="bi bi-images fs-2 text-muted"></i>
+                    <p class="mb-0 small fw-medium">Add more photos</p>
+                    <div v-if="previewPropertyImages.length > 0" class="row g-2 mt-2">
+                      <div v-for="(img, idx) in previewPropertyImages.slice(0, 4)" :key="idx" class="col-3">
+                        <div class="ratio ratio-1x1">
+                          <img :src="img" class="object-fit-cover rounded border" />
+                        </div>
+                      </div>
+                      <div v-if="previewPropertyImages.length > 4" class="col-3">
+                        <div class="ratio ratio-1x1 bg-dark rounded d-flex align-items-center justify-content-center text-white small">
+                          +{{ previewPropertyImages.length - 4 }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div ref="step1PermitField" class="upload-card">
+                <label class="form-label fw-semibold small text-uppercase">Business Permit <span class="text-danger">*</span></label>
+                <div class="upload-container position-relative">
+                  <input type="file" class="file-input-overlay" @change="handleBusinessPermit" accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf" />
+                  <div class="upload-placeholder border-dashed rounded-3 p-4 text-center">
+                    <div v-if="!previewBusinessPermitName">
+                      <i class="bi bi-file-earmark-check fs-2 text-primary"></i>
+                      <p class="mb-0 small fw-medium">Upload business permit (JPG, PNG, or PDF)</p>
+                    </div>
+                    <div v-else>
+                      <p class="mb-2 small fw-semibold">{{ previewBusinessPermitName }}</p>
+                      <img
+                        v-if="previewBusinessPermitType === 'image' && previewBusinessPermitUrl"
+                        :src="previewBusinessPermitUrl"
+                        alt="Business permit preview"
+                        class="img-fluid rounded border shadow-sm"
+                        style="max-height: 180px;"
+                      />
+                      <iframe
+                        v-else-if="previewBusinessPermitType === 'pdf' && previewBusinessPermitUrl"
+                        :src="previewBusinessPermitUrl"
+                        title="Business permit PDF preview"
+                        class="w-100 rounded border bg-white"
+                        style="height: 180px;"
+                      ></iframe>
+                      <p v-else class="mb-0 text-muted small">Preview unavailable for this file type.</p>
+                    </div>
+                  </div>
+                </div>
+                <small class="d-block text-muted mt-1" style="font-size:0.75rem;">Accepted: JPG, PNG, PDF (max 5MB)</small>
+                <small v-if="errors.business_permit" class="field-error-text">{{ errors.business_permit }}</small>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1052,6 +1077,14 @@ export default {
         }
       });
     },
+    scrollToStep1Anchor(anchorRef) {
+      this.$nextTick(() => {
+        const target = this.$refs[anchorRef];
+        if (target && typeof target.scrollIntoView === "function") {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+    },
     stepStatusClass(step) {
       if (step < this.step) return "is-completed";
       if (step === this.step) return "is-active";
@@ -1528,6 +1561,38 @@ export default {
       }
       return "Your account is not yet verified by admin. You can still add properties.";
     },
+    step1Checklist() {
+      return [
+        {
+          key: "title",
+          label: "Title",
+          anchor: "step1TitleField",
+          status: this.form.title && this.form.title.trim() ? "complete" : "missing",
+          statusLabel: this.form.title && this.form.title.trim() ? "Complete" : "Missing",
+        },
+        {
+          key: "description",
+          label: "Description",
+          anchor: "step1DescriptionField",
+          status: this.form.description && this.form.description.trim() ? "complete" : "missing",
+          statusLabel: this.form.description && this.form.description.trim() ? "Complete" : "Missing",
+        },
+        {
+          key: "thumbnail",
+          label: "Thumbnail",
+          anchor: "step1ThumbnailField",
+          status: this.previewThumbnail ? "complete" : "missing",
+          statusLabel: this.previewThumbnail ? "Complete" : "Missing",
+        },
+        {
+          key: "business_permit",
+          label: "Business Permit",
+          anchor: "step1PermitField",
+          status: this.form.business_permit ? "complete" : "required",
+          statusLabel: this.form.business_permit ? "Complete" : "Required",
+        },
+      ];
+    },
     utilitiesList() {
       return [
         { value: 'electricity', label: 'Electricity' },
@@ -1798,9 +1863,77 @@ export default {
   margin-top: 0.35rem;
 }
 
+.step1-pane {
+  border: 1px solid #e6edf7;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 1rem;
+}
+
+.step1-checklist {
+  border: 1px solid #e7eef9;
+  border-radius: 0.9rem;
+  background: #f8fbff;
+  padding: 0.8rem;
+}
+
+.step1-chip {
+  border: 1px solid #d4deeb;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.28rem 0.66rem;
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #2e4057;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.18s ease;
+}
+
+.step1-chip:hover {
+  border-color: #8cb5ef;
+  color: #0d6efd;
+}
+
+.step1-chip .dot {
+  width: 0.46rem;
+  height: 0.46rem;
+  border-radius: 50%;
+  background: #c2cad6;
+}
+
+.step1-chip.is-complete .dot {
+  background: #20a36a;
+}
+
+.step1-chip.is-missing .dot {
+  background: #dc3545;
+}
+
+.step1-chip.is-required .dot {
+  background: #fd7e14;
+}
+
+.upload-card {
+  border: 1px solid #e6edf7;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.75rem;
+}
+
+.upload-placeholder {
+  min-height: 150px;
+}
+
 @media (max-width: 992px) {
   .wizard-step-rail {
     grid-template-columns: 1fr;
+  }
+
+  .step1-pane,
+  .upload-card {
+    padding: 0.85rem;
   }
 }
 

@@ -499,7 +499,7 @@ export default {
           await verifyOwner(owner.id);
         } else if (this.confirmConfig.action === "notify") {
           if (!this.confirmInput.trim()) {
-            alert("Notification message is required.");
+            alert("Please enter the feedback message for the owner.");
             this.isActionLoading = false;
             return;
           }

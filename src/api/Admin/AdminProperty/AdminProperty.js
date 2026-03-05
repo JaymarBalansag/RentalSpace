@@ -42,6 +42,24 @@ export async function getPropertyDetails(id) {
     }
 }
 
+export async function getPropertyCounts() {
+    try {
+        const res = await api.get("/admin/properties/counts");
+        return res;
+    } catch (error) {
+        return error.response;
+    }
+}
+
+export async function notifyPropertyOwner(id, message) {
+    try {
+        const res = await api.post(`/admin/properties/${id}/notify`, { message });
+        return res;
+    } catch (error) {
+        return error.response;
+    }
+}
+
 
 // For Actions
 

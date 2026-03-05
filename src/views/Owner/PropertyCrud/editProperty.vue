@@ -745,100 +745,178 @@
       <div v-if="step === 5" class="card border-0 shadow-sm rounded-4 animate__animated animate__fadeIn">
         <div class="card-header bg-white py-3 border-0">
           <h6 class="mb-0 fw-bold text-success"><i class="bi bi-check2-circle me-2"></i>Final Confirmation</h6>
+          <small class="text-muted">Review changes carefully before saving this listing.</small>
         </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th class="ps-4" style="width: 35%;">Category</th>
-                  <th class="pe-4">Current Selection</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="ps-4 small text-muted text-uppercase fw-bold">Property Title</td>
-                  <td class="pe-4 fw-bold">{{ form.title }}</td>
-                </tr>
+        <div class="card-body p-3 p-md-4">
+          <div class="step5-grid">
+            <section class="step5-card">
+              <div class="step5-card-head">
+                <div>
+                  <h6 class="mb-1 fw-bold">Basics</h6>
+                  <small class="text-muted">Title, summary, agreement, and property type.</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="step5-status-pill" :class="`is-${reviewStatus.basics.status}`">{{ reviewStatus.basics.label }}</span>
+                  <button type="button" class="btn btn-sm step5-edit-chip" @click="step = 1">Edit Basics</button>
+                </div>
+              </div>
+              <div class="step5-kv">
+                <div class="step5-row">
+                  <span>Title</span>
+                  <strong>{{ form.title || "Not set" }}</strong>
+                </div>
+                <div class="step5-row align-items-start">
+                  <span>Description</span>
+                  <p class="mb-0 step5-truncate">{{ form.description || "No description added." }}</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle text-capitalize">{{ form.agreement_type || "N/A" }}</span>
+                  <span class="badge bg-light text-dark border">{{ property_types.find(p => p.id === form.property_type_id)?.type_name || "Property type missing" }}</span>
+                </div>
+              </div>
+            </section>
 
-                <tr>
-                  <td class="ps-4 small text-muted text-uppercase fw-bold">Pricing</td>
-                  <td class="pe-4">
-                    <span class="text-success fw-bold">PHP {{ form.price?.toLocaleString() }}</span>
-                    <span class="text-muted small"> / {{ form.payment_frequency }}</span>
-                  </td>
-                </tr>
+            <section class="step5-card">
+              <div class="step5-card-head">
+                <div>
+                  <h6 class="mb-1 fw-bold">Pricing</h6>
+                  <small class="text-muted">Base price and agreement-specific terms.</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="step5-status-pill" :class="`is-${reviewStatus.pricing.status}`">{{ reviewStatus.pricing.label }}</span>
+                  <button type="button" class="btn btn-sm step5-edit-chip" @click="step = 3">Edit Pricing</button>
+                </div>
+              </div>
+              <div class="step5-kv">
+                <div class="step5-row">
+                  <span>Base Price</span>
+                  <strong>PHP {{ Number(form.price || 0).toLocaleString() }} <small class="text-muted fw-normal">/ {{ form.payment_frequency || "N/A" }}</small></strong>
+                </div>
+                <template v-if="form.agreement_type === 'rental'">
+                  <div class="step5-row">
+                    <span>Advance Payment</span>
+                    <strong>PHP {{ Number(form.advance_payment_months || 0).toLocaleString() }}</strong>
+                  </div>
+                  <div class="step5-row">
+                    <span>Deposit</span>
+                    <strong>PHP {{ Number(form.deposit_required || 0).toLocaleString() }}</strong>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="step5-row">
+                    <span>Lease Term</span>
+                    <strong>{{ form.lease_term_months || 0 }} month(s)</strong>
+                  </div>
+                  <div class="step5-row">
+                    <span>Renewal</span>
+                    <strong class="text-capitalize">{{ form.renewal_option || "none" }}</strong>
+                  </div>
+                  <div class="step5-row">
+                    <span>Notice Period</span>
+                    <strong>{{ form.notice_period || 0 }} day(s)</strong>
+                  </div>
+                </template>
+              </div>
+            </section>
 
-                <tr>
-                  <td class="ps-4 small text-muted text-uppercase fw-bold">Space Details</td>
-                  <td class="pe-4">
-                    <div class="d-flex flex-wrap gap-2">
-                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                        {{ form.bedrooms }} BR
-                      </span>
-                      <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">
-                        {{ form.bed_space }} Max Occupants
-                      </span>
-                      <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
-                        {{ form.furnishing?.replace('-', ' ') }}
-                      </span>
+            <section class="step5-card">
+              <div class="step5-card-head">
+                <div>
+                  <h6 class="mb-1 fw-bold">Property Specs</h6>
+                  <small class="text-muted">Features, setup, and house rules.</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="step5-status-pill" :class="`is-${reviewStatus.details.status}`">{{ reviewStatus.details.label }}</span>
+                  <button type="button" class="btn btn-sm step5-edit-chip" @click="step = 2">Edit Details</button>
+                </div>
+              </div>
+              <div class="step5-kv">
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="badge bg-light text-dark border text-capitalize">{{ form.furnishing?.replace("-", " ") || "N/A" }}</span>
+                  <span class="badge bg-light text-dark border">{{ form.bedrooms || 0 }} BR</span>
+                  <span class="badge bg-light text-dark border">{{ form.bed_space || 0 }} Max Occupants</span>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="badge rounded-pill bg-light text-dark border">{{ form.utilities?.length || 0 }} Utilities</span>
+                  <span class="badge rounded-pill bg-light text-dark border">{{ form.property_amenities?.length || 0 }} Amenities</span>
+                  <span class="badge rounded-pill bg-light text-dark border">{{ form.property_facilities?.length || 0 }} Facilities</span>
+                </div>
+                <div class="step5-row align-items-start">
+                  <span>Rules</span>
+                  <p class="mb-0">{{ form.rules || "No specific rules set." }}</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="step5-card">
+              <div class="step5-card-head">
+                <div>
+                  <h6 class="mb-1 fw-bold">Location</h6>
+                  <small class="text-muted">Address and coordinate resolution.</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="step5-status-pill" :class="`is-${reviewStatus.location.status}`">{{ reviewStatus.location.label }}</span>
+                  <button type="button" class="btn btn-sm step5-edit-chip" @click="step = 4">Edit Location</button>
+                </div>
+              </div>
+              <div class="step5-kv">
+                <div class="step5-row">
+                  <span>Address</span>
+                  <strong>{{ form.village_name || "-" }}, {{ form.town_name || "-" }}, {{ form.state_name || "-" }}, {{ form.region_name || "-" }}</strong>
+                </div>
+                <div class="step5-row">
+                  <span>Coordinates</span>
+                  <strong>{{ form.latitude || "-" }} , {{ form.longitude || "-" }}</strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="step5-card">
+              <div class="step5-card-head">
+                <div>
+                  <h6 class="mb-1 fw-bold">Media & Documents</h6>
+                  <small class="text-muted">Current and newly selected media updates.</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="step5-status-pill" :class="`is-${reviewStatus.media.status}`">{{ reviewStatus.media.label }}</span>
+                  <button type="button" class="btn btn-sm step5-edit-chip" @click="step = 1">Edit Basics</button>
+                </div>
+              </div>
+              <div class="step5-kv">
+                <div class="step5-media-strip">
+                  <div class="step5-thumb">
+                    <img v-if="previewThumbnail" :src="previewThumbnail" alt="Thumbnail preview" />
+                    <span v-else class="text-muted small">No thumbnail</span>
+                  </div>
+                  <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <div v-for="(img, idx) in previewPropertyImages.slice(0, 3)" :key="`review-gallery-${idx}`" class="step5-gallery-thumb">
+                      <img :src="img" alt="Gallery preview" />
                     </div>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td class="ps-4 small text-muted text-uppercase fw-bold">Location Pin</td>
-                  <td class="pe-4 small">
-                    <i class="bi bi-geo-alt-fill text-danger"></i>
-                    <strong>{{ form.region_name }}, {{ form.state_name }}</strong><br>
-                    <span class="text-muted">{{ form.town_name }} {{ form.village_name }}</span>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td class="ps-4 small text-muted text-uppercase fw-bold">Inclusions</td>
-                  <td class="pe-4">
-                    <div class="small">
-                      <span v-if="form.property_amenities.length" class="me-2">
-                        <i class="bi bi-check-circle text-success"></i> {{ form.property_amenities.length }} Amenities
-                      </span>
-                      <span v-if="form.property_facilities.length">
-                        <i class="bi bi-check-circle text-success"></i> {{ form.property_facilities.length }} Facilities
-                      </span>
-                      <p v-if="!form.property_amenities.length && !form.property_facilities.length" class="text-muted mb-0 italic">
-                        No specific inclusions selected
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td class="ps-4 small text-muted text-uppercase fw-bold">Media Update</td>
-                  <td class="pe-4">
-                    <span v-if="form.thumbnail" class="badge bg-warning text-dark me-2">
-                      <i class="bi bi-image"></i> New Thumbnail
-                    </span>
-                    <span v-else class="text-muted small">Keeping existing thumbnail</span>
-                    <br>
-                    <span v-if="form.images.length" class="badge bg-warning text-dark mt-1">
-                      <i class="bi bi-images"></i> {{ form.images.length }} New Gallery Photos
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    <span v-if="previewPropertyImages.length > 3" class="badge bg-light text-dark border">+{{ previewPropertyImages.length - 3 }} more</span>
+                  </div>
+                </div>
+                <div class="step5-row">
+                  <span>Thumbnail Update</span>
+                  <strong>{{ form.thumbnail ? "New thumbnail selected" : "Keeping current thumbnail" }}</strong>
+                </div>
+                <div class="step5-row">
+                  <span>Permit File</span>
+                  <strong>{{ form.business_permit ? "Replacement selected" : (businessPermitUrl ? "Keeping current permit" : "No permit on file") }}</strong>
+                </div>
+              </div>
+            </section>
           </div>
 
-          <div class="p-3">
+          <div class="p-0 mt-3">
             <div class="alert alert-warning border-0 bg-warning-subtle rounded-3 d-flex align-items-center mb-0 shadow-sm" role="alert">
               <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
               <div class="small">
-                <strong>Review carefully:</strong> Once you save these changes, they will be visible to all potential tenants immediately.
+                <strong>Review carefully:</strong> Once you save these changes, they will be visible to potential tenants immediately.
               </div>
             </div>
           </div>
         </div>
-        <div class="card-footer bg-white py-4 border-0 text-center">
+        <div class="card-footer bg-white py-4 border-0 text-center step5-footer-bar">
           <button
             class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow"
             @click="validateForm"
@@ -1890,6 +1968,45 @@ export default {
         { key: "region_setup", label: "Region/State/Town/Village", anchor: "step4AddressField", status: hasRegionSet ? "complete" : "required", statusLabel: hasRegionSet ? labels.complete : labels.required },
       ];
     },
+    reviewStatus() {
+      const basicsReady =
+        !!(this.form.title || "").trim() &&
+        !!(this.form.description || "").trim() &&
+        !!this.form.agreement_type &&
+        !!this.form.property_type_id;
+      const pricingReady =
+        (this.form.price || 0) > 0 &&
+        !!this.form.payment_frequency &&
+        (
+          this.form.agreement_type === "rental"
+            ? (this.form.advance_payment_months || 0) >= 0 && (this.form.deposit_required || 0) >= 0
+            : (this.form.lease_term_months || 0) > 0 && !!this.form.renewal_option && (this.form.notice_period || 0) >= 0
+        );
+      const detailsReady =
+        (this.form.utilities?.length || 0) > 0 ||
+        (this.form.property_amenities?.length || 0) > 0 ||
+        (this.form.property_facilities?.length || 0) > 0 ||
+        !!(this.form.rules || "").trim();
+      const locationReady =
+        this.form.latitude !== null &&
+        this.form.longitude !== null &&
+        !!(this.form.region_name || "").trim() &&
+        !!(this.form.state_name || "").trim() &&
+        !!(this.form.town_name || "").trim() &&
+        !!(this.form.village_name || "").trim();
+      const mediaReady =
+        !!this.previewThumbnail &&
+        !!(this.businessPermitUrl || this.form.business_permit) &&
+        (this.previewPropertyImages?.length || 0) > 0;
+
+      return {
+        basics: { status: basicsReady ? "complete" : "missing", label: basicsReady ? "Complete" : "Missing" },
+        pricing: { status: pricingReady ? "complete" : "missing", label: pricingReady ? "Complete" : "Missing" },
+        details: { status: detailsReady ? "complete" : "warning", label: detailsReady ? "Complete" : "Needs attention" },
+        location: { status: locationReady ? "complete" : "missing", label: locationReady ? "Complete" : "Missing" },
+        media: { status: mediaReady ? "complete" : "warning", label: mediaReady ? "Complete" : "Needs attention" },
+      };
+    },
     stepTitle() {
       const titles = ["Basics", "Details", "Pricing", "Location", "Review"];
       return titles[this.step - 1];
@@ -2248,6 +2365,134 @@ export default {
   padding: 1rem;
 }
 
+.step5-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.step5-card {
+  border: 1px solid #e6edf7;
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.9rem;
+}
+
+.step5-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-bottom: 0.7rem;
+}
+
+.step5-status-pill {
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.69rem;
+  font-weight: 700;
+  border: 1px solid #d6deea;
+  background: #f8fafc;
+  color: #44546a;
+}
+
+.step5-status-pill.is-complete {
+  background: #e9f8ef;
+  border-color: #b9e4ca;
+  color: #1e7c4d;
+}
+
+.step5-status-pill.is-missing {
+  background: #fdecec;
+  border-color: #f1c0c0;
+  color: #b42318;
+}
+
+.step5-status-pill.is-warning {
+  background: #fff6e9;
+  border-color: #f3dbb1;
+  color: #b25f0f;
+}
+
+.step5-edit-chip {
+  border: 1px solid #cdd9ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #355070;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.step5-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.step5-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.65rem;
+  font-size: 0.86rem;
+  color: #41566f;
+}
+
+.step5-row > span {
+  color: #6b7f95;
+  min-width: 110px;
+}
+
+.step5-media-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.step5-thumb {
+  width: 68px;
+  height: 68px;
+  border-radius: 0.75rem;
+  border: 1px solid #d9e4f2;
+  background: #f4f8ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.step5-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.step5-gallery-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.6rem;
+  border: 1px solid #d9e4f2;
+  overflow: hidden;
+  background: #f4f8ff;
+}
+
+.step5-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.step5-truncate {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.step5-footer-bar {
+  border-top: 1px solid #e9eff8 !important;
+}
+
 .upload-card {
   border: 1px solid #e6edf7;
   border-radius: 0.9rem;
@@ -2266,15 +2511,21 @@ export default {
 
   .step1-pane,
   .step2-pane,
+  .step5-card,
   .step2-subcard,
   .upload-card {
     padding: 0.85rem;
+  }
+
+  .step5-grid {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .wizard-step-pill,
   .step2-chip,
+  .step5-edit-chip,
   .step2-accordion .accordion-button,
   .upload-placeholder,
   .card {

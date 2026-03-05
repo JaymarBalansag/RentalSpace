@@ -4,6 +4,7 @@ const ICON_MAP = {
   booking_pending: "bi bi-calendar-check text-success",
   owner_verification_feedback: "bi bi-shield-exclamation text-info",
   property_verification_feedback: "bi bi-house-exclamation text-primary",
+  property_review_status_update: "bi bi-patch-check text-success",
   default: "bi bi-bell text-primary",
 };
 
@@ -13,6 +14,7 @@ const TAB_MAP = {
   booking_pending: "bookings",
   owner_verification_feedback: "system",
   property_verification_feedback: "system",
+  property_review_status_update: "system",
 };
 
 function safeDateToMs(value) {
@@ -53,6 +55,10 @@ export function resolveNotificationTitle(raw, type) {
 
   if (type === "property_verification_feedback") {
     return raw?.title || "Admin review update for your property listing.";
+  }
+
+  if (type === "property_review_status_update") {
+    return raw?.title || "Property review update for your listing.";
   }
 
   return "You have a new notification.";

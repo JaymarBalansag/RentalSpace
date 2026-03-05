@@ -944,6 +944,7 @@ import { createProperty, getAmenities, getFacilities, getPropertyTypes } from "@
 import { getOwnerSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
 import confirmModal from "@/components/confirmModal.vue";
+import Swal from "sweetalert2";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -1438,10 +1439,15 @@ export default {
       try {
         this.submitStatusMessage = "Uploading property details...";
         await createProperty(fd);
-        // console.log("Property added successfully:", response);
+        await Swal.fire({
+          icon: "success",
+          title: "Property submitted",
+          text: "Your property was submitted successfully.",
+          timer: 1300,
+          showConfirmButton: false,
+        });
         sessionStorage.setItem("propertyCreated", true);
         this.showConfirmModal = false;
-        // alert("Property created successfully!");
         this.$router.push("/properties")
       } catch (error) {
         if (error.response && error.response.status === 403) {
@@ -1450,7 +1456,11 @@ export default {
             this.subscriptionState = subscriptionPayload;
           }
 
-          alert(error.response?.data?.message || "Subscription expired or inactive. Renew to continue.");
+          await Swal.fire({
+            icon: "error",
+            title: "Submission blocked",
+            text: error.response?.data?.message || "Subscription expired or inactive. Renew to continue.",
+          });
           this.$router.push("/overview");
           return;
         }
@@ -1467,10 +1477,19 @@ export default {
           else if (["price", "payment_frequency", "advance_payment_months", "deposit_required", "lease_term_months", "renewal_option", "notice_period"].some((f) => this.errors[f])) this.step = 3;
           else if (["latitude", "longitude", "location", "region_name", "state_name", "town_name", "village_name"].some((f) => this.errors[f])) this.step = 4;
           this.scrollToValidationSummary();
+          await Swal.fire({
+            icon: "error",
+            title: "Submission failed",
+            text: "Please fix the highlighted fields and try again.",
+          });
           console.error("Validation Errors:", backendErrors);
         } else {
           console.error("Error submitting property:", error);
-          alert("Something went wrong. Check console.");
+          await Swal.fire({
+            icon: "error",
+            title: "Submission failed",
+            text: error?.response?.data?.message || "Something went wrong. Please try again.",
+          });
         }
       } finally {
         this.isSubmitting = false;

@@ -246,6 +246,13 @@ export default {
     const update = sessionStorage.getItem("propertyUpdate");
     if (success) {
       this.showSuccess = true;
+      Swal.fire({
+          icon: "success",
+          title: "Property submitted",
+          text: "Your property was submitted successfully.",
+          timer: 1300,
+          showConfirmButton: false,
+        });
       sessionStorage.removeItem("propertyCreated");
       this.toastMessage = "Property Created Successfully";
       // Auto-hide toast after 3 seconds

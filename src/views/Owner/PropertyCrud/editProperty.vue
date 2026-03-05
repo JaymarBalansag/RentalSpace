@@ -951,6 +951,7 @@
 <script>
 import Header from "@/components/Header.vue";
 import confirmModal from "@/components/confirmModal.vue";
+import Swal from "sweetalert2";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getAmenities, getFacilities, getPropertyTypes } from "@/api/property";
@@ -1545,9 +1546,14 @@ export default {
         this.showConfirmModal = false;
         const id = this.$route.params.id;
         await updatePropertyData(id, fd);
-        // console.log("Property added successfully:", response);
+        await Swal.fire({
+          icon: "success",
+          title: "Property updated",
+          text: "Your property changes were saved successfully.",
+          timer: 1300,
+          showConfirmButton: false,
+        });
         sessionStorage.setItem("propertyUpdate", true);
-        // alert("Property created successfully!");
         this.$router.push("/properties")
       } catch (error) {
         if (error.response && error.response.status === 422) {
@@ -1562,10 +1568,19 @@ export default {
           else if (["price", "payment_frequency", "advance_payment_months", "deposit_required", "lease_term_months", "renewal_option", "notice_period"].some((f) => this.errors[f])) this.step = 3;
           else if (["latitude", "longitude", "location", "region_name", "state_name", "town_name", "village_name"].some((f) => this.errors[f])) this.step = 4;
           this.scrollToValidationSummary();
+          await Swal.fire({
+            icon: "error",
+            title: "Update failed",
+            text: "Please fix the highlighted fields and try again.",
+          });
           console.error("Validation Errors:", backendErrors);
         } else {
           console.error("Error submitting property:", error);
-          alert("Something went wrong. Check console.");
+          await Swal.fire({
+            icon: "error",
+            title: "Update failed",
+            text: error?.response?.data?.message || "Something went wrong. Please try again.",
+          });
         }
       } finally {
         this.isSubmitting = false;

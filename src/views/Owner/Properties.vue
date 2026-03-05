@@ -126,6 +126,7 @@ import { deleteProperty as deleteOwnerPropertyApi, getOwnerProperties, getProper
 import SuccessToast from '@/components/successToast.vue';
 import placeholderImg from '@/assets/Placeholder/thumbnail_placeholder.jpg'; 
 import { useUserInfo } from '@/store/userInfo';
+import Swal from 'sweetalert2';
 
 export default {
   data() {
@@ -163,18 +164,36 @@ export default {
   },
   methods: {
     async deleteProperty(id) {
-      if (confirm("Are you sure you want to delete this property? This action cannot be undone.")) {
-        try {
-          await deleteOwnerPropertyApi(id);
-          this.toastMessage = "Property deleted successfully";
-          this.showSuccess = true;
-          setTimeout(() => { this.showSuccess = false; }, 3000);
-          this.getProperties(); // Refresh list
-          this.getPropertyLimit(); // Refresh limit
-        } catch (error) {
-          console.error("Delete failed", error);
-          alert(error?.response?.data?.message || "Delete failed.");
-        }
+      const result = await Swal.fire({
+        title: "Delete property?",
+        text: "This action cannot be undone.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, delete",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: "#d33",
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        await deleteOwnerPropertyApi(id);
+        await Swal.fire({
+          icon: "success",
+          title: "Deleted",
+          text: "Property deleted successfully.",
+          timer: 1400,
+          showConfirmButton: false,
+        });
+        this.getProperties(); // Refresh list
+        this.getPropertyLimit(); // Refresh limit
+      } catch (error) {
+        console.error("Delete failed", error);
+        await Swal.fire({
+          icon: "error",
+          title: "Delete failed",
+          text: error?.response?.data?.message || "Delete failed.",
+        });
       }
     },
     async getProperties() {
@@ -227,6 +246,13 @@ export default {
     const update = sessionStorage.getItem("propertyUpdate");
     if (success) {
       this.showSuccess = true;
+      Swal.fire({
+          icon: "success",
+          title: "Property submitted",
+          text: "Your property was submitted successfully.",
+          timer: 1300,
+          showConfirmButton: false,
+        });
       sessionStorage.removeItem("propertyCreated");
       this.toastMessage = "Property Created Successfully";
       // Auto-hide toast after 3 seconds

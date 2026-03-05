@@ -193,6 +193,32 @@
           </div>
         </div>
 
+        <div class="mb-3">
+          <p class="fw-semibold small mb-2">Business Permit</p>
+          <div class="d-flex align-items-center gap-2">
+            <template v-if="selectedPropertyDetails.property?.business_permit_url">
+              <button
+                v-if="isPermitImage(selectedPropertyDetails.property?.business_permit_url)"
+                type="button"
+                class="btn btn-outline-primary btn-sm"
+                @click="openPermitPreview(selectedPropertyDetails.property?.business_permit_url)"
+              >
+                View Permit
+              </button>
+              <a
+                v-else
+                :href="selectedPropertyDetails.property?.business_permit_url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn btn-outline-primary btn-sm"
+              >
+                Open Permit
+              </a>
+            </template>
+            <small v-else class="text-muted">No permit uploaded.</small>
+          </div>
+        </div>
+
         <div>
           <p class="fw-semibold small mb-2">Images</p>
           <div class="row g-2">
@@ -202,6 +228,16 @@
             <small v-if="!selectedPropertyDetails.images?.length" class="text-muted">No images uploaded.</small>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div v-if="showPermitPreviewModal" class="modal-overlay-custom" @click.self="closePermitPreview">
+      <div class="modal-body-custom rounded-4 shadow-lg p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Business Permit Preview</h5>
+          <button class="btn-close" @click="closePermitPreview"></button>
+        </div>
+        <img :src="permitPreviewUrl" alt="Business Permit" class="img-fluid rounded border w-100">
       </div>
     </div>
 
@@ -245,6 +281,8 @@ export default {
       properties: [],
       showDetailsModal: false,
       selectedPropertyDetails: null,
+      showPermitPreviewModal: false,
+      permitPreviewUrl: "",
       statusFilter: "active",
       showConfirmModal: false,
       confirmInput: "",
@@ -347,6 +385,20 @@ export default {
     closeDetailsModal() {
       this.showDetailsModal = false;
       this.selectedPropertyDetails = null;
+      this.closePermitPreview();
+    },
+    isPermitImage(url) {
+      const lower = String(url || "").toLowerCase();
+      return /\.(jpg|jpeg|png|webp|gif)(\?|#|$)/.test(lower);
+    },
+    openPermitPreview(url) {
+      if (!url) return;
+      this.permitPreviewUrl = url;
+      this.showPermitPreviewModal = true;
+    },
+    closePermitPreview() {
+      this.showPermitPreviewModal = false;
+      this.permitPreviewUrl = "";
     },
     openApproveModal(property) {
       this.confirmInput = "";

@@ -2,6 +2,12 @@
   <Header />
 
   <div class="container py-4" v-if="!loading && property">
+    <div v-if="bookingSubmitting" class="booking-overlay">
+      <div class="booking-overlay-card shadow-sm rounded-4">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mb-0 text-muted fw-semibold">Submitting booking…</p>
+      </div>
+    </div>
     <div class="mb-3">
       <button @click="BackToPrevPage()" class="btn btn-link text-decoration-none p-0 text-secondary fw-semibold">
         <i class="bi bi-arrow-left"></i> Back to Listings
@@ -154,7 +160,7 @@
 
           <div class="d-grid gap-2">
             <button 
-              :disabled="property.owner_id === authId || isOwner == 'owner' || !property?.is_available" 
+              :disabled="property.owner_id === authId || isOwner == 'owner' || !property?.is_available || bookingSubmitting" 
               class="btn btn-primary btn-lg rounded-pill fw-bold py-3"
               @click="openAgreementModal"
             >
@@ -396,6 +402,7 @@
       title="Confirm Booking"
       message="Are you sure all the information you entered is correct?"
       confirm-text="Yes, I'm Sure"
+      :loading="bookingSubmitting"
       @confirm="submitAgreement"
       @cancel="closeConfirmModal"
     />
@@ -429,6 +436,7 @@ export default {
       showFullDescription: false,
       showConfirmModal: false,
       showUserAgreementModal: false,
+      bookingSubmitting: false,
       isLoggedIn: null,
       property: null,
       relatedProperties: [],
@@ -854,7 +862,11 @@ export default {
       const { agreement } = this.agreement;
 
       if (!agreement) {
-        return alert("Please check the agreement box.");
+        return Swal.fire({
+          icon: "warning",
+          title: "Agreement required",
+          text: "Please check the agreement box.",
+        });
       }
 
       // If all checks pass:
@@ -862,13 +874,26 @@ export default {
       this.showConfirmModal = true;
     },
     async submitAgreement() {
+      if (this.bookingSubmitting) return;
+      this.showConfirmModal = false;
+      this.showUserAgreementModal = false;
+      this.bookingSubmitting = true;
       try {
         const response = await submitAgreement(this.agreement, this.property.id);
-        alert(response.data.message || "Booking request submitted!");
-        this.showConfirmModal = false;
+        await Swal.fire({
+          icon: "success",
+          title: "Booking submitted",
+          text: response.data.message || "Booking request submitted!",
+        });
       } catch (error) {
         console.log(error)
-        alert(error.data?.error || "Something went wrong.");
+        await Swal.fire({
+          icon: "error",
+          title: "Booking failed",
+          text: error?.response?.data?.message || error?.data?.error || "Something went wrong.",
+        });
+      } finally {
+        this.bookingSubmitting = false;
       }
     },
     async contactOwner(receiver_id, property_id) {
@@ -1104,6 +1129,26 @@ export default {
 .modal-body-custom {
   background: white; width: 90%; max-width: 500px;
   max-height: 90vh; overflow-y: auto;
+}
+
+.booking-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1040;
+}
+
+.booking-overlay-card {
+  background: #ffffff;
+  border: 1px solid #e6ebf2;
+  padding: 1.25rem 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .property-card:hover {

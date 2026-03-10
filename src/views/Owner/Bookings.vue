@@ -126,34 +126,79 @@
             <button class="btn-close" @click="closeDetailsModal"></button>
           </div>
 
-          <div class="row g-3 small mb-3">
-            <div class="col-6">
-              <div class="text-muted">Tenant</div>
-              <div class="fw-semibold">{{ selectedBooking.first_name }} {{ selectedBooking.last_name }}</div>
+          <div class="details-grid">
+            <div class="detail-card">
+              <div class="detail-card-head">
+                <h6 class="fw-bold mb-0">Tenant Info</h6>
+                <span class="chip-muted">User</span>
+              </div>
+              <div class="detail-kv">
+                <span>Name</span>
+                <strong>{{ selectedBooking.first_name }} {{ selectedBooking.last_name }}</strong>
+              </div>
+              <div class="detail-kv">
+                <span>Email</span>
+                <strong>{{ selectedBooking.email || '-' }}</strong>
+              </div>
+              <div class="detail-kv">
+                <span>Phone</span>
+                <strong>{{ selectedBooking.phone_number || selectedBooking.phone || '-' }}</strong>
+              </div>
             </div>
-            <div class="col-6">
-              <div class="text-muted">Email</div>
-              <div class="fw-semibold">{{ selectedBooking.email || '-' }}</div>
+
+            <div class="detail-card">
+              <div class="detail-card-head">
+                <h6 class="fw-bold mb-0">Booking Info</h6>
+                <span class="chip-muted">Request</span>
+              </div>
+              <div class="detail-kv">
+                <span>Property</span>
+                <strong>{{ selectedBooking.title }}</strong>
+              </div>
+              <div class="detail-kv">
+                <span>Status</span>
+                <span class="badge" :class="statusBadgeClass(selectedBooking.status)">{{ selectedBooking.status }}</span>
+              </div>
+              <div class="detail-kv">
+                <span>Move-in Date</span>
+                <strong>{{ selectedBooking.move_in_date || '-' }}</strong>
+              </div>
+              <div class="detail-kv">
+                <span>Lease Duration</span>
+                <strong>{{ selectedBooking.lease_duration || '-' }}</strong>
+              </div>
+              <div class="detail-kv">
+                <span>Occupants</span>
+                <strong>{{ selectedBooking.occupants_num || '-' }}</strong>
+              </div>
             </div>
-            <div class="col-6">
-              <div class="text-muted">Property</div>
-              <div class="fw-semibold">{{ selectedBooking.title }}</div>
-            </div>
-            <div class="col-6">
-              <div class="text-muted">Status</div>
-              <span class="badge" :class="statusBadgeClass(selectedBooking.status)">{{ selectedBooking.status }}</span>
-            </div>
-            <div class="col-6">
-              <div class="text-muted">Move-in Date</div>
-              <div class="fw-semibold">{{ selectedBooking.move_in_date || '-' }}</div>
-            </div>
-            <div class="col-6">
-              <div class="text-muted">Lease Duration</div>
-              <div class="fw-semibold">{{ selectedBooking.lease_duration || '-' }}</div>
-            </div>
-            <div class="col-6">
-              <div class="text-muted">Occupants</div>
-              <div class="fw-semibold">{{ selectedBooking.occupants_num || '-' }}</div>
+
+            <div class="detail-card detail-card-full">
+              <div class="detail-card-head">
+                <h6 class="fw-bold mb-0">Valid ID</h6>
+                <span class="chip-muted">Verification</span>
+              </div>
+              <div v-if="selectedBooking.valid_id_url || selectedBooking.user_valid_govt_id_url" class="id-preview">
+                <iframe
+                  v-if="String(selectedBooking.valid_id_url || selectedBooking.user_valid_govt_id_url).toLowerCase().includes('.pdf')"
+                  :src="selectedBooking.valid_id_url || selectedBooking.user_valid_govt_id_url"
+                  title="Valid ID preview"
+                ></iframe>
+                <img
+                  v-else
+                  :src="selectedBooking.valid_id_url || selectedBooking.user_valid_govt_id_url"
+                  alt="Valid ID"
+                />
+                <a
+                  :href="selectedBooking.valid_id_url || selectedBooking.user_valid_govt_id_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn btn-outline-primary btn-sm mt-2"
+                >
+                  <i class="bi bi-box-arrow-up-right me-1"></i> Open in new tab
+                </a>
+              </div>
+              <div v-else class="empty-state-sm">No uploaded ID found.</div>
             </div>
           </div>
 
@@ -165,20 +210,6 @@
           <div v-if="selectedBooking.rejection_reason" class="mb-3">
             <div class="text-muted small">Rejection Reason</div>
             <div class="border rounded p-2 bg-danger-subtle small text-danger-emphasis">{{ selectedBooking.rejection_reason }}</div>
-          </div>
-
-          <div class="mb-4">
-            <div class="text-muted small mb-2">Submitted Valid ID</div>
-            <a
-              v-if="selectedBooking.valid_id_url"
-              :href="selectedBooking.valid_id_url"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="btn btn-outline-primary btn-sm"
-            >
-              <i class="bi bi-file-earmark-image me-1"></i> View Valid ID
-            </a>
-            <div v-else class="small text-muted">No uploaded ID found.</div>
           </div>
 
           <div class="d-flex gap-2" v-if="selectedBooking.status === 'pending'">
@@ -333,6 +364,82 @@ export default {
 .modal-scroll-area {
   max-height: 82vh;
   overflow-y: auto;
+}
+
+.details-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.detail-card {
+  border: 1px solid #e7edf5;
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  background: #ffffff;
+}
+
+.detail-card-full {
+  grid-column: 1 / -1;
+}
+
+.detail-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.chip-muted {
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: #f2f6fb;
+  color: #516079;
+  border: 1px solid #e1e8f2;
+}
+
+.detail-kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.85rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed #eef2f7;
+}
+
+.detail-kv:last-child {
+  border-bottom: none;
+}
+
+.detail-kv span {
+  color: #6b7280;
+}
+
+.id-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.id-preview img,
+.id-preview iframe {
+  width: 100%;
+  max-height: 260px;
+  border-radius: 12px;
+  border: 1px solid #e6ebf2;
+  background: #f8fafc;
+}
+
+.empty-state-sm {
+  border: 1px dashed #d9e5f3;
+  border-radius: 12px;
+  padding: 0.75rem;
+  font-size: 0.82rem;
+  color: #6b7280;
+  background: #f8fbff;
+  text-align: center;
 }
 
 .table-hover tbody tr:hover {

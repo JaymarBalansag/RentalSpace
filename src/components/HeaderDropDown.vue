@@ -6,10 +6,14 @@
       id="profileDropdown" 
       data-bs-toggle="dropdown" 
       aria-expanded="false"
+      @click="loadNotificationIndicator"
     >
       <div class="avatar-container shadow-sm">
         <img :src="Profile || placeholderImg" class="profile-img" alt="User" />
       </div>
+      <span v-if="hasUnreadNotifications" class="notif-badge" aria-label="Unread notifications">
+        <i class="bi bi-bell-fill"></i>
+      </span>
       <i class="bi bi-chevron-down text-white small d-none d-md-block"></i>
     </button>
 
@@ -64,6 +68,9 @@ import { RouterLink } from 'vue-router';
 import { logout } from '@/api/auth';
 import { useUserInfo } from '@/store/userInfo';
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
+import { fetchNotifications } from "@/api/notifications";
+import { mapNotificationListResponse } from "@/observer/notifications/controller/notificationResponseController";
+import { getAuthUserId } from "@/api/user";
 
 
 export default {
@@ -112,10 +119,66 @@ export default {
   data() {
     return {
       userprofile : null,
-      placeholderImg: placeholderImg
+      placeholderImg: placeholderImg,
+      hasUnreadNotifications: false,
+      isNotifLoading: false,
+      authUserId: null,
+      notificationChannelName: null,
     }
   },
+  async mounted() {
+    await this.loadAuthUserId();
+    await this.loadNotificationIndicator();
+    this.bindRealtimeNotifications();
+  },
+  beforeUnmount() {
+    this.unbindRealtimeNotifications();
+  },
   methods: {
+    async loadAuthUserId() {
+      if (!this.isLoggedIn) {
+        this.authUserId = null;
+        return;
+      }
+      try {
+        const res = await getAuthUserId();
+        this.authUserId = res?.data?.userid || null;
+      } catch (_) {
+        this.authUserId = null;
+      }
+    },
+    async loadNotificationIndicator() {
+      if (!this.isLoggedIn || this.isNotifLoading) return;
+      this.isNotifLoading = true;
+      try {
+        const res = await fetchNotifications(null, 50);
+        const notifications = mapNotificationListResponse(res?.data);
+        this.hasUnreadNotifications = notifications.some((n) => !n.read);
+      } catch (error) {
+        this.hasUnreadNotifications = false;
+      } finally {
+        this.isNotifLoading = false;
+      }
+    },
+    handleRealtimeNotification(eventPayload) {
+      const raw = eventPayload?.notification || eventPayload || {};
+      const isRead = Boolean(raw?.read_at || raw?.is_read);
+      if (!isRead) {
+        this.hasUnreadNotifications = true;
+      }
+    },
+    bindRealtimeNotifications() {
+      if (!window.Echo || !this.authUserId) return;
+      this.notificationChannelName = `notifications.${this.authUserId}`;
+      window.Echo.private(this.notificationChannelName).listen("NotificationCreated", (event) => {
+        this.handleRealtimeNotification(event);
+      });
+    },
+    unbindRealtimeNotifications() {
+      if (!this.notificationChannelName || !window.Echo) return;
+      window.Echo.leave(`private-${this.notificationChannelName}`);
+      this.notificationChannelName = null;
+    },
     goToPaymentWall() {
       if (!this.isUserVerified) {
         this.$router.push("/profile");
@@ -148,6 +211,8 @@ export default {
 .profile-trigger {
   border-radius: 50px;
   transition: 0.3s;
+  position: relative;
+  overflow: visible;
 }
 
 .profile-trigger:hover {
@@ -160,12 +225,30 @@ export default {
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid white;
+  position: relative;
 }
 
 .profile-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  background: #1d4ed8;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 0.65rem;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
 }
 
 .profile-dropdown {

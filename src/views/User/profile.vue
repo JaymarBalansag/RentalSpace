@@ -82,13 +82,20 @@
                 <i class="bi bi-check2-square me-2"></i>Complete Profile
               </RouterLink>
               <button
-                v-if="isComplete && userVerificationStatus !== 'verified'"
+                v-if="hasValidIdUrl"
+                class="btn btn-outline-light rounded-pill fw-semibold"
+                @click="previewValidId"
+              >
+                <i class="bi bi-card-image me-2"></i>View ID
+              </button>
+              <button
+                v-if="isComplete"
                 class="btn btn-warning rounded-pill fw-semibold text-dark"
                 :disabled="verificationUploading || userVerificationStatus === 'pending'"
                 @click="triggerVerificationUpload"
               >
                 <i class="bi bi-shield-check me-2"></i>
-                {{ userVerificationStatus === 'pending' ? 'Verification Under Review' : 'Submit Valid Government ID' }}
+                {{ verificationActionLabel }}
               </button>
               <input
                 ref="verificationInput"
@@ -155,6 +162,9 @@
             </div>
             <p v-if="userVerificationStatus === 'rejected' && userVerificationRejectedReason" class="small text-danger mb-0">
               Rejected reason: {{ userVerificationRejectedReason }}
+            </p>
+            <p v-if="userVerificationStatus === 'verified'" class="small text-muted mb-0">
+              Updating your ID will set your verification back to pending review.
             </p>
             <p class="small text-muted mb-0">
               Profile actions are managed here. Security and app preferences are in the <strong>Settings</strong> menu from the header dropdown.
@@ -310,6 +320,15 @@ export default {
       if (this.userVerificationStatus === "rejected") return "bg-danger-subtle text-danger border-danger-subtle";
       return "bg-secondary-subtle text-secondary border-secondary-subtle";
     },
+    hasValidIdUrl() {
+      const info = useUserInfo();
+      return Boolean(info.user_valid_govt_id_url);
+    },
+    verificationActionLabel() {
+      if (this.userVerificationStatus === "pending") return "Verification Under Review";
+      if (this.userVerificationStatus === "verified") return "Update Valid Government ID";
+      return "Submit Valid Government ID";
+    },
   },
   mounted() {
     this.fetchUserProfile();
@@ -394,7 +413,67 @@ export default {
       if (this.userVerificationStatus === "pending") {
         return;
       }
+      if (this.userVerificationStatus === "verified") {
+        this.confirmReverification();
+        return;
+      }
       this.$refs.verificationInput?.click();
+    },
+    async confirmReverification() {
+      const result = await Swal.fire({
+        icon: "warning",
+        title: "Re-submit ID?",
+        text: "Re-submitting will set your verification back to pending review.",
+        showCancelButton: true,
+        confirmButtonText: "Continue",
+        cancelButtonText: "Cancel",
+      });
+      if (result.isConfirmed) {
+        this.$refs.verificationInput?.click();
+      }
+    },
+    async previewValidId() {
+      const url = useUserInfo().user_valid_govt_id_url;
+      if (!url) {
+        await Swal.fire({
+          icon: "info",
+          title: "No ID Available",
+          text: "There is no uploaded ID to preview.",
+        });
+        return;
+      }
+
+      const isPdf = url.toLowerCase().includes(".pdf");
+      const openLink = `<a href="${url}" target="_blank" rel="noopener" class="swal2-confirm swal2-styled" style="text-decoration:none;">Open in new tab</a>`;
+
+      if (isPdf) {
+        await Swal.fire({
+          title: "Valid ID Preview",
+          html: `
+            <div style="height:60vh;min-height:320px;">
+              <iframe src="${url}" style="width:100%;height:100%;border:0;border-radius:12px;"></iframe>
+            </div>
+            <div style="margin-top:12px;">${openLink}</div>
+          `,
+          width: 720,
+          showConfirmButton: false,
+          showCloseButton: true,
+        });
+        return;
+      }
+
+      await Swal.fire({
+        title: "Valid ID Preview",
+        html: `
+          <div style="display:flex;justify-content:center;align-items:center;max-height:60vh;">
+            <img src="${url}" alt="Valid ID" style="max-width:100%;max-height:60vh;border-radius:12px;border:1px solid #e2e8f0;" />
+          </div>
+          <div style="margin-top:12px;">${openLink}</div>
+        `,
+        width: 720,
+        showConfirmButton: false,
+        showCloseButton: true,
+      });
     },
     async onVerificationFileChange(event) {
       const file = event?.target?.files?.[0] || null;

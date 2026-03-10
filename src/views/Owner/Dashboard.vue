@@ -5,7 +5,7 @@
       :class="{ 'is-collapsed': isCollapsed, 'is-mobile-open': isMobileOpen }"
     >
       <div class="sidebar-brand">
-        <div class="brand-logo bg-primary shadow-sm">
+        <div class="brand-logo">
           <i class="bi bi-house-door-fill text-white"></i>
         </div>
         <span v-if="!isCollapsed" class="brand-name d-none d-md-block">Owner Dashboard</span>
@@ -34,7 +34,7 @@
     </aside>
 
     <main class="main-content">
-      <header class="content-header shadow-sm bg-white px-3">
+      <header class="content-header px-3">
         <div class="d-flex align-items-center">
           <button class="mobile-burger-btn d-md-none me-3" @click="isMobileOpen = !isMobileOpen">
             <i class="bi bi-list fs-4"></i>
@@ -43,8 +43,8 @@
 
         <div class="header-actions">
           <div class="dropdown">
-            <button class="profile-pill border" data-bs-toggle="dropdown">
-              <div class="avatar-box bg-primary text-white">{{ first_name[0] }}{{ last_name[0] }}</div>
+            <button class="profile-pill" data-bs-toggle="dropdown">
+              <div class="avatar-box">{{ first_name[0] }}{{ last_name[0] }}</div>
               <span class="ms-2 d-none d-md-inline small fw-bold">{{ first_name }} {{ last_name }}</span>
               <i class="bi bi-chevron-down ms-2 small opacity-50"></i>
             </button>
@@ -126,22 +126,36 @@ export default {
 
 <style scoped>
 .dashboard-wrapper {
+  --dash-bg: #f3f6fb;
+  --dash-surface: rgba(255, 255, 255, 0.78);
+  --dash-border: rgba(15, 23, 42, 0.08);
+  --dash-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  --dash-accent: #2b6af3;
+  --dash-accent-soft: rgba(43, 106, 243, 0.18);
+  --dash-ink: #0f172a;
+  --dash-muted: #64748b;
   display: flex;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: #f4f7f6;
+  background:
+    radial-gradient(circle at 0 0, rgba(209, 226, 255, 0.6), transparent 45%),
+    radial-gradient(circle at 100% 0, rgba(255, 244, 229, 0.6), transparent 40%),
+    var(--dash-bg);
 }
 
 /* --- SIDEBAR --- */
 .main-sidebar {
   width: 260px;
-  background: #1e1e2d;
+  background:
+    linear-gradient(160deg, rgba(18, 22, 36, 0.98) 0%, rgba(26, 34, 58, 0.96) 100%);
   color: #fff;
   display: flex;
   flex-direction: column;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
   z-index: 2000;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.03);
 }
 
 /* Desktop Collapse State */
@@ -154,7 +168,7 @@ export default {
     height: 100vh;
     left: 0;
     top: 0;
-    width: 70px; /* Only wide enough for icons */
+    width: 74px; /* Only wide enough for icons */
     transform: translateX(-100%);
   }
   .main-sidebar.is-mobile-open {
@@ -170,15 +184,18 @@ export default {
   display: flex;
   align-items: center;
   padding: 0 20px;
-  background: rgba(0,0,0,0.15);
+  background: rgba(255, 255, 255, 0.04);
 }
 .brand-logo {
   width: 35px;
   height: 35px;
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(43, 106, 243, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
 }
 .brand-name { margin-left: 12px; font-weight: 700; }
 
@@ -192,12 +209,13 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center; /* Center icons for mobile/collapsed */
-  padding: 12px;
+  padding: 12px 14px;
   color: #a2a3b7;
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: 12px;
   margin-bottom: 5px;
   position: relative;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 @media (min-width: 769px) {
   /* Only align left if desktop and NOT collapsed */
@@ -207,16 +225,26 @@ export default {
 }
 
 .nav-item-link:hover, .nav-item-link.active {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
 .nav-item-link.active {
-  color: #3699ff;
-  background: rgba(54, 153, 255, 0.1);
+  color: #8fb8ff;
+  background: rgba(54, 153, 255, 0.16);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
 }
 
 .nav-icon { font-size: 1.3rem; }
 .nav-label { margin-left: 12px; font-size: 0.9rem; }
+.active-indicator {
+  position: absolute;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--dash-accent);
+  box-shadow: 0 0 12px rgba(43, 106, 243, 0.6);
+}
 
 /* --- CONTENT AREA --- */
 .main-content {
@@ -224,49 +252,70 @@ export default {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 .content-header {
   height: 70px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #ebedef;
+  border-bottom: 1px solid var(--dash-border);
+  background: var(--dash-surface);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--dash-shadow);
+  position: relative;
+  z-index: 5;
+  overflow: visible;
 }
 .page-container {
   flex-grow: 1;
   overflow-y: auto;
+  color: var(--dash-ink);
 }
 
 /* --- MOBILE HELPERS --- */
 .mobile-burger-btn {
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--dash-border);
   border-radius: 6px;
   padding: 5px 10px;
 }
 .sidebar-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(2px);
+  background: rgba(9, 14, 24, 0.35);
+  backdrop-filter: blur(6px);
   z-index: 1500;
 }
 
 .profile-pill {
-  background: #fff;
-  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 6px 12px;
   border-radius: 50px;
   display: flex;
   align-items: center;
+  border: 1px solid var(--dash-border);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+.profile-pill:focus-visible {
+  outline: 2px solid var(--dash-accent);
+  outline-offset: 2px;
+}
+.dropdown-menu {
+  z-index: 10;
 }
 .avatar-box {
   width: 30px;
   height: 30px;
-  border-radius: 50%;
-  display: flex;
+  border-radius: 10px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #2b6af3, #2dd4bf);
+  color: #fff;
 }
 .sidebar-footer { padding: 10px; text-align: center; }
 .collapse-toggle {
@@ -276,5 +325,13 @@ export default {
   font-size: 1.2rem;
   width: 100%;
   justify-content: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-item-link,
+  .main-sidebar,
+  .profile-pill {
+    transition: none !important;
+  }
 }
 </style>

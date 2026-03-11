@@ -4,12 +4,12 @@
   <div class="tenant-dashboard p-3 p-md-4">
     <div class="row mb-4 align-items-center">
       <div class="col">
-        <h4 class="fw-bold mb-0">Kumusta, {{ tenantName }}! 👋</h4>
-        <p class="text-muted small">Here is your rent summary for {{ currentMonth }}.</p>
+        <h4 class="fw-bold mb-0">Hello, {{ tenantName }}!</h4>
+        <p class="text-muted small">Here is your tenancy overview for {{ currentMonth }}.</p>
       </div>
       <div class="col-auto">
-        <span class="badge bg-success-subtle text-success border border-success px-3 py-2">
-          Status: ACTIVE
+        <span class="badge px-3 py-2" :class="tenantStatusClass">
+          Status: {{ tenantStatusLabel }}
         </span>
       </div>
     </div>
@@ -18,15 +18,8 @@
       <div class="col-md-6 col-lg-4">
         <div class="card border-0 shadow-sm bg-primary text-white h-100">
           <div class="card-body">
-            <h6 class="small opacity-75">Outstanding Balance</h6>
-            <h2 class="fw-bold">₱{{ formatAmount(totalBalance) }}</h2>
-            <button 
-              class="btn btn-light btn-sm w-100 mt-2 fw-bold" 
-              :disabled="totalBalance <= 0"
-              @click="openPaymentModal"
-            >
-              <i class="bi bi-credit-card me-2"></i> Pay Now
-            </button>
+            <h6 class="small opacity-75">Total Paid</h6>
+            <h2 class="fw-bold">PHP {{ formatAmount(totalPaid) }}</h2>
           </div>
         </div>
       </div>
@@ -38,9 +31,109 @@
               <i class="bi bi-house-door fs-3"></i>
             </div>
             <div class="ms-3">
-              <h6 class="mb-0 fw-bold">{{ propertyTitle }}</h6>
+              <h6 class="mb-1 fw-bold">{{ propertyTitle }}</h6>
+              <p class="text-muted small mb-0">{{ propertyType }}</p>
               <p class="text-muted small mb-0">{{ propertyAddress }}</p>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="nav nav-pills gap-2 mb-3">
+      <li class="nav-item">
+        <button class="nav-link" :class="{ active: activeTab === 'billings' }" @click="activeTab = 'billings'">
+          Billings
+        </button>
+      </li>
+      <li class="nav-item" v-if="showPaymentsTab">
+        <button class="nav-link" :class="{ active: activeTab === 'payments' }" @click="activeTab = 'payments'">
+          Payments
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" :class="{ active: activeTab === 'tenancy' }" @click="activeTab = 'tenancy'">
+          Tenancy Record
+        </button>
+      </li>
+    </ul>
+
+    <div v-if="activeTab === 'billings'">
+      <div class="card border-0 shadow-sm">
+        <div class="list-group list-group-flush">
+          <div v-if="paidBillings.length === 0" class="p-5 text-center text-muted">
+            No paid billing records yet.
+          </div>
+          <div
+            v-for="bill in paidBillings"
+            :key="bill.id"
+            class="list-group-item p-3 border-0 border-bottom d-flex justify-content-between align-items-center"
+          >
+            <div>
+              <p class="mb-0 fw-bold">{{ bill.rent_cycle }} Rent</p>
+              <small class="text-muted">Due Date: {{ bill.rent_due }}</small>
+            </div>
+            <div class="text-end">
+              <p class="mb-0 fw-bold text-success">PHP {{ formatAmount(bill.rent_amount) }}</p>
+              <span :class="['badge rounded-pill px-3', statusBadge(bill.rent_status)]">
+                {{ bill.rent_status }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="activeTab === 'payments' && showPaymentsTab">
+      <div class="card border-0 shadow-sm">
+        <div class="list-group list-group-flush">
+          <div v-if="dueBillings.length === 0" class="p-5 text-center text-muted">
+            No payment due right now.
+          </div>
+          <div
+            v-for="bill in dueBillings"
+            :key="bill.id"
+            class="list-group-item p-3 border-0 border-bottom d-flex justify-content-between align-items-center"
+          >
+            <div>
+              <p class="mb-0 fw-bold">{{ bill.rent_cycle }} Rent</p>
+              <small class="text-muted">Due Date: {{ bill.rent_due }}</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span :class="['badge rounded-pill px-3', statusBadge(bill.rent_status)]">
+                {{ bill.rent_status }}
+              </span>
+              <button class="btn btn-primary btn-sm fw-bold" @click="openPaymentModal(bill)">
+                Pay Now
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="activeTab === 'tenancy'">
+      <div class="card border-0 shadow-sm p-4">
+        <div class="row g-3 small">
+          <div class="col-md-6">
+            <div class="text-muted">Property</div>
+            <div class="fw-semibold">{{ propertyTitle }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted">Property Type</div>
+            <div class="fw-semibold">{{ propertyType }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted">Move-in Date</div>
+            <div class="fw-semibold">{{ moveInDate || '-' }}</div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted">Status</div>
+            <div class="fw-semibold">{{ tenantStatusLabel }}</div>
+          </div>
+          <div class="col-12">
+            <div class="text-muted">Address</div>
+            <div class="fw-semibold">{{ propertyAddress }}</div>
           </div>
         </div>
       </div>
@@ -59,12 +152,10 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label small fw-bold text-muted">Select Bill to Pay</label>
-          <select class="form-select" v-model="paymentForm.billing_id">
-            <option v-for="bill in unpaidBillings" :key="bill.id" :value="bill.id">
-              {{ toTitle(bill.rent_cycle) }} Rent - ₱{{ formatAmount(bill.rent_amount) }}
-            </option>
-          </select>
+          <label class="form-label small fw-bold text-muted">Selected Bill</label>
+          <div class="border rounded p-2 bg-light small">
+            {{ selectedBillingLabel }}
+          </div>
         </div>
 
         <div class="mb-3">
@@ -81,7 +172,7 @@
           <div class="col-md-6">
             <label class="form-label small fw-bold text-muted">Amount Paid</label>
             <div class="input-group">
-              <span class="input-group-text bg-light">₱</span>
+              <span class="input-group-text bg-light">PHP</span>
               <input type="number" class="form-control" v-model="paymentForm.amount_paid" />
             </div>
           </div>
@@ -110,53 +201,27 @@
         </div>
       </div>
     </div>
-
-    <h6 class="fw-bold mb-3">Billing History</h6>
-    <div class="card border-0 shadow-sm">
-      <div class="list-group list-group-flush">
-        <div v-if="billings.length === 0" class="p-5 text-center text-muted">
-          No billing records yet.
-        </div>
-        
-        <div 
-          v-for="bill in billings" 
-          :key="bill.id" 
-          class="list-group-item p-3 border-0 border-bottom d-flex justify-content-between align-items-center"
-        >
-          <div>
-            <p class="mb-0 fw-bold">{{ bill.rent_cycle }} Rent</p>
-            <small class="text-muted">Due Date: {{ bill.rent_due }}</small>
-          </div>
-          <div class="text-end">
-            <p class="mb-0 fw-bold" :class="bill.rent_status === 'unpaid' ? 'text-danger' : 'text-dark'">
-              ₱{{ formatAmount(bill.rent_amount) }}
-            </p>
-            <span :class="['badge rounded-pill px-3', statusBadge(bill.rent_status)]">
-              {{ bill.rent_status }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script>
-import { getMyBillings, submitPaymentRecords } from '@/api/tenants';
+import { getTenantDashboard, submitPaymentRecords } from '@/api/tenants';
 import Header from '@/components/Header.vue';
 
 export default {
   components: { Header },
   data() {
     return {
-      tenantName: 'Juan Dela Cruz',
-      propertyTitle: 'Unit 402 - Seaside Apartments',
-      propertyAddress: '123 Coastal Road, Pasay City',
+      tenantName: 'Tenant',
+      propertyTitle: 'Property',
+      propertyType: 'Property type',
+      propertyAddress: 'Address unavailable',
       billings: [],
-      totalBalance: 0,
+      tenantStatus: 'inactive',
+      moveInDate: null,
+      totalPaid: 0,
       currentMonth: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
-      
-      // Modal State
+      activeTab: 'billings',
       showPaymentModal: false,
       loading: false,
       paymentForm: {
@@ -170,11 +235,29 @@ export default {
     };
   },
   computed: {
-    unpaidBillings() {
-      return this.billings.filter(b => ['unpaid', 'overdue'].includes(String(b.rent_status || '').toLowerCase()));
-    },
     selectedBilling() {
       return this.billings.find(b => String(b.id) === String(this.paymentForm.billing_id)) || null;
+    },
+    selectedBillingLabel() {
+      if (!this.selectedBilling) return 'No billing selected';
+      return `${this.toTitle(this.selectedBilling.rent_cycle)} Rent - PHP ${this.formatAmount(this.selectedBilling.rent_amount)}`;
+    },
+    paidBillings() {
+      return this.billings.filter(b => String(b.rent_status || '').toLowerCase() === 'paid');
+    },
+    dueBillings() {
+      return this.billings.filter(b => ['unpaid', 'overdue', 'pending'].includes(String(b.rent_status || '').toLowerCase()));
+    },
+    showPaymentsTab() {
+      return String(this.tenantStatus || '').toLowerCase() === 'active';
+    },
+    tenantStatusLabel() {
+      return String(this.tenantStatus || '').toLowerCase() === 'active' ? 'ACTIVE' : 'INACTIVE';
+    },
+    tenantStatusClass() {
+      return String(this.tenantStatus || '').toLowerCase() === 'active'
+        ? 'bg-success-subtle text-success border border-success'
+        : 'bg-secondary-subtle text-secondary border border-secondary';
     }
   },
   mounted() {
@@ -182,36 +265,38 @@ export default {
   },
   methods: {
     toTitle(text){
-      return text ? text.charAt(0).toUpperCase() + text.slice(1) : "asd";
+      return text ? text.charAt(0).toUpperCase() + text.slice(1) : "-";
     },
     async fetchMyData() {
       try {
-        const res = await getMyBillings();
-        this.billings = res.data.data;
+        const res = await getTenantDashboard();
+        const payload = res?.data?.data || {};
+        this.billings = payload.billings || [];
 
         const local = JSON.parse(localStorage.getItem("userInfo") || "{}");
         const fullName = [local.first_name, local.last_name].filter(Boolean).join(" ").trim();
         if (fullName) this.tenantName = fullName;
-        if (this.billings.length > 0) {
-          this.propertyTitle = this.billings[0].property_title || this.propertyTitle;
-          this.propertyAddress = "Address unavailable";
-        }
 
-        this.totalBalance = this.billings
-          .filter(b => ['unpaid', 'overdue'].includes(String(b.rent_status || '').toLowerCase()))
+        this.propertyTitle = payload.property_title || this.propertyTitle;
+        this.propertyType = payload.property_type || this.propertyType;
+        this.propertyAddress = payload.property_address || this.propertyAddress;
+        this.tenantStatus = payload.tenant_status || this.tenantStatus;
+        this.moveInDate = payload.move_in_date || null;
+
+        this.totalPaid = this.billings
+          .filter(b => String(b.rent_status || '').toLowerCase() === 'paid')
           .reduce((acc, curr) => acc + Number(curr.rent_amount), 0);
       } catch (err) {
         console.error("Dashboard error:", err);
       }
     },
-    openPaymentModal() {
-      if (this.unpaidBillings.length > 0) {
-        this.paymentForm.billing_id = this.unpaidBillings[0].id;
-        this.paymentForm.amount_paid = this.unpaidBillings[0].rent_amount;
-      } else {
-        alert("No unpaid billing is available for payment.");
+    openPaymentModal(bill) {
+      if (!bill) {
+        alert("No billing selected for payment.");
         return;
       }
+      this.paymentForm.billing_id = bill.id;
+      this.paymentForm.amount_paid = bill.rent_amount;
       this.showPaymentModal = true;
     },
     closePaymentModal() {
@@ -276,7 +361,7 @@ export default {
       }
 
       if (submittedAmount !== expectedAmount) {
-        alert(`Amount must exactly match the billing amount of ₱${this.formatAmount(expectedAmount)}.`);
+        alert(`Amount must exactly match the billing amount of PHP ${this.formatAmount(expectedAmount)}.`);
         return;
       }
 
@@ -313,15 +398,6 @@ export default {
     },
     formatAmount(val) {
       return Number(val).toLocaleString(undefined, { minimumFractionDigits: 2 });
-    }
-  }
-  ,
-  watch: {
-    'paymentForm.billing_id'(nextId) {
-      const selected = this.billings.find(b => String(b.id) === String(nextId));
-      if (selected) {
-        this.paymentForm.amount_paid = selected.rent_amount;
-      }
     }
   }
 };

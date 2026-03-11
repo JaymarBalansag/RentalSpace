@@ -87,23 +87,23 @@
     <div v-if="activeTab === 'payments' && showPaymentsTab">
       <div class="card border-0 shadow-sm">
         <div class="list-group list-group-flush">
-          <div v-if="dueBillings.length === 0" class="p-5 text-center text-muted">
+          <div v-if="payableItems.length === 0" class="p-5 text-center text-muted">
             No payment due right now.
           </div>
           <div
-            v-for="bill in dueBillings"
-            :key="bill.id"
+            v-for="item in payableItems"
+            :key="item.id"
             class="list-group-item p-3 border-0 border-bottom d-flex justify-content-between align-items-center"
           >
             <div>
-              <p class="mb-0 fw-bold">{{ bill.rent_cycle }} Rent</p>
-              <small class="text-muted">Due Date: {{ bill.rent_due }}</small>
+              <p class="mb-0 fw-bold">{{ item.label }}</p>
+              <small class="text-muted">Due Date: {{ item.due || '-' }}</small>
             </div>
             <div class="d-flex align-items-center gap-2">
-              <span :class="['badge rounded-pill px-3', statusBadge(bill.rent_status)]">
-                {{ bill.rent_status }}
+              <span :class="['badge rounded-pill px-3', statusBadge(item.rent_status)]">
+                {{ item.rent_status }}
               </span>
-              <button class="btn btn-primary btn-sm fw-bold" @click="openPaymentModal(bill)">
+              <button class="btn btn-primary btn-sm fw-bold" @click="openPaymentModal(item)">
                 Pay Now
               </button>
             </div>
@@ -219,6 +219,8 @@ export default {
       billings: [],
       tenantStatus: 'inactive',
       moveInDate: null,
+      depositRequired: 0,
+      advancePaymentMonths: 0,
       totalPaid: 0,
       currentMonth: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
       activeTab: 'billings',
@@ -247,6 +249,45 @@ export default {
     },
     dueBillings() {
       return this.billings.filter(b => ['unpaid', 'overdue', 'pending'].includes(String(b.rent_status || '').toLowerCase()));
+    },
+    payableItems() {
+      const items = this.dueBillings.map((bill) => ({
+        type: "billing",
+        id: bill.id,
+        label: `${bill.rent_cycle} Rent`,
+        amount: Number(bill.rent_amount || 0),
+        due: bill.rent_due,
+        rent_status: bill.rent_status,
+        billing: bill,
+      }));
+
+      const baseRent = this.billings.length > 0 ? Number(this.billings[0].rent_amount || 0) : 0;
+      const depositValue = Number(this.depositRequired || 0);
+      const advanceMonths = Number(this.advancePaymentMonths || 0);
+
+      if (depositValue > 0) {
+        items.unshift({
+          type: "deposit",
+          id: "deposit",
+          label: "Security Deposit",
+          amount: depositValue,
+          due: "Upon move-in",
+          rent_status: "unpaid",
+        });
+      }
+
+      if (advanceMonths > 0 && baseRent > 0) {
+        items.unshift({
+          type: "advance",
+          id: "advance",
+          label: `Advance Payment (${advanceMonths} month${advanceMonths > 1 ? "s" : ""})`,
+          amount: advanceMonths * baseRent,
+          due: "Upon move-in",
+          rent_status: "unpaid",
+        });
+      }
+
+      return items;
     },
     showPaymentsTab() {
       return String(this.tenantStatus || '').toLowerCase() === 'active';
@@ -282,6 +323,8 @@ export default {
         this.propertyAddress = payload.property_address || this.propertyAddress;
         this.tenantStatus = payload.tenant_status || this.tenantStatus;
         this.moveInDate = payload.move_in_date || null;
+        this.depositRequired = payload.deposit_required || 0;
+        this.advancePaymentMonths = payload.advance_payment_months || 0;
 
         this.totalPaid = this.billings
           .filter(b => String(b.rent_status || '').toLowerCase() === 'paid')
@@ -290,13 +333,25 @@ export default {
         console.error("Dashboard error:", err);
       }
     },
-    openPaymentModal(bill) {
-      if (!bill) {
+    openPaymentModal(item) {
+      if (!item) {
         alert("No billing selected for payment.");
         return;
       }
-      this.paymentForm.billing_id = bill.id;
-      this.paymentForm.amount_paid = bill.rent_amount;
+      if (item.type === "billing") {
+        this.paymentForm.billing_id = item.id;
+        this.paymentForm.amount_paid = item.amount;
+        this.paymentForm.remarks = "";
+      } else {
+        const firstBilling = this.billings[0];
+        if (!firstBilling) {
+          alert("No billing available to attach this payment.");
+          return;
+        }
+        this.paymentForm.billing_id = firstBilling.id;
+        this.paymentForm.amount_paid = item.amount;
+        this.paymentForm.remarks = item.type === "deposit" ? "Security deposit" : "Advance payment";
+      }
       this.showPaymentModal = true;
     },
     closePaymentModal() {

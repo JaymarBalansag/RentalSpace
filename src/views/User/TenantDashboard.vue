@@ -5,7 +5,7 @@
     <div class="row mb-4 align-items-center">
       <div class="col">
         <h4 class="fw-bold mb-0">Hello, {{ tenantName }}!</h4>
-        <p class="text-muted small">Here is your tenancy overview for {{ currentMonth }}.</p>
+        <p class="text-muted small">Here is your billing and payment summary for {{ currentMonth }}.</p>
       </div>
       <div class="col-auto">
         <span class="badge px-3 py-2" :class="tenantStatusClass">
@@ -15,7 +15,7 @@
     </div>
 
     <div class="row g-3 mb-4">
-      <div class="col-md-6 col-lg-4">
+      <div class="col-md-6 col-lg-3">
         <div class="card border-0 shadow-sm bg-primary text-white h-100">
           <div class="card-body">
             <h6 class="small opacity-75">Total Paid</h6>
@@ -23,17 +23,32 @@
           </div>
         </div>
       </div>
-
-      <div class="col-md-6 col-lg-8">
+      <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h6 class="small text-muted">Remaining Due</h6>
+            <h2 class="fw-bold">PHP {{ formatAmount(remainingDue) }}</h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <h6 class="small text-muted">Next Due Date</h6>
+            <h2 class="fw-bold">{{ nextDueDate || '-' }}</h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
         <div class="card border-0 shadow-sm h-100">
           <div class="card-body d-flex align-items-center">
-            <div class="flex-shrink-0 bg-light p-3 rounded text-primary">
-              <i class="bi bi-house-door fs-3"></i>
+            <div class="flex-shrink-0 bg-light p-2 rounded text-primary">
+              <i class="bi bi-house-door"></i>
             </div>
             <div class="ms-3">
-              <h6 class="mb-1 fw-bold">{{ propertyTitle }}</h6>
-              <p class="text-muted small mb-0">{{ propertyType }}</p>
-              <p class="text-muted small mb-0">{{ propertyAddress }}</p>
+              <div class="small text-muted">Active Property</div>
+              <div class="fw-semibold">{{ propertyTitle }}</div>
+              <div class="small text-muted">{{ propertyType }}</div>
             </div>
           </div>
         </div>
@@ -51,33 +66,47 @@
           Payments
         </button>
       </li>
-      <li class="nav-item">
-        <button class="nav-link" :class="{ active: activeTab === 'tenancy' }" @click="activeTab = 'tenancy'">
-          Tenancy Record
-        </button>
-      </li>
     </ul>
 
     <div v-if="activeTab === 'billings'">
       <div class="card border-0 shadow-sm">
+        <div class="card-body border-bottom">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted">Type</label>
+              <select class="form-select" v-model="billingTypeFilter">
+                <option value="">All</option>
+                <option value="rent">Rent</option>
+                <option value="deposit">Security Deposit</option>
+                <option value="advance">Advance Payment</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted">From</label>
+              <input type="date" class="form-control" v-model="billingDateFrom" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted">To</label>
+              <input type="date" class="form-control" v-model="billingDateTo" />
+            </div>
+          </div>
+        </div>
         <div class="list-group list-group-flush">
-          <div v-if="paidBillings.length === 0" class="p-5 text-center text-muted">
-            No paid billing records yet.
+          <div v-if="filteredPaidRecords.length === 0" class="p-5 text-center text-muted">
+            No payment records yet.
           </div>
           <div
-            v-for="bill in paidBillings"
-            :key="bill.id"
+            v-for="record in filteredPaidRecords"
+            :key="record.id"
             class="list-group-item p-3 border-0 border-bottom d-flex justify-content-between align-items-center"
           >
             <div>
-              <p class="mb-0 fw-bold">{{ bill.rent_cycle }} Rent</p>
-              <small class="text-muted">Due Date: {{ bill.rent_due }}</small>
+              <p class="mb-0 fw-bold">{{ record.label }}</p>
+              <small class="text-muted">Date: {{ record.date || '-' }}</small>
             </div>
             <div class="text-end">
-              <p class="mb-0 fw-bold text-success">PHP {{ formatAmount(bill.rent_amount) }}</p>
-              <span :class="['badge rounded-pill px-3', statusBadge(bill.rent_status)]">
-                {{ bill.rent_status }}
-              </span>
+              <p class="mb-0 fw-bold text-primary">PHP {{ formatAmount(record.amount) }}</p>
+              <span class="badge rounded-pill px-3 bg-success-subtle text-success">paid</span>
             </div>
           </div>
         </div>
@@ -85,55 +114,29 @@
     </div>
 
     <div v-if="activeTab === 'payments' && showPaymentsTab">
-      <div class="card border-0 shadow-sm">
-        <div class="list-group list-group-flush">
-          <div v-if="payableItems.length === 0" class="p-5 text-center text-muted">
-            No payment due right now.
-          </div>
-          <div
-            v-for="item in payableItems"
-            :key="item.id"
-            class="list-group-item p-3 border-0 border-bottom d-flex justify-content-between align-items-center"
-          >
-            <div>
-              <p class="mb-0 fw-bold">{{ item.label }}</p>
-              <small class="text-muted">Due Date: {{ item.due || '-' }}</small>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-              <span :class="['badge rounded-pill px-3', statusBadge(item.rent_status)]">
-                {{ item.rent_status }}
-              </span>
-              <button class="btn btn-primary btn-sm fw-bold" @click="openPaymentModal(item)">
-                Pay Now
-              </button>
-            </div>
-          </div>
-        </div>
+      <div v-if="payableItems.length === 0" class="p-5 text-center text-muted">
+        No payment due right now.
       </div>
-    </div>
-
-    <div v-if="activeTab === 'tenancy'">
-      <div class="card border-0 shadow-sm p-4">
-        <div class="row g-3 small">
-          <div class="col-md-6">
-            <div class="text-muted">Property</div>
-            <div class="fw-semibold">{{ propertyTitle }}</div>
-          </div>
-          <div class="col-md-6">
-            <div class="text-muted">Property Type</div>
-            <div class="fw-semibold">{{ propertyType }}</div>
-          </div>
-          <div class="col-md-6">
-            <div class="text-muted">Move-in Date</div>
-            <div class="fw-semibold">{{ moveInDate || '-' }}</div>
-          </div>
-          <div class="col-md-6">
-            <div class="text-muted">Status</div>
-            <div class="fw-semibold">{{ tenantStatusLabel }}</div>
-          </div>
-          <div class="col-12">
-            <div class="text-muted">Address</div>
-            <div class="fw-semibold">{{ propertyAddress }}</div>
+      <div class="row g-3">
+        <div v-for="item in payableItems" :key="item.id" class="col-12 col-md-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <p class="mb-1 fw-bold">{{ item.label }}</p>
+                  <small class="text-muted">Due Date: {{ item.due || '-' }}</small>
+                </div>
+                <span :class="['badge rounded-pill px-3', statusBadge(item.rent_status)]">
+                  {{ item.rent_status }}
+                </span>
+              </div>
+              <div class="mt-3 d-flex justify-content-between align-items-center">
+                <div class="fw-bold text-primary">PHP {{ formatAmount(item.amount_due || item.amount) }}</div>
+                <button class="btn btn-primary btn-sm fw-bold" @click="openPaymentModal(item)">
+                  Pay Now
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -142,20 +145,20 @@
     <div v-if="showPaymentModal" class="modal-backdrop-custom">
       <div class="modal-custom shadow-lg border-0">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-bold mb-0">Submit Payment Proof</h5>
+          <h5 class="fw-bold mb-0">Online Payment</h5>
           <button class="btn-close" @click="closePaymentModal"></button>
         </div>
 
-        <div class="alert alert-primary py-2 small border-0">
-          <i class="bi bi-info-circle me-2"></i>
-          Please upload your GCash or Bank Transfer receipt.
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted">Selected Item</label>
+          <div class="border rounded p-2 bg-light small">
+            {{ selectedPaymentLabel }}
+          </div>
         </div>
 
         <div class="mb-3">
-          <label class="form-label small fw-bold text-muted">Selected Bill</label>
-          <div class="border rounded p-2 bg-light small">
-            {{ selectedBillingLabel }}
-          </div>
+          <label class="form-label small fw-bold text-muted">Payment Type</label>
+          <input type="text" class="form-control" :value="paymentTypeLabel" disabled />
         </div>
 
         <div class="mb-3">
@@ -163,40 +166,23 @@
           <select class="form-select" v-model="paymentForm.payment_method">
             <option value="GCash">GCash</option>
             <option value="Maya">Maya</option>
-            <option value="Personal">Personal</option>
-            <option value="Other">Other Online Payment</option>
+            <option value="QRPH">QRPH</option>
           </select>
         </div>
 
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Amount Paid</label>
-            <div class="input-group">
-              <span class="input-group-text bg-light">PHP</span>
-              <input type="number" class="form-control" v-model="paymentForm.amount_paid" />
-            </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted">Amount</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light">PHP</span>
+            <input type="number" class="form-control" v-model="paymentForm.amount" min="1" />
           </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Reference No.</label>
-            <input type="text" class="form-control" v-model="paymentForm.payment_reference" placeholder="Ref #" />
-          </div>
-        </div>
-
-        <div class="mt-3">
-          <label class="form-label small fw-bold text-muted">Proof of Payment (Image)</label>
-          <input type="file" class="form-control" @change="handleFileUpload" accept="image/*" />
-        </div>
-
-        <div class="mt-3">
-          <label class="form-label small fw-bold text-muted">Remarks (Optional)</label>
-          <textarea class="form-control" rows="2" v-model="paymentForm.remarks" placeholder="Notes for the owner..."></textarea>
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
           <button class="btn btn-light px-4" @click="closePaymentModal">Cancel</button>
-          <button class="btn btn-primary px-4 fw-bold" @click="submitPayment" :disabled="loading || !paymentForm.billing_id">
+          <button class="btn btn-primary px-4 fw-bold" @click="proceedToCheckout" :disabled="loading || !paymentForm.billing_id">
             <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
-            Submit Payment
+            Continue to Checkout
           </button>
         </div>
       </div>
@@ -205,7 +191,7 @@
 </template>
 
 <script>
-import { getTenantDashboard, submitPaymentRecords } from '@/api/tenants';
+import { getTenantDashboard } from '@/api/tenants';
 import Header from '@/components/Header.vue';
 
 export default {
@@ -216,23 +202,31 @@ export default {
       propertyTitle: 'Property',
       propertyType: 'Property type',
       propertyAddress: 'Address unavailable',
+      propertyId: '',
       billings: [],
       tenantStatus: 'inactive',
       moveInDate: null,
       depositRequired: 0,
       advancePaymentMonths: 0,
+      depositPaidAmount: 0,
+      advancePaidAmount: 0,
       totalPaid: 0,
       currentMonth: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
       activeTab: 'billings',
       showPaymentModal: false,
       loading: false,
+      dueItems: [],
+      dueItemsLoaded: false,
+      selectedPaymentItem: null,
+      billingTypeFilter: "",
+      billingDateFrom: "",
+      billingDateTo: "",
       paymentForm: {
         billing_id: '',
-        payment_method: 'GCash',
-        amount_paid: '',
-        payment_reference: '',
-        proof: null,
-        remarks: ''
+        property_id: '',
+        payment_method: 'Online',
+        payment_type: 'rent',
+        amount: ''
       }
     };
   },
@@ -240,9 +234,16 @@ export default {
     selectedBilling() {
       return this.billings.find(b => String(b.id) === String(this.paymentForm.billing_id)) || null;
     },
-    selectedBillingLabel() {
-      if (!this.selectedBilling) return 'No billing selected';
-      return `${this.toTitle(this.selectedBilling.rent_cycle)} Rent - PHP ${this.formatAmount(this.selectedBilling.rent_amount)}`;
+    selectedPaymentLabel() {
+      if (!this.selectedPaymentItem) return 'No item selected';
+      return `${this.selectedPaymentItem.label} - PHP ${this.formatAmount(this.selectedPaymentItem.amount)}`;
+    },
+    paymentTypeLabel() {
+      const type = this.paymentForm.payment_type;
+      if (type === 'rent') return 'Rent';
+      if (type === 'deposit') return 'Security Deposit';
+      if (type === 'advance') return 'Advance Payment (Move-out Notice)';
+      return '-';
     },
     paidBillings() {
       return this.billings.filter(b => String(b.rent_status || '').toLowerCase() === 'paid');
@@ -251,6 +252,9 @@ export default {
       return this.billings.filter(b => ['unpaid', 'overdue', 'pending'].includes(String(b.rent_status || '').toLowerCase()));
     },
     payableItems() {
+      const serverItems = Array.isArray(this.dueItems) ? this.dueItems : [];
+      if (this.dueItemsLoaded) return serverItems;
+
       const items = this.dueBillings.map((bill) => ({
         type: "billing",
         id: bill.id,
@@ -261,9 +265,8 @@ export default {
         billing: bill,
       }));
 
-      const baseRent = this.billings.length > 0 ? Number(this.billings[0].rent_amount || 0) : 0;
       const depositValue = Number(this.depositRequired || 0);
-      const advanceMonths = Number(this.advancePaymentMonths || 0);
+      const advanceAmount = Number(this.advancePaymentMonths || 0);
 
       if (depositValue > 0) {
         items.unshift({
@@ -276,12 +279,12 @@ export default {
         });
       }
 
-      if (advanceMonths > 0 && baseRent > 0) {
+      if (advanceAmount > 0) {
         items.unshift({
           type: "advance",
           id: "advance",
-          label: `Advance Payment (${advanceMonths} month${advanceMonths > 1 ? "s" : ""})`,
-          amount: advanceMonths * baseRent,
+          label: "Advance Payment (Move-out Notice)",
+          amount: advanceAmount,
           due: "Upon move-in",
           rent_status: "unpaid",
         });
@@ -291,6 +294,71 @@ export default {
     },
     showPaymentsTab() {
       return String(this.tenantStatus || '').toLowerCase() === 'active';
+    },
+    advanceRequired() {
+      return Math.max(0, Number(this.advancePaymentMonths || 0));
+    },
+    remainingDue() {
+      return this.payableItems.reduce((acc, item) => acc + Number(item.amount_due || item.amount || 0), 0);
+    },
+    nextDueDate() {
+      const dates = this.payableItems
+        .map(i => i.due)
+        .filter(Boolean)
+        .map(d => new Date(d))
+        .filter(d => !isNaN(d.getTime()))
+        .sort((a, b) => a - b);
+      if (dates.length === 0) return null;
+      return dates[0].toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+    },
+    paidRecords() {
+      const records = [];
+      this.billings
+        .filter(b => String(b.rent_status || '').toLowerCase() === 'paid')
+        .forEach(b => {
+          records.push({
+            id: `rent_${b.id}`,
+            type: 'rent',
+            label: `${b.rent_cycle} Rent`,
+            amount: Number(b.rent_amount || 0),
+            date: b.rent_due || null
+          });
+        });
+
+      if (Number(this.depositPaidAmount || 0) > 0) {
+        records.push({
+          id: 'deposit_paid',
+          type: 'deposit',
+          label: 'Security Deposit',
+          amount: Number(this.depositPaidAmount || 0),
+          date: this.moveInDate || null
+        });
+      }
+      if (Number(this.advancePaidAmount || 0) > 0) {
+        records.push({
+          id: 'advance_paid',
+          type: 'advance',
+          label: 'Advance Payment (Move-out Notice)',
+          amount: Number(this.advancePaidAmount || 0),
+          date: this.moveInDate || null
+        });
+      }
+      return records;
+    },
+    filteredPaidRecords() {
+      let records = this.paidRecords;
+      if (this.billingTypeFilter) {
+        records = records.filter(r => r.type === this.billingTypeFilter);
+      }
+      if (this.billingDateFrom) {
+        const from = new Date(this.billingDateFrom);
+        records = records.filter(r => r.date && new Date(r.date) >= from);
+      }
+      if (this.billingDateTo) {
+        const to = new Date(this.billingDateTo);
+        records = records.filter(r => r.date && new Date(r.date) <= to);
+      }
+      return records;
     },
     tenantStatusLabel() {
       return String(this.tenantStatus || '').toLowerCase() === 'active' ? 'ACTIVE' : 'INACTIVE';
@@ -313,6 +381,8 @@ export default {
         const res = await getTenantDashboard();
         const payload = res?.data?.data || {};
         this.billings = payload.billings || [];
+        this.dueItems = payload.due_items || [];
+        this.dueItemsLoaded = Object.prototype.hasOwnProperty.call(payload, 'due_items');
 
         const local = JSON.parse(localStorage.getItem("userInfo") || "{}");
         const fullName = [local.first_name, local.last_name].filter(Boolean).join(" ").trim();
@@ -321,10 +391,14 @@ export default {
         this.propertyTitle = payload.property_title || this.propertyTitle;
         this.propertyType = payload.property_type || this.propertyType;
         this.propertyAddress = payload.property_address || this.propertyAddress;
+        this.propertyId = payload.property_id || this.propertyId;
         this.tenantStatus = payload.tenant_status || this.tenantStatus;
         this.moveInDate = payload.move_in_date || null;
         this.depositRequired = payload.deposit_required || 0;
         this.advancePaymentMonths = payload.advance_payment_months || 0;
+        const latestBilling = Array.isArray(this.billings) && this.billings.length > 0 ? this.billings[0] : null;
+        this.depositPaidAmount = latestBilling?.deposit_paid_amount || 0;
+        this.advancePaidAmount = latestBilling?.advance_paid_amount || 0;
 
         this.totalPaid = this.billings
           .filter(b => String(b.rent_status || '').toLowerCase() === 'paid')
@@ -335,23 +409,21 @@ export default {
     },
     openPaymentModal(item) {
       if (!item) {
-        alert("No billing selected for payment.");
+        alert("No payment item selected.");
         return;
       }
-      if (item.type === "billing") {
-        this.paymentForm.billing_id = item.id;
-        this.paymentForm.amount_paid = item.amount;
-        this.paymentForm.remarks = "";
-      } else {
-        const firstBilling = this.billings[0];
-        if (!firstBilling) {
-          alert("No billing available to attach this payment.");
-          return;
-        }
-        this.paymentForm.billing_id = firstBilling.id;
-        this.paymentForm.amount_paid = item.amount;
-        this.paymentForm.remarks = item.type === "deposit" ? "Security deposit" : "Advance payment";
+      const firstBilling = this.billings[0] || null;
+      if (!firstBilling && !item.billing_id) {
+        alert("No billing available to attach this payment.");
+        return;
       }
+
+      this.selectedPaymentItem = item;
+      this.paymentForm.billing_id = item.billing_id || (item.type === "billing" ? item.id : firstBilling?.id);
+      this.paymentForm.property_id = item.property_id || item?.billing?.property_id || firstBilling?.property_id || this.propertyId || '';
+      this.paymentForm.payment_type = item.type === "billing" ? "rent" : item.type;
+      this.paymentForm.payment_method = "GCash";
+      this.paymentForm.amount = item.amount;
       this.showPaymentModal = true;
     },
     closePaymentModal() {
@@ -359,40 +431,31 @@ export default {
       this.resetForm();
     },
     resetForm() {
-      this.paymentForm = { 
-        billing_id: '', 
-        payment_method: 'GCash', 
-        amount_paid: '', 
-        payment_reference: '', 
-        proof: null, 
-        remarks: '' 
+      this.selectedPaymentItem = null;
+      this.paymentForm = {
+        billing_id: '',
+        property_id: '',
+        payment_method: 'Online',
+        payment_type: 'rent',
+        amount: ''
       };
     },
-    handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (!file) {
-        this.paymentForm.proof = null;
+    syncAmountForType() {
+      const baseRent = this.billings.length > 0 ? Number(this.billings[0].rent_amount || 0) : 0;
+      if (this.paymentForm.payment_type === "rent") {
+        const selectedAmount = this.selectedPaymentItem?.amount;
+        this.paymentForm.amount = Number.isFinite(Number(selectedAmount)) ? Number(selectedAmount) : baseRent;
         return;
       }
-
-      const allowed = ["image/jpeg", "image/jpg", "image/png"];
-      if (!allowed.includes(file.type)) {
-        alert("Only JPG and PNG files are allowed.");
-        event.target.value = "";
-        this.paymentForm.proof = null;
+      if (this.paymentForm.payment_type === "deposit") {
+        this.paymentForm.amount = Number(this.depositRequired || 0);
         return;
       }
-
-      if (file.size > 5 * 1024 * 1024) {
-        alert("Proof image must be 5MB or less.");
-        event.target.value = "";
-        this.paymentForm.proof = null;
-        return;
+      if (this.paymentForm.payment_type === "advance") {
+        this.paymentForm.amount = Number(this.advancePaymentMonths || 0);
       }
-
-      this.paymentForm.proof = file;
     },
-    async submitPayment() {
+    async proceedToCheckout() {
       if (!this.paymentForm.billing_id) {
         alert("Please select a billing to pay.");
         return;
@@ -403,41 +466,31 @@ export default {
         return;
       }
 
-      if (!this.paymentForm.proof) {
-        alert("Please upload proof of payment.");
-        return;
-      }
-
-      const submittedAmount = Number(this.paymentForm.amount_paid);
-      const expectedAmount = Number(this.selectedBilling.rent_amount);
+      const submittedAmount = Number(this.paymentForm.amount);
       if (!Number.isFinite(submittedAmount) || submittedAmount <= 0) {
         alert("Please enter a valid payment amount.");
         return;
       }
 
-      if (submittedAmount !== expectedAmount) {
-        alert(`Amount must exactly match the billing amount of PHP ${this.formatAmount(expectedAmount)}.`);
-        return;
-      }
-
       this.loading = true;
       try {
-        const formData = new FormData();
-        formData.append('billing_id', this.paymentForm.billing_id);
-        formData.append('payment_method', this.paymentForm.payment_method);
-        formData.append('amount_paid', this.paymentForm.amount_paid);
-        formData.append('payment_reference', this.paymentForm.payment_reference);
-        formData.append('proof', this.paymentForm.proof);
-        formData.append('remarks', this.paymentForm.remarks);
+        const local = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        const payload = {
+          tenant_id: local?.id || null,
+          billing_id: this.paymentForm.billing_id,
+          property_id: this.paymentForm.property_id,
+          payment_type: this.paymentForm.payment_type,
+          payment_method: this.paymentForm.payment_method,
+          amount: submittedAmount,
+          rent_cycle: this.selectedBilling?.rent_cycle || null
+        };
 
-        await submitPaymentRecords(formData);
-        
-        alert("Payment submitted successfully! The owner will verify your proof.");
+        sessionStorage.setItem("tenantMockCheckout", JSON.stringify(payload));
         this.closePaymentModal();
-        this.fetchMyData();
+        this.$router.push("/tenant/checkout");
       } catch (err) {
         console.error(err);
-        alert("Error submitting payment. Please check your connection.");
+        alert("Error preparing payment. Please check your connection.");
       } finally {
         this.loading = false;
       }

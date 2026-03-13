@@ -15,3 +15,7 @@ export async function submitPaymentRecords(formData){
     }
   });
 }
+
+export async function submitMockTenantPayment(payload){
+  return await api.post("/tenant/mock-payments", payload);
+}

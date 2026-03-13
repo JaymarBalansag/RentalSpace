@@ -139,6 +139,12 @@ const routes = [
     component: () => import('@/views/User/TenantDashboard.vue'),
     meta: { requiresAuth: true, isVerified: true, roleIsTenants: true }
   },
+  {
+    path: '/tenant/checkout',
+    name: 'tenantMockCheckout',
+    component: () => import('@/views/User/TenantMockCheckout.vue'),
+    meta: { requiresAuth: true, isVerified: true, roleIsTenants: true }
+  },
   { path: '/about', name: 'about', component: () => import('@/views/User/about.vue') },
   { path: '/contactus', name: 'contactus', component: () => import('@/views/User/contactus.vue') },
 

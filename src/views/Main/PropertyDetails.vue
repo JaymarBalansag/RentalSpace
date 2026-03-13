@@ -1036,7 +1036,7 @@ export default {
         { label: "Price", value: `PHP ${this.formatMoney(this.property.price)}` },
         { label: "Payment Frequency", value: this.toTitle(this.property.payment_frequency) },
         { label: "Agreement", value: this.toTitle(this.property.agreement_type) },
-        { label: "Advance Payment", value: hasAdvance ? `${advanceValue} month(s)` : "None" },
+        { label: "Advance Payment (Move-out Notice)", value: hasAdvance ? `PHP ${this.formatMoney(advanceValue)}` : "None" },
         { label: "Deposit", value: hasDeposit ? `PHP ${this.formatMoney(depositValue)}` : "None" },
         { label: "Availability", value: this.availabilityText },
       ];

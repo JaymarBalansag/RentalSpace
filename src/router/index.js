@@ -157,6 +157,7 @@ const routes = [
     meta: { requiresAuth: true, roleIsOwner: true, isVerified: true },
     children: [
       { path: "/overview", name: "OwnerOverview", component: () => import('@/views/Owner/Overview.vue') },
+      { path: "/subscription", name: "OwnerSubscription", component: () => import('@/views/Owner/Subscription.vue') },
       { path: "/properties", name: "OwnerProperties", component: () => import('@/views/Owner/Properties.vue') },
       { path: "/dashboard/properties/add", name: "AddProperty", component: () => import('@/views/Owner/PropertyCrud/addProperty.vue') },
       { path: "/dashboard/properties/:id/edit", name: "EditProperty", component: () => import('@/views/Owner/PropertyCrud/editProperty.vue') },

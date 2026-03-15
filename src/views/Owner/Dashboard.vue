@@ -83,6 +83,7 @@ export default {
       isCollapsed: false, // Desktop starts expanded
       isMobileOpen: false, // Mobile starts hidden
       navItems: [
+        { name: "Subscription", route: "/subscription", icon: "bi bi-gem" },
         { name: "Overview", route: "/overview", icon: "bi bi-speedometer2" },
         { name: "Properties", route: "/properties", icon: "bi bi-building" },
         { name: "Tenants", route: "/tenants", icon: "bi bi-people" },

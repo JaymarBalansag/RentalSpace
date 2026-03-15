@@ -93,12 +93,25 @@
                 <span class="value">Manual</span>
               </div>
             </div>
-            <div class="upgrade-banner mt-4">
-              <div>
-                <h6 class="fw-bold mb-1">Upgrade for more listings</h6>
-                <p class="small mb-0">Higher tiers unlock premium visibility and analytics.</p>
+            <div class="upgrade-cta mt-4">
+              <div class="usage-bar">
+                <div class="usage-meta">
+                  <span class="fw-semibold">Listings Used</span>
+                  <span class="text-muted small">{{ listingUsageText }}</span>
+                </div>
+                <div class="progress usage-progress" role="progressbar" :aria-valuenow="listingUsagePercent" aria-valuemin="0" aria-valuemax="100">
+                  <div class="progress-bar" :style="{ width: listingUsagePercent + '%' }"></div>
+                </div>
               </div>
-              <button class="btn btn-primary fw-semibold" disabled>Coming Soon</button>
+              <div class="upgrade-banner">
+                <div>
+                  <h6 class="fw-bold mb-1">Need more listings?</h6>
+                  <p class="small mb-0">Add extra listing slots without changing your plan.</p>
+                </div>
+                <button class="btn btn-primary fw-semibold" @click="showUpgradeModal = true">
+                  Upgrade Limit
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -151,6 +164,47 @@
       </div>
     </div>
   </div>
+
+  <div v-if="showUpgradeModal" class="modal fade show modal-backdrop-open" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold">Upgrade Listing Limit</h5>
+          <button type="button" class="btn-close" @click="showUpgradeModal = false"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3">Choose how many extra listings you want to add.</p>
+          <div class="stepper-card">
+            <div class="stepper-controls">
+              <button class="btn btn-outline-secondary" @click="decreaseAddon" :disabled="addonQty <= addonMin">
+                <i class="bi bi-dash"></i>
+              </button>
+              <div class="stepper-value">{{ addonQty }}</div>
+              <button class="btn btn-outline-secondary" @click="increaseAddon" :disabled="addonQty >= addonMax">
+                <i class="bi bi-plus"></i>
+              </button>
+            </div>
+            <div class="stepper-meta">
+              <div>
+                <p class="text-muted small mb-1">Unit Price</p>
+                <p class="fw-bold mb-0">PHP {{ addonUnitPrice }} / {{ addonCycleLabel }}</p>
+              </div>
+              <div class="text-end">
+                <p class="text-muted small mb-1">Total</p>
+                <p class="fw-bold mb-0">PHP {{ addonTotal }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button class="btn btn-light border" @click="showUpgradeModal = false">Cancel</button>
+          <button class="btn btn-primary fw-semibold" @click="goToAddonPayment">
+            Continue to Payment
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -161,6 +215,10 @@ export default {
   name: "OwnerSubscription",
   data() {
     return {
+      showUpgradeModal: false,
+      addonQty: 1,
+      addonMin: 1,
+      addonMax: 10,
       upgradePlans: [
         {
           tag: "Starter",
@@ -233,8 +291,47 @@ export default {
     currentCycle() {
       return String(this.subscription?.billing_cycle || "").toLowerCase();
     },
+    addonUnitPrice() {
+      return this.currentCycle === "annual" ? 450 : 50;
+    },
+    addonCycleLabel() {
+      return this.currentCycle === "annual" ? "year" : "month";
+    },
+    addonTotal() {
+      return this.addonQty * this.addonUnitPrice;
+    },
+    listingUsageText() {
+      const limit = this.subscription?.listing_limit;
+      if (typeof limit !== "number" || limit <= 0) {
+        return "Usage data unavailable";
+      }
+      return `${limit} listings available`;
+    },
+    listingUsagePercent() {
+      const limit = this.subscription?.listing_limit;
+      if (typeof limit !== "number" || limit <= 0) {
+        return 0;
+      }
+      return 0;
+    },
   },
   methods: {
+    increaseAddon() {
+      this.addonQty = Math.min(this.addonQty + 1, this.addonMax);
+    },
+    decreaseAddon() {
+      this.addonQty = Math.max(this.addonQty - 1, this.addonMin);
+    },
+    goToAddonPayment() {
+      const query = {
+        qty: this.addonQty,
+        cycle: this.currentCycle || "monthly",
+        unit_price: this.addonUnitPrice,
+        total: this.addonTotal,
+      };
+      this.showUpgradeModal = false;
+      this.$router.push({ path: "/owner/addon-payment", query });
+    },
     isCurrentPlan(plan) {
       if (!this.currentCycle) return false;
       return String(plan.cycle || "").toLowerCase() === this.currentCycle;
@@ -384,6 +481,72 @@ export default {
   border-color: rgba(255, 255, 255, 0.4);
   color: #fff;
 }
+.upgrade-cta {
+  display: grid;
+  gap: 1rem;
+}
+.usage-bar {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+.usage-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.usage-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+}
+.usage-progress .progress-bar {
+  background: linear-gradient(120deg, rgba(43, 106, 243, 0.95), rgba(45, 212, 191, 0.9));
+  border-radius: 999px;
+}
+.upgrade-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid rgba(43, 106, 243, 0.2);
+  background: rgba(43, 106, 243, 0.08);
+}
+.modal-backdrop-open {
+  display: block;
+  background: rgba(15, 23, 42, 0.35);
+}
+.stepper-card {
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(15, 23, 42, 0.03);
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+.stepper-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+.stepper-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  min-width: 64px;
+  text-align: center;
+}
+.stepper-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
 .plan-card {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 16px;
@@ -425,6 +588,10 @@ export default {
 
 @media (max-width: 768px) {
   .upgrade-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .upgrade-inline {
     flex-direction: column;
     align-items: flex-start;
   }

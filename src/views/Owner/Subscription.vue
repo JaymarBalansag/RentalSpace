@@ -120,7 +120,7 @@
             </div>
 
             <div class="row g-3">
-              <div class="col-12 col-md-4" v-for="plan in upgradePlans" :key="plan.name">
+              <div class="col-12 col-md-6" v-for="plan in upgradePlans" :key="plan.name">
                 <div class="plan-card">
                   <div class="d-flex align-items-start justify-content-between mb-3">
                     <div>
@@ -154,6 +154,7 @@
 </template>
 
 <script>
+import { getOwnerSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
 
 export default {
@@ -163,33 +164,27 @@ export default {
       upgradePlans: [
         {
           tag: "Starter",
-          name: "Portfolio Lite",
+          name: "Monthly",
           desc: "Best for new property owners.",
-          price: "PHP 299",
+          price: "PHP 200", 
           cycle: "month",
           icon: "bi bi-stars",
-          features: ["Up to 3 listings", "Standard support", "Basic insights"],
+          features: ["Up to 2 listings"],
         },
         {
           tag: "Popular",
-          name: "Growth Plus",
+          name: "Annual",
           desc: "For steady rental growth.",
-          price: "PHP 799",
-          cycle: "month",
+          price: "PHP 1800",
+          cycle: "annual",
           icon: "bi bi-graph-up-arrow",
-          features: ["Up to 10 listings", "Priority support", "Smart reminders"],
-        },
-        {
-          tag: "Premium",
-          name: "Enterprise",
-          desc: "Scale confidently with full visibility.",
-          price: "PHP 1,499",
-          cycle: "month",
-          icon: "bi bi-gem",
-          features: ["Unlimited listings", "Dedicated support", "Advanced analytics"],
+          features: ["Up to 5 listings", "System Management"],
         },
       ],
     };
+  },
+  async mounted() {
+    await this.refreshSubscription();
   },
   computed: {
     subscription() {
@@ -237,6 +232,15 @@ export default {
     },
   },
   methods: {
+    async refreshSubscription() {
+      try {
+        const subscription = await getOwnerSubscriptionStatus();
+        const info = useUserInfo();
+        info.setSubscriptionStatus(subscription);
+      } catch (error) {
+        console.warn("Failed to refresh subscription status:", error);
+      }
+    },
     formatAmount(amount) {
       if (amount === null || amount === undefined || amount === "") return "—";
       const value = Number(amount || 0);

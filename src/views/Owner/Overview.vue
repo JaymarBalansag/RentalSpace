@@ -62,6 +62,7 @@
               <RouterLink to="/dashboard/properties/add" class="btn btn-primary fw-semibold">Add Property</RouterLink>
               <RouterLink to="/bookings" class="btn btn-outline-primary fw-semibold">View Bookings</RouterLink>
               <RouterLink to="/ledger" class="btn btn-outline-dark fw-semibold">Go to Ledger</RouterLink>
+              <RouterLink to="/tenants?tab=moveout" class="btn btn-outline-secondary fw-semibold">Move-Out Notices</RouterLink>
             </div>
           </div>
         </div>

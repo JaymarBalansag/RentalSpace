@@ -22,3 +22,7 @@ export async function getTenantsByProperty(propertyId) {
 export async function moveIn(tenant_id){
     return await api.post(`/tenants/${tenant_id}/move-in`);
 }
+
+export async function getOwnerMoveOutNotices(params = {}){
+    return await api.get("/owner/move-out-notices", { params });
+}

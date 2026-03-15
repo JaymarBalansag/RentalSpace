@@ -19,3 +19,11 @@ export async function submitPaymentRecords(formData){
 export async function submitMockTenantPayment(payload){
   return await api.post("/tenant/mock-payments", payload);
 }
+
+export async function submitMoveOutNotice(payload){
+  return await api.post("/tenant/move-out-notices", payload);
+}
+
+export async function getTenantMoveOutNotices(){
+  return await api.get("/tenant/move-out-notices");
+}

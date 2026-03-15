@@ -2,15 +2,23 @@
   <Header></Header>
 
   <div class="tenant-dashboard p-3 p-md-4">
+    <div v-if="tenantLoadError" class="alert alert-warning small mb-3">
+      {{ tenantLoadError }}
+    </div>
     <div class="row mb-4 align-items-center">
       <div class="col">
         <h4 class="fw-bold mb-0">Hello, {{ tenantName }}!</h4>
         <p class="text-muted small">Here is your billing and payment summary for {{ currentMonth }}.</p>
       </div>
       <div class="col-auto">
-        <span class="badge px-3 py-2" :class="tenantStatusClass">
-          Status: {{ tenantStatusLabel }}
-        </span>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge px-3 py-2" :class="tenantStatusClass">
+            Status: {{ tenantStatusLabel }}
+          </span>
+          <button class="btn btn-outline-primary btn-sm fw-semibold" @click="showMoveOutModal = true">
+            Notify Move-Out
+          </button>
+        </div>
       </div>
     </div>
 
@@ -64,6 +72,11 @@
       <li class="nav-item" v-if="showPaymentsTab">
         <button class="nav-link" :class="{ active: activeTab === 'payments' }" @click="activeTab = 'payments'">
           Payments
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" :class="{ active: activeTab === 'moveout' }" @click="activeTab = 'moveout'">
+          Move-Out Notices
         </button>
       </li>
     </ul>
@@ -142,6 +155,36 @@
       </div>
     </div>
 
+    <div v-if="activeTab === 'moveout'">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div v-if="moveOutNoticesError" class="text-center py-5 text-muted">
+            {{ moveOutNoticesError }}
+          </div>
+          <div v-else-if="moveOutNotices.length === 0" class="text-center py-5 text-muted">
+            No notices yet.
+          </div>
+          <div v-else class="list-group list-group-flush">
+            <div v-for="notice in moveOutNotices" :key="notice.id" class="list-group-item border-0 border-bottom">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="fw-bold">Move-Out Notice</div>
+                  <small class="text-muted">Submitted: {{ formatDate(notice.created_at) }}</small>
+                </div>
+                <span class="badge rounded-pill" :class="noticeStatusClass(notice.status)">
+                  {{ (notice.status || 'pending').toUpperCase() }}
+                </span>
+              </div>
+              <p class="mb-0 small text-muted mt-2">{{ notice.message || 'Awaiting owner response.' }}</p>
+              <small v-if="notice.requested_move_out_date" class="text-muted">
+                Requested Move-Out: {{ formatDate(notice.requested_move_out_date) }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showPaymentModal" class="modal-backdrop-custom">
       <div class="modal-custom shadow-lg border-0">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -187,11 +230,38 @@
         </div>
       </div>
     </div>
+
+    <div v-if="showMoveOutModal" class="modal-backdrop-custom">
+      <div class="modal-custom shadow-lg border-0">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Notify Move-Out</h5>
+          <button class="btn-close" @click="showMoveOutModal = false"></button>
+        </div>
+        <p class="text-muted small">
+          This will notify your owner that you intend to move out. You can cancel if you are not ready yet.
+        </p>
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted">Requested Move-Out Date</label>
+          <input type="date" class="form-control" v-model="moveOutForm.requested_move_out_date">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted">Message (Optional)</label>
+          <textarea class="form-control" rows="3" v-model="moveOutForm.message" placeholder="Share any details with your owner..."></textarea>
+        </div>
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button class="btn btn-light px-4" @click="showMoveOutModal = false">Cancel</button>
+          <button class="btn btn-primary px-4 fw-bold" @click="confirmMoveOut" :disabled="sendingMoveOut">
+            <span v-if="sendingMoveOut" class="spinner-border spinner-border-sm me-2"></span>
+            Send Notice
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { getTenantDashboard } from '@/api/tenants';
+import { getTenantDashboard, getTenantMoveOutNotices, submitMoveOutNotice } from '@/api/tenants';
 import Header from '@/components/Header.vue';
 
 export default {
@@ -221,6 +291,15 @@ export default {
       billingTypeFilter: "",
       billingDateFrom: "",
       billingDateTo: "",
+      moveOutNotices: [],
+      showMoveOutModal: false,
+      sendingMoveOut: false,
+      tenantLoadError: "",
+      moveOutNoticesError: "",
+      moveOutForm: {
+        requested_move_out_date: "",
+        message: ""
+      },
       paymentForm: {
         billing_id: '',
         property_id: '',
@@ -371,6 +450,7 @@ export default {
   },
   mounted() {
     this.fetchMyData();
+    this.fetchMoveOutNotices();
   },
   methods: {
     toTitle(text){
@@ -378,6 +458,7 @@ export default {
     },
     async fetchMyData() {
       try {
+        this.tenantLoadError = "";
         const res = await getTenantDashboard();
         const payload = res?.data?.data || {};
         this.billings = payload.billings || [];
@@ -392,7 +473,7 @@ export default {
         this.propertyType = payload.property_type || this.propertyType;
         this.propertyAddress = payload.property_address || this.propertyAddress;
         this.propertyId = payload.property_id || this.propertyId;
-        this.tenantStatus = payload.tenant_status || this.tenantStatus;
+        this.tenantStatus = payload.tenant_status || payload.status || this.tenantStatus;
         this.moveInDate = payload.move_in_date || null;
         this.depositRequired = payload.deposit_required || 0;
         this.advancePaymentMonths = payload.advance_payment_months || 0;
@@ -405,6 +486,11 @@ export default {
           .reduce((acc, curr) => acc + Number(curr.rent_amount), 0);
       } catch (err) {
         console.error("Dashboard error:", err);
+        if (err?.response?.status === 404) {
+          this.tenantLoadError = "Tenant profile not found. Please contact support.";
+        } else {
+          this.tenantLoadError = "Unable to load tenant dashboard right now.";
+        }
       }
     },
     openPaymentModal(item) {
@@ -455,6 +541,20 @@ export default {
         this.paymentForm.amount = Number(this.advancePaymentMonths || 0);
       }
     },
+    async confirmMoveOut() {
+      this.sendingMoveOut = true;
+      try {
+        await submitMoveOutNotice(this.moveOutForm);
+        this.showMoveOutModal = false;
+        this.moveOutForm = { requested_move_out_date: "", message: "" };
+        await this.fetchMoveOutNotices();
+        alert("Move-out notice sent.");
+      } catch (error) {
+        alert("Failed to send move-out notice. Please try again.");
+      } finally {
+        this.sendingMoveOut = false;
+      }
+    },
     async proceedToCheckout() {
       if (!this.paymentForm.billing_id) {
         alert("Please select a billing to pay.");
@@ -503,6 +603,29 @@ export default {
         overdue: "bg-dark text-white"
       };
       return map[status] || "bg-secondary";
+    },
+    async fetchMoveOutNotices() {
+      try {
+        this.moveOutNoticesError = "";
+        const res = await getTenantMoveOutNotices();
+        this.moveOutNotices = res?.data?.data || [];
+      } catch (error) {
+        console.warn("Failed to load move-out notices", error);
+        this.moveOutNoticesError = "Unable to load move-out notices right now.";
+      }
+    },
+    noticeStatusClass(status) {
+      const value = String(status || 'pending').toLowerCase();
+      if (value === 'approved') return 'bg-success-subtle text-success';
+      if (value === 'rejected') return 'bg-danger-subtle text-danger';
+      if (value === 'acknowledged') return 'bg-info-subtle text-info';
+      return 'bg-warning-subtle text-warning';
+    },
+    formatDate(date) {
+      if (!date) return '-';
+      const parsed = new Date(date);
+      if (Number.isNaN(parsed.getTime())) return '-';
+      return parsed.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
     },
     formatAmount(val) {
       return Number(val).toLocaleString(undefined, { minimumFractionDigits: 2 });

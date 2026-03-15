@@ -121,7 +121,7 @@
 
             <div class="row g-3">
               <div class="col-12 col-md-6" v-for="plan in upgradePlans" :key="plan.name">
-                <div class="plan-card">
+                <div class="plan-card" :class="{ 'plan-card--current': isCurrentPlan(plan) }">
                   <div class="d-flex align-items-start justify-content-between mb-3">
                     <div>
                       <p class="text-uppercase small fw-semibold text-muted mb-1">{{ plan.tag }}</p>
@@ -140,8 +140,8 @@
                       <span>{{ feature }}</span>
                     </li>
                   </ul>
-                  <button class="btn btn-light border w-100 fw-semibold mt-3" disabled>
-                    Coming Soon
+                  <button class="btn w-100 fw-semibold mt-3" :class="planButtonClass(plan)" disabled>
+                    {{ planButtonLabel(plan) }}
                   </button>
                 </div>
               </div>
@@ -167,7 +167,7 @@ export default {
           name: "Monthly",
           desc: "Best for new property owners.",
           price: "PHP 200", 
-          cycle: "month",
+          cycle: "monthly",
           icon: "bi bi-stars",
           features: ["Up to 2 listings"],
         },
@@ -230,8 +230,21 @@ export default {
       if (days <= 0) return "Your subscription is due for renewal.";
       return `${days} day(s) remaining until renewal.`;
     },
+    currentCycle() {
+      return String(this.subscription?.billing_cycle || "").toLowerCase();
+    },
   },
   methods: {
+    isCurrentPlan(plan) {
+      if (!this.currentCycle) return false;
+      return String(plan.cycle || "").toLowerCase() === this.currentCycle;
+    },
+    planButtonLabel(plan) {
+      return this.isCurrentPlan(plan) ? "Current Plan" : "Upgrade to this plan";
+    },
+    planButtonClass(plan) {
+      return this.isCurrentPlan(plan) ? "btn-primary" : "btn-light border";
+    },
     async refreshSubscription() {
       try {
         const subscription = await getOwnerSubscriptionStatus();
@@ -380,6 +393,10 @@ export default {
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   display: flex;
   flex-direction: column;
+}
+.plan-card--current {
+  border-color: rgba(43, 106, 243, 0.45);
+  box-shadow: 0 16px 34px rgba(43, 106, 243, 0.15);
 }
 .plan-icon {
   font-size: 1.4rem;

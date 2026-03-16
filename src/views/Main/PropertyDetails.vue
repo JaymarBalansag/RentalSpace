@@ -1028,12 +1028,16 @@ export default {
     },
     rentalTerms() {
       if (!this.property) return [];
+      const advanceValue = Number(this.property.advance_payment_months || 0);
+      const hasAdvance = Number.isFinite(advanceValue) && advanceValue > 0;
+      const depositValue = Number(this.property.deposit_required || 0);
+      const hasDeposit = Number.isFinite(depositValue) && depositValue > 0;
       const terms = [
         { label: "Price", value: `PHP ${this.formatMoney(this.property.price)}` },
         { label: "Payment Frequency", value: this.toTitle(this.property.payment_frequency) },
         { label: "Agreement", value: this.toTitle(this.property.agreement_type) },
-        { label: "Advance Payment", value: this.property.advance_payment_months ?? 0 },
-        { label: "Deposit", value: this.property.deposit_required ? `PHP ${this.formatMoney(this.property.deposit_required)}` : "None" },
+        { label: "Advance Payment (Move-out Notice)", value: hasAdvance ? `PHP ${this.formatMoney(advanceValue)}` : "None" },
+        { label: "Deposit", value: hasDeposit ? `PHP ${this.formatMoney(depositValue)}` : "None" },
         { label: "Availability", value: this.availabilityText },
       ];
 

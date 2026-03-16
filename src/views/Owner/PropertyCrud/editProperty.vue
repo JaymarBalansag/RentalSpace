@@ -557,7 +557,7 @@
             <small class="text-muted d-block mb-3">Define upfront payment expectations for tenants.</small>
             <div class="row g-3">
               <div class="col-12 col-md-6">
-                <label class="form-label fw-semibold small text-uppercase">Advance Payment</label>
+                <label class="form-label fw-semibold small text-uppercase">Advance Payment (Move-out Notice)</label>
                 <div class="input-group">
                   <span class="input-group-text border-2">PHP</span>
                   <input
@@ -794,7 +794,7 @@
                 </div>
                 <template v-if="form.agreement_type === 'rental'">
                   <div class="step5-row">
-                    <span>Advance Payment</span>
+                    <span>Advance Payment (Move-out Notice)</span>
                     <strong>PHP {{ Number(form.advance_payment_months || 0).toLocaleString() }}</strong>
                   </div>
                   <div class="step5-row">
@@ -1470,7 +1470,7 @@ export default {
 
         if (this.form.agreement_type === "rental") {
           if (this.form.advance_payment_months < 0) {
-            this.pushValidation("advance_payment_months", "Advance payment months cannot be negative.");
+            this.pushValidation("advance_payment_months", "Advance payment amount cannot be negative.");
           }
           if (this.form.deposit_required < 0) {
             this.pushValidation("deposit_required", "Deposit required cannot be negative.");

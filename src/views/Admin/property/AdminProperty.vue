@@ -257,12 +257,12 @@
           v-if="selectedPropertyDetails.property?.status === 'pending'"
           class="details-actions mt-3 d-flex justify-content-end gap-2"
         >
-          <button class="btn btn-success btn-sm" :disabled="isActionLoading" @click="openApproveModal(selectedPropertyDetails.property)">
+          <!-- <button class="btn btn-success btn-sm" :disabled="isActionLoading" @click="openApproveModal(selectedPropertyDetails.property)">
             Approve
-          </button>
-          <button class="btn btn-outline-danger btn-sm" :disabled="isActionLoading" @click="openRejectModal(selectedPropertyDetails.property)">
+          </button> -->
+          <!-- <button class="btn btn-outline-danger btn-sm" :disabled="isActionLoading" @click="openRejectModal(selectedPropertyDetails.property)">
             Reject
-          </button>
+          </button> -->
           <button class="btn btn-outline-primary btn-sm btn-notify" :disabled="isActionLoading" @click="openNotifyOwnerModal(selectedPropertyDetails.property)">
             Notify Owner
           </button>

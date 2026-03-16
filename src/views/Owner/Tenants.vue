@@ -84,6 +84,16 @@
               <p v-if="latestNotice.message" class="small text-muted mb-0 mt-1">
                 {{ latestNotice.message }}
               </p>
+              <div class="mt-3">
+                <button
+                  class="btn btn-sm btn-outline-danger fw-semibold"
+                  :disabled="deletingNoticeId === latestNotice.id"
+                  @click="deleteNotice(latestNotice)"
+                >
+                  <span v-if="deletingNoticeId === latestNotice.id" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Delete Notice
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -98,7 +108,7 @@
               <th class="ps-4 py-3">Tenant Details</th>
               <th>Property</th>
               <th>Status</th>
-              <th class="text-center px-4">Action</th>
+              <th class="text-center px-4">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -114,14 +124,28 @@
                 </span>
               </td>
               <td class="text-center px-4">
-                <button 
-                  v-if="tenant.status === 'inactive'" 
-                  class="btn btn-sm btn-success px-3 fw-bold shadow-sm"
-                  @click="processMoveIn(tenant)"
-                >
-                  <i class="bi bi-door-open-fill me-1"></i> Move In
-                </button>
-                <span v-else class="text-muted small">-</span>
+                <div class="d-inline-flex align-items-center gap-2 flex-wrap justify-content-center">
+                  <button class="btn btn-sm btn-outline-primary fw-semibold" @click="openTenantProfile(tenant)">
+                    View
+                  </button>
+                  <button class="btn btn-sm btn-outline-secondary fw-semibold" @click="messageTenant(tenant)">
+                    Message
+                  </button>
+                  <button
+                    v-if="tenant.status === 'active'"
+                    class="btn btn-sm btn-outline-danger fw-semibold"
+                    @click="processEndLease(tenant)"
+                  >
+                    End Lease
+                  </button>
+                  <button
+                    v-if="tenant.status === 'inactive'"
+                    class="btn btn-sm btn-success fw-semibold"
+                    @click="processMoveIn(tenant)"
+                  >
+                    <i class="bi bi-door-open-fill me-1"></i> Move In
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -139,7 +163,8 @@
           <div class="d-flex justify-content-between align-items-start mb-3">
             <div class="d-flex align-items-center">
               <div class="avatar-circle me-2 bg-primary-subtle text-primary fw-bold">
-                {{ tenant.first_name[0] }}{{ tenant.last_name[0] }}
+                <img v-if="tenant.user_img_url" :src="tenant.user_img_url" :alt="tenant.first_name" />
+                <span v-else>{{ tenant.first_name[0] }}{{ tenant.last_name[0] }}</span>
               </div>
               <div>
                 <h6 class="fw-bold mb-0 text-dark">{{ tenant.first_name }} {{ tenant.last_name }}</h6>
@@ -156,16 +181,28 @@
             <span class="small fw-medium text-dark"><i class="bi bi-house me-1"></i>{{ tenant.property_title }}</span>
           </div>
 
-          <button 
-            v-if="tenant.status === 'inactive'" 
-            class="btn btn-success w-100 py-2 fw-bold shadow-sm"
-            @click="processMoveIn(tenant)"
-          >
-            <i class="bi bi-door-open-fill me-2"></i> Process Move-In
-          </button>
-          <button v-else class="btn btn-outline-secondary w-100 disabled py-2 small">
-            Tenant is Active
-          </button>
+          <div class="d-grid gap-2">
+            <button class="btn btn-outline-primary w-100 py-2 fw-semibold" @click="openTenantProfile(tenant)">
+              View Profile
+            </button>
+            <button class="btn btn-outline-secondary w-100 py-2 fw-semibold" @click="messageTenant(tenant)">
+              Message
+            </button>
+            <button
+              v-if="tenant.status === 'active'"
+              class="btn btn-outline-danger w-100 py-2 fw-semibold"
+              @click="processEndLease(tenant)"
+            >
+              End Lease
+            </button>
+            <button 
+              v-if="tenant.status === 'inactive'" 
+              class="btn btn-success w-100 py-2 fw-bold shadow-sm"
+              @click="processMoveIn(tenant)"
+            >
+              <i class="bi bi-door-open-fill me-2"></i> Process Move-In
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -209,11 +246,12 @@
                   <th>Submitted</th>
                   <th>Requested</th>
                   <th>Message</th>
+                  <th class="text-end">Action</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="filteredNotices.length === 0">
-                  <td colspan="6" class="text-center text-muted py-4">No notices found.</td>
+                  <td colspan="7" class="text-center text-muted py-4">No notices found.</td>
                 </tr>
                 <tr v-for="notice in filteredNotices" :key="notice.id">
                   <td class="fw-semibold">{{ notice.first_name }} {{ notice.last_name }}</td>
@@ -226,6 +264,16 @@
                   <td>{{ formatDate(notice.created_at) }}</td>
                   <td>{{ formatDate(notice.requested_move_out_date) }}</td>
                   <td class="text-muted small">{{ notice.message || '-' }}</td>
+                  <td class="text-end">
+                    <button
+                      class="btn btn-sm btn-outline-danger fw-semibold"
+                      :disabled="deletingNoticeId === notice.id"
+                      @click="deleteNotice(notice)"
+                    >
+                      <span v-if="deletingNoticeId === notice.id" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -250,6 +298,86 @@
               <small class="text-muted d-block mt-1">Submitted: {{ formatDate(notice.created_at) }}</small>
               <small class="text-muted d-block">Requested: {{ formatDate(notice.requested_move_out_date) }}</small>
               <p class="small text-muted mb-0 mt-1">{{ notice.message || '-' }}</p>
+              <div class="mt-3">
+                <button
+                  class="btn btn-sm btn-outline-danger fw-semibold w-100"
+                  :disabled="deletingNoticeId === notice.id"
+                  @click="deleteNotice(notice)"
+                >
+                  <span v-if="deletingNoticeId === notice.id" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Delete Notice
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showTenantModal" class="modal-backdrop-custom">
+      <div class="modal-custom shadow-lg border-0" style="max-width: 760px;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Tenant Profile</h5>
+          <button class="btn-close" @click="closeTenantProfile"></button>
+        </div>
+        <div v-if="selectedTenant" class="card border-0 profile-card">
+          <div class="card-body">
+            <div class="d-flex flex-column flex-md-row align-items-md-center gap-3 mb-4">
+              <div class="profile-avatar shadow-sm">
+                <img
+                  v-if="selectedTenant.user_img_url"
+                  :src="selectedTenant.user_img_url"
+                  :alt="selectedTenant.first_name"
+                />
+                <div v-else class="profile-initials">
+                  {{ selectedTenant.first_name[0] }}{{ selectedTenant.last_name[0] }}
+                </div>
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <h5 class="fw-bold mb-0">{{ selectedTenant.first_name }} {{ selectedTenant.last_name }}</h5>
+                  <span :class="['badge rounded-pill px-3 py-2', statusClass(selectedTenant.status)]">
+                    {{ selectedTenant.status }}
+                  </span>
+                </div>
+                <div class="text-muted small mt-1">
+                  <i class="bi bi-envelope me-1"></i>{{ selectedTenant.tenant_email }}
+                </div>
+                <div class="text-muted small">
+                  <i class="bi bi-telephone me-1"></i>{{ selectedTenant.phone_number || selectedTenant.contact_number || '-' }}
+                </div>
+              </div>
+              <div class="text-md-end">
+                <div class="small text-muted text-uppercase fw-bold">Current Property</div>
+                <div class="fw-semibold">{{ selectedTenant.property_title }}</div>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <div class="info-card">
+                  <div class="small text-muted text-uppercase fw-bold">Move-In Date</div>
+                  <div class="fw-semibold">{{ formatDate(selectedTenant.move_in_date) }}</div>
+                  <div class="small text-muted mt-2">Stay Duration</div>
+                  <div>{{ selectedTenant.stay_duration || '-' }}</div>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="info-card">
+                  <div class="small text-muted text-uppercase fw-bold">Location</div>
+                  <div>{{ formatTenantAddress(selectedTenant) || '-' }}</div>
+                  <div class="small text-muted mt-2">Notes</div>
+                  <div>{{ selectedTenant.notes || '-' }}</div>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="info-card">
+                  <div class="small text-muted text-uppercase fw-bold">Property Type</div>
+                  <div>{{ selectedTenant.property_type_name || selectedTenant.property_type || '-' }}</div>
+                  <div class="small text-muted mt-2">Room Preference</div>
+                  <div>{{ selectedTenant.room_preference || '-' }}</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -259,7 +387,7 @@
 </template>
 
 <script>
-import { getTenantsByProperty, getTenantsList, moveIn, getOwnerMoveOutNotices } from '@/api/Owner/tenants';
+import { getTenantsByProperty, getTenantsList, moveIn, endLease, getOwnerMoveOutNotices, deleteMoveOutNotice } from '@/api/Owner/tenants';
 import { getOwnerProperties } from '@/api/property';
 
 export default {
@@ -275,7 +403,10 @@ export default {
       noticesPage: 1,
       noticesLastPage: 1,
       noticesTotal: 0,
+      deletingNoticeId: null,
       showNoticesModal: false,
+      showTenantModal: false,
+      selectedTenant: null,
       noticeFilters: {
         status: "",
         dateFrom: "",
@@ -302,8 +433,12 @@ export default {
     latestNotice() {
       if (!this.moveOutNotices.length) return null;
       const sorted = [...this.moveOutNotices].sort((a, b) => {
-        const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
-        const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+        const aTime = a?.updated_at
+          ? new Date(a.updated_at).getTime()
+          : (a?.created_at ? new Date(a.created_at).getTime() : 0);
+        const bTime = b?.updated_at
+          ? new Date(b.updated_at).getTime()
+          : (b?.created_at ? new Date(b.created_at).getTime() : 0);
         if (aTime === bTime) return (b?.id || 0) - (a?.id || 0);
         return bTime - aTime;
       });
@@ -323,8 +458,12 @@ export default {
         records = records.filter(r => r.created_at && new Date(r.created_at) <= to);
       }
       return records.sort((a, b) => {
-        const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
-        const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+        const aTime = a?.updated_at
+          ? new Date(a.updated_at).getTime()
+          : (a?.created_at ? new Date(a.created_at).getTime() : 0);
+        const bTime = b?.updated_at
+          ? new Date(b.updated_at).getTime()
+          : (b?.created_at ? new Date(b.created_at).getTime() : 0);
         if (aTime === bTime) return (b?.id || 0) - (a?.id || 0);
         return bTime - aTime;
       });
@@ -356,6 +495,40 @@ export default {
         }
       }
     },
+    async processEndLease(tenant) {
+      if (!confirm(`End lease for ${tenant.first_name}? This will set the tenant to inactive.`)) {
+        return;
+      }
+      try {
+        await endLease(tenant.id);
+        await this.getTenants();
+      } catch (error) {
+        console.error("End lease failed:", error);
+        alert("Failed to end lease. Please try again.");
+      }
+    },
+    openTenantProfile(tenant) {
+      this.selectedTenant = tenant;
+      this.showTenantModal = true;
+    },
+    closeTenantProfile() {
+      this.showTenantModal = false;
+      this.selectedTenant = null;
+    },
+    messageTenant(tenant) {
+      alert(`Messaging ${tenant.first_name} is coming soon.`);
+    },
+    formatTenantAddress(tenant) {
+      if (!tenant) return '';
+      const parts = [
+        tenant.streets,
+        tenant.village_name,
+        tenant.town_name,
+        tenant.state_name,
+        tenant.region_name
+      ].filter(part => typeof part === 'string' && part.trim() !== '');
+      return parts.join(', ');
+    },
 
     async getPropertyType() {
       try {
@@ -381,8 +554,12 @@ export default {
         const res = await getOwnerMoveOutNotices({ page, per_page: 5 });
         const incoming = res?.data?.data || [];
         this.moveOutNotices = incoming.sort((a, b) => {
-          const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
-          const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+          const aTime = a?.updated_at
+            ? new Date(a.updated_at).getTime()
+            : (a?.created_at ? new Date(a.created_at).getTime() : 0);
+          const bTime = b?.updated_at
+            ? new Date(b.updated_at).getTime()
+            : (b?.created_at ? new Date(b.created_at).getTime() : 0);
           if (aTime === bTime) return (b?.id || 0) - (a?.id || 0);
           return bTime - aTime;
         });
@@ -414,6 +591,26 @@ export default {
     },
     changeNoticesPage(page) {
       this.getMoveOutNotices(page);
+    },
+    async deleteNotice(notice) {
+      if (!notice?.id) return;
+      if (!confirm('Delete this move-out notice? This cannot be undone.')) {
+        return;
+      }
+      this.deletingNoticeId = notice.id;
+      try {
+        await deleteMoveOutNotice(notice.id);
+        await this.getMoveOutNotices(this.noticesPage);
+        if (this.showNoticesModal) {
+          const res = await getOwnerMoveOutNotices({ page: 1, per_page: 1000 });
+          this.allNotices = res?.data?.data || [];
+        }
+      } catch (error) {
+        console.warn('Failed to delete move-out notice', error);
+        alert('Failed to delete move-out notice. Please try again.');
+      } finally {
+        this.deletingNoticeId = null;
+      }
     },
     noticeStatusClass(status) {
       const value = String(status || 'pending').toLowerCase();
@@ -466,6 +663,12 @@ export default {
   justify-content: center;
   font-size: 0.85rem;
 }
+.avatar-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
 .extra-small { font-size: 0.65rem; }
 .form-select, .form-control {
   padding: 0.6rem 0.8rem;
@@ -491,5 +694,37 @@ export default {
 }
 .latest-notice {
   background: rgba(15, 23, 42, 0.03);
+}
+.profile-card {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(255, 255, 255, 0.9));
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+.profile-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 22px;
+}
+.profile-initials {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.info-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
 }
 </style>

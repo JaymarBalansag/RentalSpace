@@ -79,6 +79,11 @@
           Move-Out Notices
         </button>
       </li>
+      <li class="nav-item">
+        <button class="nav-link" :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">
+          Past Tenancies
+        </button>
+      </li>
     </ul>
 
     <div v-if="activeTab === 'billings'">
@@ -185,6 +190,32 @@
       </div>
     </div>
 
+    <div v-if="activeTab === 'history'">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <div v-if="pastTenancies.length === 0" class="text-center py-5 text-muted">
+            No past tenancies yet.
+          </div>
+          <div v-else class="list-group list-group-flush">
+            <div v-for="tenancy in pastTenancies" :key="tenancy.id" class="list-group-item border-0 border-bottom">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="fw-bold">{{ tenancy.property_title }}</div>
+                  <small class="text-muted">{{ tenancy.property_type || '-' }}</small>
+                </div>
+                <span class="badge rounded-pill" :class="tenancyStatusBadge(tenancy.status)">
+                  {{ String(tenancy.status || '').toUpperCase() }}
+                </span>
+              </div>
+              <div class="small text-muted mt-2">
+                Move-in: {{ formatDate(tenancy.move_in_date) }} · Ended: {{ formatDate(tenancy.ended_at) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showPaymentModal" class="modal-backdrop-custom">
       <div class="modal-custom shadow-lg border-0">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -273,6 +304,7 @@ export default {
       propertyType: 'Property type',
       propertyAddress: 'Address unavailable',
       propertyId: '',
+      currentTenantId: null,
       billings: [],
       tenantStatus: 'inactive',
       moveInDate: null,
@@ -292,6 +324,7 @@ export default {
       billingDateFrom: "",
       billingDateTo: "",
       moveOutNotices: [],
+      tenancyHistory: [],
       showMoveOutModal: false,
       sendingMoveOut: false,
       tenantLoadError: "",
@@ -446,6 +479,12 @@ export default {
       return String(this.tenantStatus || '').toLowerCase() === 'active'
         ? 'bg-success-subtle text-success border border-success'
         : 'bg-secondary-subtle text-secondary border border-secondary';
+    },
+    pastTenancies() {
+      const history = Array.isArray(this.tenancyHistory) ? this.tenancyHistory : [];
+      return history
+        .filter(row => row && row.id !== this.currentTenantId)
+        .filter(row => String(row.status || '').toLowerCase() === 'inactive' || !!row.ended_at);
     }
   },
   mounted() {
@@ -473,10 +512,12 @@ export default {
         this.propertyType = payload.property_type || this.propertyType;
         this.propertyAddress = payload.property_address || this.propertyAddress;
         this.propertyId = payload.property_id || this.propertyId;
+        this.currentTenantId = payload.tenant_id || this.currentTenantId;
         this.tenantStatus = payload.tenant_status || payload.status || this.tenantStatus;
         this.moveInDate = payload.move_in_date || null;
         this.depositRequired = payload.deposit_required || 0;
         this.advancePaymentMonths = payload.advance_payment_months || 0;
+        this.tenancyHistory = payload.tenancy_history || [];
         const latestBilling = Array.isArray(this.billings) && this.billings.length > 0 ? this.billings[0] : null;
         this.depositPaidAmount = latestBilling?.deposit_paid_amount || 0;
         this.advancePaidAmount = latestBilling?.advance_paid_amount || 0;
@@ -620,6 +661,12 @@ export default {
       if (value === 'rejected') return 'bg-danger-subtle text-danger';
       if (value === 'acknowledged') return 'bg-info-subtle text-info';
       return 'bg-warning-subtle text-warning';
+    },
+    tenancyStatusBadge(status) {
+      const value = String(status || '').toLowerCase();
+      if (value === 'active') return 'bg-success-subtle text-success';
+      if (value === 'inactive') return 'bg-secondary-subtle text-secondary';
+      return 'bg-light text-dark';
     },
     formatDate(date) {
       if (!date) return '-';

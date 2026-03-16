@@ -27,3 +27,7 @@ export async function submitMoveOutNotice(payload){
 export async function getTenantMoveOutNotices(){
   return await api.get("/tenant/move-out-notices");
 }
+
+export async function getTenantBillingsById(tenantId){
+  return await api.get(`/tenant/billings/${tenantId}`);
+}

@@ -15,7 +15,11 @@
           <span class="badge px-3 py-2" :class="tenantStatusClass">
             Status: {{ tenantStatusLabel }}
           </span>
-          <button class="btn btn-outline-primary btn-sm fw-semibold" @click="showMoveOutModal = true">
+          <button
+            v-if="isActiveTenant"
+            class="btn btn-outline-primary btn-sm fw-semibold"
+            @click="showMoveOutModal = true"
+          >
             Notify Move-Out
           </button>
         </div>
@@ -74,7 +78,7 @@
           Payments
         </button>
       </li>
-      <li class="nav-item">
+      <li class="nav-item" v-if="isActiveTenant">
         <button class="nav-link" :class="{ active: activeTab === 'moveout' }" @click="activeTab = 'moveout'">
           Move-Out Notices
         </button>
@@ -110,7 +114,10 @@
           </div>
         </div>
         <div class="list-group list-group-flush">
-          <div v-if="filteredPaidRecords.length === 0" class="p-5 text-center text-muted">
+          <div v-if="!isActiveTenant" class="p-5 text-center text-muted">
+            No active tenancy right now. Your past payments are available in Past Tenancies.
+          </div>
+          <div v-else-if="filteredPaidRecords.length === 0" class="p-5 text-center text-muted">
             No payment records yet.
           </div>
           <div
@@ -203,12 +210,17 @@
                   <div class="fw-bold">{{ tenancy.property_title }}</div>
                   <small class="text-muted">{{ tenancy.property_type || '-' }}</small>
                 </div>
-                <span class="badge rounded-pill" :class="tenancyStatusBadge(tenancy.status)">
-                  {{ String(tenancy.status || '').toUpperCase() }}
-                </span>
+                <div class="text-end">
+                  <span class="badge rounded-pill" :class="tenancyStatusBadge(tenancy.status)">
+                    {{ String(tenancy.status || '').toUpperCase() }}
+                  </span>
+                  <button class="btn btn-link btn-sm fw-semibold d-block mt-2 p-0" @click="openPastBillings(tenancy)">
+                    View Billings
+                  </button>
+                </div>
               </div>
               <div class="small text-muted mt-2">
-                Move-in: {{ formatDate(tenancy.move_in_date) }} · Ended: {{ formatDate(tenancy.ended_at) }}
+                Move-in: {{ formatDate(tenancy.move_in_date) }} - Ended: {{ formatDate(tenancy.ended_at) }}
               </div>
             </div>
           </div>
@@ -288,11 +300,48 @@
         </div>
       </div>
     </div>
+
+    <div v-if="showPastBillingModal" class="modal-backdrop-custom">
+      <div class="modal-custom shadow-lg border-0" style="max-width: 650px;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Past Billings</h5>
+          <button class="btn-close" @click="closePastBillings"></button>
+        </div>
+        <div v-if="pastBillingTenant" class="small text-muted mb-3">
+          {{ pastBillingTenant.property_title }} · {{ pastBillingTenant.property_type || '-' }}
+        </div>
+        <div v-if="pastBillingLoading" class="py-5 text-center text-muted">
+          Loading billings...
+        </div>
+        <div v-else-if="pastBillingError" class="py-5 text-center text-muted">
+          {{ pastBillingError }}
+        </div>
+        <div v-else-if="pastBillingRecords.length === 0" class="py-5 text-center text-muted">
+          No billings found for this tenancy.
+        </div>
+        <div v-else class="list-group list-group-flush">
+          <div v-for="bill in pastBillingRecords" :key="bill.id" class="list-group-item border-0 border-bottom">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="fw-bold">{{ bill.rent_cycle }} Rent</div>
+                <small class="text-muted">Due: {{ bill.rent_due || '-' }}</small>
+              </div>
+              <div class="text-end">
+                <div class="fw-bold text-primary">PHP {{ formatAmount(bill.rent_amount) }}</div>
+                <span class="badge rounded-pill" :class="statusBadge(bill.rent_status)">
+                  {{ bill.rent_status }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { getTenantDashboard, getTenantMoveOutNotices, submitMoveOutNotice } from '@/api/tenants';
+import { getTenantDashboard, getTenantMoveOutNotices, submitMoveOutNotice, getTenantBillingsById } from '@/api/tenants';
 import Header from '@/components/Header.vue';
 
 export default {
@@ -326,6 +375,11 @@ export default {
       moveOutNotices: [],
       tenancyHistory: [],
       showMoveOutModal: false,
+      showPastBillingModal: false,
+      pastBillingTenant: null,
+      pastBillingRecords: [],
+      pastBillingLoading: false,
+      pastBillingError: "",
       sendingMoveOut: false,
       tenantLoadError: "",
       moveOutNoticesError: "",
@@ -358,9 +412,11 @@ export default {
       return '-';
     },
     paidBillings() {
+      if (!this.isActiveTenant) return [];
       return this.billings.filter(b => String(b.rent_status || '').toLowerCase() === 'paid');
     },
     dueBillings() {
+      if (!this.isActiveTenant) return [];
       return this.billings.filter(b => ['unpaid', 'overdue', 'pending'].includes(String(b.rent_status || '').toLowerCase()));
     },
     payableItems() {
@@ -407,10 +463,14 @@ export default {
     showPaymentsTab() {
       return String(this.tenantStatus || '').toLowerCase() === 'active';
     },
+    isActiveTenant() {
+      return String(this.tenantStatus || '').toLowerCase() === 'active';
+    },
     advanceRequired() {
       return Math.max(0, Number(this.advancePaymentMonths || 0));
     },
     remainingDue() {
+      if (!this.isActiveTenant) return 0;
       return this.payableItems.reduce((acc, item) => acc + Number(item.amount_due || item.amount || 0), 0);
     },
     nextDueDate() {
@@ -425,6 +485,7 @@ export default {
     },
     paidRecords() {
       const records = [];
+      if (!this.isActiveTenant) return records;
       this.billings
         .filter(b => String(b.rent_status || '').toLowerCase() === 'paid')
         .forEach(b => {
@@ -473,18 +534,31 @@ export default {
       return records;
     },
     tenantStatusLabel() {
-      return String(this.tenantStatus || '').toLowerCase() === 'active' ? 'ACTIVE' : 'INACTIVE';
+      const value = String(this.tenantStatus || '').toLowerCase();
+      if (value === 'active') return 'ACTIVE';
+      if (value === 'move_out') return 'MOVE OUT';
+      return 'INACTIVE';
     },
     tenantStatusClass() {
-      return String(this.tenantStatus || '').toLowerCase() === 'active'
-        ? 'bg-success-subtle text-success border border-success'
-        : 'bg-secondary-subtle text-secondary border border-secondary';
+      const value = String(this.tenantStatus || '').toLowerCase();
+      if (value === 'active') {
+        return 'bg-success-subtle text-success border border-success';
+      }
+      if (value === 'move_out') {
+        return 'bg-secondary-subtle text-secondary border border-secondary';
+      }
+      return 'bg-secondary-subtle text-secondary border border-secondary';
     },
     pastTenancies() {
       const history = Array.isArray(this.tenancyHistory) ? this.tenancyHistory : [];
+      const isActive = this.isActiveTenant;
       return history
-        .filter(row => row && row.id !== this.currentTenantId)
-        .filter(row => String(row.status || '').toLowerCase() === 'inactive' || !!row.ended_at);
+        .filter(row => row)
+        .filter(row => {
+          if (isActive && row.id === this.currentTenantId) return false;
+          const value = String(row.status || '').toLowerCase();
+          return value === 'inactive' || value === 'move_out' || !!row.ended_at;
+        });
     }
   },
   mounted() {
@@ -522,9 +596,11 @@ export default {
         this.depositPaidAmount = latestBilling?.deposit_paid_amount || 0;
         this.advancePaidAmount = latestBilling?.advance_paid_amount || 0;
 
-        this.totalPaid = this.billings
-          .filter(b => String(b.rent_status || '').toLowerCase() === 'paid')
-          .reduce((acc, curr) => acc + Number(curr.rent_amount), 0);
+        this.totalPaid = this.isActiveTenant
+          ? this.billings
+              .filter(b => String(b.rent_status || '').toLowerCase() === 'paid')
+              .reduce((acc, curr) => acc + Number(curr.rent_amount), 0)
+          : 0;
       } catch (err) {
         console.error("Dashboard error:", err);
         if (err?.response?.status === 404) {
@@ -655,6 +731,29 @@ export default {
         this.moveOutNoticesError = "Unable to load move-out notices right now.";
       }
     },
+    async openPastBillings(tenancy) {
+      if (!tenancy?.id) return;
+      this.pastBillingTenant = tenancy;
+      this.pastBillingLoading = true;
+      this.pastBillingError = "";
+      this.pastBillingRecords = [];
+      this.showPastBillingModal = true;
+      try {
+        const res = await getTenantBillingsById(tenancy.id);
+        this.pastBillingRecords = res?.data?.data || [];
+      } catch (error) {
+        console.warn("Failed to load past billings", error);
+        this.pastBillingError = "Unable to load billings for this tenancy.";
+      } finally {
+        this.pastBillingLoading = false;
+      }
+    },
+    closePastBillings() {
+      this.showPastBillingModal = false;
+      this.pastBillingTenant = null;
+      this.pastBillingRecords = [];
+      this.pastBillingError = "";
+    },
     noticeStatusClass(status) {
       const value = String(status || 'pending').toLowerCase();
       if (value === 'approved') return 'bg-success-subtle text-success';
@@ -666,6 +765,7 @@ export default {
       const value = String(status || '').toLowerCase();
       if (value === 'active') return 'bg-success-subtle text-success';
       if (value === 'inactive') return 'bg-secondary-subtle text-secondary';
+      if (value === 'move_out') return 'bg-secondary-subtle text-secondary';
       return 'bg-light text-dark';
     },
     formatDate(date) {

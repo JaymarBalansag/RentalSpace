@@ -25,6 +25,7 @@
                   <option value="active">Active</option>
                   <option value="pending">Pending</option>
                   <option value="inactive">Inactive</option>
+                  <option value="move_out">Move Out</option>
                 </select>
               </div>
               <div class="col-12 col-md-4 d-flex align-items-end">
@@ -201,6 +202,12 @@
               @click="processMoveIn(tenant)"
             >
               <i class="bi bi-door-open-fill me-2"></i> Process Move-In
+            </button>
+            <button 
+              v-else-if="tenant.status === 'move_out'" 
+              class="btn btn-outline-secondary w-100 py-2 small disabled"
+            >
+              Tenant Moved Out
             </button>
           </div>
         </div>
@@ -397,7 +404,7 @@ export default {
       tenants: [],
       searchQuery: '',
       properties: [],
-      statusFilter: '',
+      statusFilter: 'active',
       moveOutRequested: false,
       moveOutNotices: [],
       noticesPage: 1,
@@ -476,6 +483,7 @@ export default {
     statusClass(status) {
       if (status === 'active') return 'bg-success-subtle text-success border border-success';
       if (status === 'pending') return 'bg-warning-subtle text-warning-emphasis border border-warning';
+      if (status === 'move_out') return 'bg-secondary-subtle text-secondary border border-secondary';
       return 'bg-light text-dark border';
     },
 

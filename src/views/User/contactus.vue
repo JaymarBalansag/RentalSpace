@@ -150,7 +150,7 @@ export default {
 .contact-hero {
   background:
     linear-gradient(145deg, rgba(20, 51, 98, 0.84), rgba(38, 90, 168, 0.78)),
-    url("https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=80");
+    url("../../assets/Main/contact.avif");
   background-size: cover;
   background-position: center;
 }

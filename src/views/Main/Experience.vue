@@ -337,7 +337,7 @@ export default {
 .experience-hero {
   background:
     linear-gradient(145deg, rgba(20, 51, 98, 0.84), rgba(38, 90, 168, 0.78)),
-    url("https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1800&q=80");
+    url("../../assets/Main/exp.avif");
   background-size: cover;
   background-position: center;
   border-bottom: 1px solid rgba(255,255,255,0.1);

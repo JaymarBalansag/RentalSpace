@@ -351,7 +351,7 @@ export default {
   min-height: 88vh;
   background:
     linear-gradient(145deg, rgba(19, 49, 95, 0.84), rgba(29, 80, 158, 0.78)),
-    url("https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=2000&q=80");
+    url("../../assets/Main/hero.avif");
   background-size: cover;
   background-position: center;
   padding: 6.5rem 0 4.5rem;

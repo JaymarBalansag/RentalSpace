@@ -1,6 +1,6 @@
 <template>
     <div
-        class="toast align-items-center text-bg-success border-0 position-fixed top-30 start-0 m-3"
+        class="toast align-items-center text-bg-success border-0 position-fixed top-0 end-0 mt-3 me-3 toast-fixed"
         role="alert"
         ref="successToast"
     >
@@ -57,3 +57,9 @@ export default {
 }
 
 </script>
+
+<style scoped>
+.toast-fixed {
+    z-index: 2000;
+}
+</style>

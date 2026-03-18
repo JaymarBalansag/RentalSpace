@@ -104,7 +104,7 @@
                       v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
                       class="btn-action approve"
                       title="Approve Verification"
-                      @click="handleVerificationAction(user, 'verified')"
+                      @click="openVerifyUserModal(user)"
                     >
                       <i class="bi bi-patch-check"></i>
                     </button>
@@ -112,7 +112,7 @@
                       v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
                       class="btn-action reject"
                       title="Reject Verification"
-                      @click="handleVerificationAction(user, 'rejected')"
+                      @click="openRejectUserModal(user)"
                     >
                       <i class="bi bi-x-octagon"></i>
                     </button>
@@ -155,14 +155,14 @@
                 <button
                   v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
                   class="btn-mobile-icon approve"
-                  @click="handleVerificationAction(user, 'verified')"
+                  @click="openVerifyUserModal(user)"
                 >
                   <i class="bi bi-check2"></i>
                 </button>
                 <button
                   v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
                   class="btn-mobile-icon reject"
-                  @click="handleVerificationAction(user, 'rejected')"
+                  @click="openRejectUserModal(user)"
                 >
                   <i class="bi bi-x-lg"></i>
                 </button>
@@ -261,10 +261,10 @@
             </div>
             <div class="col-12" v-if="selectedUserDetails.user_verification_status === 'pending'">
               <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-success btn-sm rounded-pill px-3" @click="handleVerificationAction(selectedUserDetails, 'verified')">
+                <button class="btn btn-success btn-sm rounded-pill px-3" @click="openVerifyUserModal(selectedUserDetails)">
                   Approve Verification
                 </button>
-                <button class="btn btn-danger btn-sm rounded-pill px-3" @click="handleVerificationAction(selectedUserDetails, 'rejected')">
+                <button class="btn btn-danger btn-sm rounded-pill px-3" @click="openRejectUserModal(selectedUserDetails)">
                   Reject Verification
                 </button>
               </div>
@@ -273,6 +273,23 @@
         </div>
       </div>
     </div>
+
+    <confirmModal
+      :show="showConfirmModal"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      :confirm-text="confirmConfig.confirmText"
+      :variant="confirmConfig.variant"
+      :show-input="confirmConfig.showInput"
+      :input-label="confirmConfig.inputLabel"
+      :input-placeholder="confirmConfig.inputPlaceholder"
+      :input-required="confirmConfig.inputRequired"
+      :input-value="confirmInput"
+      :loading="isActionLoading"
+      @update:inputValue="confirmInput = $event"
+      @confirm="handleConfirmAction"
+      @cancel="closeConfirmModal"
+    />
   </div>
 </template>
 
@@ -282,9 +299,11 @@ import {
   getUserVerificationDetails,
   updateUserVerification,
 } from '@/api/Admin/AdminUser/AdminUser';
+import confirmModal from "@/components/confirmModal.vue";
 
 export default {
   name: "tenantsList",
+  components: { confirmModal },
   data() {
     return {
       search: "",
@@ -294,6 +313,21 @@ export default {
       selectedUserDetails: null,
       isUserDetailsLoading: false,
       userDetailsError: "",
+      showConfirmModal: false,
+      confirmConfig: {
+        action: "",
+        user: null,
+        title: "Confirm Action",
+        message: "",
+        confirmText: "Confirm",
+        variant: "success",
+        showInput: false,
+        inputLabel: "Reason",
+        inputPlaceholder: "Type here...",
+        inputRequired: false,
+      },
+      confirmInput: "",
+      isActionLoading: false,
     };
   },
   computed: {
@@ -344,16 +378,52 @@ export default {
       if (status === "rejected") return "incomplete";
       return "neutral";
     },
-    async handleVerificationAction(user, status) {
-      if (!user?.id) return;
-      let reason = "";
-      if (status === "rejected") {
-        reason = window.prompt("Enter rejection reason:") || "";
-        if (!reason.trim()) return;
-      }
+    openVerifyUserModal(user) {
+      this.confirmInput = "";
+      this.confirmConfig = {
+        action: "verify",
+        user,
+        title: "Verify User",
+        message: `Verify ${user.first_name} ${user.last_name}?`,
+        confirmText: "Verify",
+        variant: "success",
+        showInput: false,
+        inputLabel: "Reason",
+        inputPlaceholder: "Type here...",
+        inputRequired: false,
+      };
+      this.showConfirmModal = true;
+    },
+    openRejectUserModal(user) {
+      this.confirmInput = "";
+      this.confirmConfig = {
+        action: "reject",
+        user,
+        title: "Reject Verification",
+        message: `Reject verification for ${user.first_name} ${user.last_name}?`,
+        confirmText: "Reject",
+        variant: "danger",
+        showInput: true,
+        inputLabel: "Rejection Reason",
+        inputPlaceholder: "Provide a reason for rejection...",
+        inputRequired: true,
+      };
+      this.showConfirmModal = true;
+    },
+    closeConfirmModal() {
+      if (this.isActionLoading) return;
+      this.showConfirmModal = false;
+      this.confirmInput = "";
+    },
+    async handleConfirmAction() {
+      const user = this.confirmConfig.user;
+      if (!user || this.isActionLoading) return;
 
+      this.isActionLoading = true;
       try {
-        await updateUserVerification(user.id, status, reason.trim());
+        const status = this.confirmConfig.action === "verify" ? "verified" : "rejected";
+        await updateUserVerification(user.id, status, this.confirmInput.trim());
+        this.closeConfirmModal();
         await this.getToggleUserStatus(this.filterStatus);
         if (this.showUserModal && this.selectedUserDetails?.id === user.id) {
           const detailsRes = await getUserVerificationDetails(user.id);
@@ -361,6 +431,8 @@ export default {
         }
       } catch (error) {
         alert(error?.response?.data?.message || "Failed to update verification status.");
+      } finally {
+        this.isActionLoading = false;
       }
     },
     avatarFallback(user) {

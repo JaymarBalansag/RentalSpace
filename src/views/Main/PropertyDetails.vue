@@ -388,8 +388,11 @@
           </div>
 
           <div class="form-check mt-3">
-            <input type="checkbox" v-model="agreement.agreement" class="form-check-input" id="termAgree">
+            <input type="checkbox" v-model="agreement.agreement" class="form-check-input" id="termAgree" @change="agreementError = ''">
             <label class="form-check-label small" for="termAgree">I agree to the property rules and terms.</label>
+          </div>
+          <div v-if="agreementError" class="text-danger small mt-1">
+            {{ agreementError }}
           </div>
 
           <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-3 mt-4">Confirm Request</button>
@@ -436,6 +439,7 @@ export default {
       showFullDescription: false,
       showConfirmModal: false,
       showUserAgreementModal: false,
+      agreementError: "",
       bookingSubmitting: false,
       isLoggedIn: null,
       property: null,
@@ -853,6 +857,7 @@ export default {
         notes: "",
         agreement: false,
       };
+      this.agreementError = "";
       this.showUserAgreementModal = true;
     },
     closeAgreementModal() {
@@ -862,12 +867,10 @@ export default {
       const { agreement } = this.agreement;
 
       if (!agreement) {
-        return Swal.fire({
-          icon: "warning",
-          title: "Agreement required",
-          text: "Please check the agreement box.",
-        });
+        this.agreementError = "Please check the agreement box.";
+        return;
       }
+      this.agreementError = "";
 
       // If all checks pass:
       this.showUserAgreementModal = false;

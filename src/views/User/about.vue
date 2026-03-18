@@ -129,7 +129,7 @@ export default {
 .about-hero {
   background:
     linear-gradient(145deg, rgba(20, 51, 98, 0.84), rgba(38, 90, 168, 0.78)),
-    url("https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=1800&q=80");
+    url("../../assets/Main/about.avif");
   background-size: cover;
   background-position: center;
 }

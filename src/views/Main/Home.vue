@@ -520,7 +520,7 @@ export default {
 .search-hero {
   background:
     linear-gradient(145deg, rgba(20, 51, 98, 0.84), rgba(38, 90, 168, 0.78)),
-    url("https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=1800&q=80");
+    url("../../assets/Main/home.avif");
   background-size: cover;
   background-position: center;
 }

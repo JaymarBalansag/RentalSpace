@@ -71,6 +71,7 @@
 import { RouterLink } from "vue-router";
 import { logout } from "@/api/auth";
 import { useUserInfo } from "@/store/userInfo";
+import { getOwnerSubscriptionStatus } from "@/api/subscription";
 import { nextTick } from "vue";
 
 export default {
@@ -82,7 +83,18 @@ export default {
       last_name : "Account",
       isCollapsed: false, // Desktop starts expanded
       isMobileOpen: false, // Mobile starts hidden
-      navItems: [
+    };
+  },
+  computed: {
+    subscription() {
+      return useUserInfo().subscription || null;
+    },
+    isMonthlyPlan() {
+      const cycle = String(this.subscription?.billing_cycle || "").toLowerCase();
+      return cycle === "monthly";
+    },
+    navItems() {
+      const base = [
         { name: "Subscription", route: "/subscription", icon: "bi bi-gem" },
         { name: "Overview", route: "/overview", icon: "bi bi-speedometer2" },
         { name: "Properties", route: "/properties", icon: "bi bi-building" },
@@ -91,13 +103,21 @@ export default {
         { name: "Billing", route: "/billing", icon: "bi bi-cash-stack" },
         { name: "Account Ledger", route: "/ledger", icon: "bi bi-wallet" },
         { name: "Reports", route: "/reports", icon: "bi bi-bar-chart-line" },
-      ],
-    };
+      ];
+
+      if (!this.subscription) return base;
+      if (!this.isMonthlyPlan) return base;
+
+      return base.filter((item) =>
+        ["/subscription", "/overview", "/properties"].includes(item.route)
+      );
+    },
   },
   mounted(){
     this.$nextTick(() => {
       this.getUser();
     })
+    this.refreshSubscription();
   },
   methods: {
     closeOnMobile() {
@@ -109,6 +129,16 @@ export default {
       const info = useUserInfo();
       this.first_name = info.first_name;
       this.last_name = info.last_name;
+    },
+    async refreshSubscription() {
+      try {
+        const subscription = await getOwnerSubscriptionStatus();
+        if (subscription) {
+          useUserInfo().setSubscriptionStatus(subscription);
+        }
+      } catch (error) {
+        console.warn("Failed to refresh subscription status:", error);
+      }
     },
     async handleLogout() {
       try {

@@ -508,6 +508,7 @@ export default {
           await rejectOwnerVerification(owner.id, this.confirmInput.trim());
         }
 
+        this.isActionLoading = false;
         this.closeConfirmModal();
         await this.fetchOwners();
         if (this.selectedOwner?.id === owner.id) {

@@ -736,7 +736,7 @@
               </div>
               <div class="col-6 col-md-3 border-top border-md-top-0 pt-2 pt-md-0">
                 <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Village</label>
-                <input type="text" v-model="form.village_name" class="form-control-plaintext py-0 fw-semibold" readonly />
+                <input type="text" v-model="form.village_name" class="form-control-plaintext py-0 fw-semibold"  />
               </div>
             </div>
           </div>

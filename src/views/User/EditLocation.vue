@@ -45,7 +45,7 @@
                 <div class="row g-2 mb-3">
                   <div class="col-12">
                     <label class="form-label small fw-bold text-muted">Barangay</label>
-                    <input type="text" class="form-control bg-light" v-model="form.village_name" disabled>
+                    <input type="text" class="form-control custom-input" v-model="form.village_name">
                   </div>
                   <div class="col-12">
                     <label class="form-label small fw-bold text-muted">City / Municipality</label>

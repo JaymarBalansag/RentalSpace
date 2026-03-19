@@ -6,6 +6,7 @@ import Home from '@/views/Main/Home.vue'
 import Login from '@/views/Authentication/login.vue'
 import Register from '@/views/Authentication/register.vue'
 import { getOwnerSubscriptionStatus } from '@/api/subscription'
+import { getOwnerProperties, updateOwnerPropertyState } from '@/api/property'
 
 const routes = [
   {
@@ -195,6 +196,32 @@ const router = createRouter({
   routes
 })
 
+async function applyExpiredOwnerAvailability(subscription, user) {
+  if (!subscription) return;
+  const canManage = subscription?.can_manage_properties;
+  const hasStatus = typeof subscription?.status !== "undefined" && subscription?.status !== null;
+  const status = hasStatus ? String(subscription.status).toLowerCase() : "";
+  const statusInactive = hasStatus && !["active", "trialing", "trial", "ongoing"].includes(status);
+  if (canManage !== false && !statusInactive) return;
+
+  try {
+    const response = await getOwnerProperties();
+    const properties = response?.data?.properties || [];
+    const toDisable = properties.filter(
+      (p) =>
+        p?.is_available ||
+        String(p?.status || "").toLowerCase() !== "pending"
+    );
+    if (!toDisable.length) return;
+
+    await Promise.allSettled(
+      toDisable.map((property) => updateOwnerPropertyState(property.id, false, "pending"))
+    );
+  } catch (error) {
+    console.warn("Failed to auto-hide listings on expiry:", error);
+  }
+}
+
 // Navigation Guard
 router.beforeEach(async (to, from, next) => {
   const isLoggedIn = !!localStorage.getItem("access_token");
@@ -239,7 +266,7 @@ router.beforeEach(async (to, from, next) => {
     to.path === "/dashboard/properties/add" ||
     /^\/dashboard\/properties\/\d+\/edit$/.test(to.path);
 
-  if (isLoggedIn && role === "owner" && to.meta.roleIsOwner) {
+  if (isLoggedIn && role === "owner") {
     try {
       const subscription = await getOwnerSubscriptionStatus();
       const userInfoRaw = localStorage.getItem("userInfo");
@@ -253,15 +280,13 @@ router.beforeEach(async (to, from, next) => {
         sessionStorage.setItem("ownerSubscriptionWarning", subscription.message || "Your subscription is about to expire.");
       }
 
+      await applyExpiredOwnerAvailability(subscription, user);
+
       if (isOwnerPropertyManagementRoute && !subscription?.can_manage_properties) {
-        alert(subscription?.message || "Subscription expired or inactive. Renew to manage properties.");
-        return next("/overview");
+        sessionStorage.setItem("ownerSubscriptionExpired", "1");
       }
     } catch (error) {
-      if (isOwnerPropertyManagementRoute) {
-        alert("Unable to validate subscription status. Please try again.");
-        return next("/overview");
-      }
+      console.warn("Unable to validate subscription status:", error);
     }
   }
 

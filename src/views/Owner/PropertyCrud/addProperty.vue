@@ -6,8 +6,14 @@
     </div>
 
     <div v-if="subscriptionState?.is_expiring_soon" class="alert alert-warning py-2 px-3 mt-2 mb-3">
-      {{ subscriptionState.message || `Your subscription will expire in ${subscriptionState.days_left} day(s).` }}
+      {{
+        subscriptionState.message ||
+        (subscriptionState.days_left === 0
+          ? "Your subscription expires today."
+          : `Your subscription will expire in ${subscriptionState.days_left} day(s).`)
+      }}
     </div>
+    <OwnerSubscriptionExpiredBanner />
     <div v-if="ownerVerificationStatus !== 'verified'" class="alert alert-info py-2 px-3 mt-2 mb-3">
       <strong>Owner verification:</strong> {{ ownerVerificationMessage }}
     </div>
@@ -900,7 +906,7 @@
           <button
             class="btn btn-success btn-lg shadow-sm py-3 fw-bold"
             @click="validateForm"
-            :disabled="isValidating || isSubmitting || isCheckingAccess"
+            :disabled="isValidating || isSubmitting || isCheckingAccess || isSubscriptionExpired"
           >
             <template v-if="isValidating || isSubmitting || isCheckingAccess">
               <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -944,6 +950,7 @@ import { createProperty, getAmenities, getFacilities, getPropertyTypes } from "@
 import { getOwnerSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
 import confirmModal from "@/components/confirmModal.vue";
+import OwnerSubscriptionExpiredBanner from "@/components/OwnerSubscriptionExpiredBanner.vue";
 import Swal from "sweetalert2";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -1063,7 +1070,8 @@ export default {
     };
   },
   components: {
-    confirmModal
+    confirmModal,
+    OwnerSubscriptionExpiredBanner
   },
   methods: {
     async ensureOwnerCanManageProperties(options = { redirectIfBlocked: true }) {
@@ -1071,9 +1079,9 @@ export default {
       try {
         const subscription = await getOwnerSubscriptionStatus();
         this.subscriptionState = subscription;
+        useUserInfo().setSubscriptionStatus(subscription);
 
         if (!subscription?.can_manage_properties) {
-          alert(subscription?.message || "Subscription expired or inactive. Renew to manage properties.");
           if (options.redirectIfBlocked) {
             this.$router.push("/overview");
           }
@@ -1333,6 +1341,11 @@ export default {
       this.isValidating = true;
       try {
         this.resetValidation();
+        if (this.isSubscriptionExpired) {
+          this.pushValidation("form", "Your subscription has expired. Renew to add properties.");
+          this.scrollToValidationSummary();
+          return;
+        }
         const stepsToValidate = [1, 2, 3, 4];
         let firstInvalidStep = null;
 
@@ -1394,6 +1407,7 @@ export default {
     // Submit form
     async submitForm() {
       if (this.isSubmitting) return;
+      if (this.isSubscriptionExpired) return;
       this.isSubmitting = true;
       this.submitStatusMessage = "Checking subscription status...";
 
@@ -1681,6 +1695,9 @@ export default {
         this.subscriptionState = null;
       }
     }
+    if (!this.subscriptionState) {
+      this.subscriptionState = useUserInfo().subscription || null;
+    }
 
     this.getAmenities();
     this.getFacilities();
@@ -1698,9 +1715,22 @@ export default {
     // });
   },
   computed: {
+    info() {
+      return useUserInfo();
+    },
+    subscriptionSnapshot() {
+      return this.subscriptionState || this.info.subscription || null;
+    },
+    isSubscriptionExpired() {
+      if (!this.subscriptionSnapshot) return false;
+      const canManage = this.subscriptionSnapshot?.can_manage_properties;
+      const hasStatus = typeof this.subscriptionSnapshot?.status !== "undefined" && this.subscriptionSnapshot?.status !== null;
+      const status = hasStatus ? String(this.subscriptionSnapshot.status).toLowerCase() : "";
+      const statusInactive = hasStatus && !["active", "trialing", "trial", "ongoing"].includes(status);
+      return canManage === false || statusInactive;
+    },
     ownerVerificationStatus() {
-      const info = useUserInfo();
-      const status = String(info?.owner_verification_status || "unverified").toLowerCase().trim();
+      const status = String(this.info?.owner_verification_status || "unverified").toLowerCase().trim();
       return ["verified", "pending", "rejected", "unverified"].includes(status) ? status : "unverified";
     },
     ownerVerificationMessage() {

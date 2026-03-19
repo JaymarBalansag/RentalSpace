@@ -2,6 +2,7 @@
   <div v-if="showSuccess" class="alert alert-success" role="alert">
     🎉 {{ toastMessage }}
   </div>
+  <OwnerSubscriptionExpiredBanner />
   <div class="container-fluid p-0">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
       <div>
@@ -17,8 +18,8 @@
       <div class="d-flex flex-column align-items-md-end">
         <button
           class="btn btn-primary px-4 py-2 fw-bold shadow-sm rounded-pill"
-          :class="limitReached ? 'btn-secondary opacity-75' : ''"
-          :disabled="limitReached"
+          :class="(limitReached || isSubscriptionExpired) ? 'btn-secondary opacity-75 cursor-not-allowed' : ''"
+          :disabled="limitReached || isSubscriptionExpired"
           @click="goToAddProperty"
         >
           <i class="bi bi-plus-lg me-1"></i> Add New Property
@@ -87,10 +88,20 @@
             </div>
 
             <div class="mt-auto pt-3 border-top d-flex gap-2">
-              <RouterLink :to="`/dashboard/properties/${property.id}/edit`" class="btn btn-outline-warning flex-grow-1 btn-sm fw-bold">
+              <RouterLink
+                :to="`/dashboard/properties/${property.id}/edit`"
+                class="btn btn-outline-warning flex-grow-1 btn-sm fw-bold"
+                :class="isSubscriptionExpired ? 'disabled pe-none opacity-75' : ''"
+                :aria-disabled="isSubscriptionExpired ? 'true' : 'false'"
+              >
                 <i class="bi bi-pencil-square me-1"></i> Edit
               </RouterLink>
-              <button @click="deleteProperty(property.id)" class="btn btn-outline-danger btn-sm px-3">
+              <button
+                @click="deleteProperty(property.id)"
+                class="btn btn-outline-danger btn-sm px-3"
+                :disabled="isSubscriptionExpired"
+                :class="isSubscriptionExpired ? 'opacity-75 cursor-not-allowed' : ''"
+              >
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -105,7 +116,7 @@
                     role="switch"
                     :id="`availability-${property.id}`"
                     :checked="property.is_available"
-                    :disabled="availabilityLoadingIds.includes(property.id)"
+                    :disabled="availabilityLoadingIds.includes(property.id) || isSubscriptionExpired"
                     @change="toggleAvailability(property)"
                   />
                   <label class="form-check-label small ms-1" :for="`availability-${property.id}`">
@@ -122,8 +133,10 @@
 </template>
 
 <script>
-import { deleteProperty as deleteOwnerPropertyApi, getOwnerProperties, getPropertyLimit, updateOwnerPropertyAvailability } from '@/api/property';
+import { deleteProperty as deleteOwnerPropertyApi, getOwnerProperties, getPropertyLimit, updateOwnerPropertyAvailability, updateOwnerPropertyState } from '@/api/property';
+import { getOwnerSubscriptionStatus } from "@/api/subscription";
 import SuccessToast from '@/components/successToast.vue';
+import OwnerSubscriptionExpiredBanner from "@/components/OwnerSubscriptionExpiredBanner.vue";
 import placeholderImg from '@/assets/Placeholder/thumbnail_placeholder.jpg'; 
 import { useUserInfo } from '@/store/userInfo';
 import Swal from 'sweetalert2';
@@ -142,11 +155,24 @@ export default {
       toastMessage: "",
     };
   },
-  components: { SuccessToast },
+  components: { SuccessToast, OwnerSubscriptionExpiredBanner },
   computed: {
+    info() {
+      return useUserInfo();
+    },
+    subscription() {
+      return this.info.subscription || null;
+    },
+    isSubscriptionExpired() {
+      if (!this.subscription) return false;
+      const canManage = this.subscription?.can_manage_properties;
+      const hasStatus = typeof this.subscription?.status !== "undefined" && this.subscription?.status !== null;
+      const status = hasStatus ? String(this.subscription.status).toLowerCase() : "";
+      const statusInactive = hasStatus && !["active", "trialing", "trial", "ongoing"].includes(status);
+      return canManage === false || statusInactive;
+    },
     ownerVerificationStatus() {
-      const info = useUserInfo();
-      const status = String(info?.owner_verification_status || "unverified").toLowerCase().trim();
+      const status = String(this.info?.owner_verification_status || "unverified").toLowerCase().trim();
       return ["verified", "pending", "rejected", "unverified"].includes(status) ? status : "unverified";
     },
     ownerVerificationLabel() {
@@ -163,7 +189,38 @@ export default {
     },
   },
   methods: {
+    async refreshSubscription() {
+      try {
+        const subscription = await getOwnerSubscriptionStatus();
+        if (subscription) {
+          this.info.setSubscriptionStatus(subscription);
+        }
+      } catch (error) {
+        console.warn("Failed to refresh subscription status:", error);
+      }
+    },
+    async applyExpiredAvailability() {
+      if (!this.isSubscriptionExpired) return;
+      const toDisable = (this.properties || []).filter(
+        (p) => p?.is_available || String(p?.status || "").toLowerCase() !== "pending"
+      );
+      if (!toDisable.length) return;
+
+      await Promise.allSettled(
+        toDisable.map(async (property) => {
+          try {
+            await updateOwnerPropertyState(property.id, false, "pending");
+            property.is_available = false;
+            property.status = "pending";
+          } catch (error) {
+            console.error("Failed to update availability:", error);
+          }
+        })
+      );
+
+    },
     async deleteProperty(id) {
+      if (this.isSubscriptionExpired) return;
       const result = await Swal.fire({
         title: "Delete property?",
         text: "This action cannot be undone.",
@@ -218,6 +275,7 @@ export default {
       }
     },
     async toggleAvailability(property) {
+      if (this.isSubscriptionExpired) return;
       if (this.availabilityLoadingIds.includes(property.id)) return;
       const nextAvailability = !property.is_available;
       this.availabilityLoadingIds.push(property.id);
@@ -233,14 +291,16 @@ export default {
       }
     },
     goToAddProperty() {
-      if (!this.limitReached) {
+      if (!this.limitReached && !this.isSubscriptionExpired) {
         this.$router.push('/dashboard/properties/add');
       }
     },
   },
-  mounted() {
-    this.getProperties();
-    this.getPropertyLimit();
+  async mounted() {
+    await this.refreshSubscription();
+    await this.getProperties();
+    await this.getPropertyLimit();
+    await this.applyExpiredAvailability();
     
     const success = sessionStorage.getItem("propertyCreated");
     const update = sessionStorage.getItem("propertyUpdate");

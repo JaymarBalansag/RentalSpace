@@ -40,7 +40,7 @@
         <div class="card h-100 shadow-sm border-0">
           <div class="card-header bg-white text-center">
             <h4 class="fw-normal mb-1">Annual Plan</h4>
-            <h2 class="fw-bold text-primary">₱2000</h2>
+            <h2 class="fw-bold text-primary">₱1800</h2>
             <small class="text-muted">per year</small>
           </div>
           <div class="card-body d-flex flex-column">
@@ -50,7 +50,7 @@
             <ul class="list-unstyled mt-3 mb-4 text-start">
               <li><i class="bi bi-check2 text-success"></i> Up to 5 property listings</li>
               <li><i class="bi bi-check2 text-success"></i> Priority admin verification</li>
-              <li><i class="bi bi-check2 text-success"></i> Save 20% compared to monthly plan</li>
+              <li><i class="bi bi-check2 text-success"></i> System Management</li>
             </ul>
             <button @click="selectPlan('Annual')" class="btn btn-outline-primary mt-auto">
               Subscribe Annually

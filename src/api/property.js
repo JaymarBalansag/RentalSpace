@@ -67,6 +67,15 @@ export async function updateOwnerPropertyAvailability(id, is_available) {
   return res;
 }
 
+export async function updateOwnerPropertyState(id, is_available, status) {
+  const payload = { is_available };
+  if (typeof status !== "undefined") {
+    payload.status = status;
+  }
+  const res = await api.patch(`/owner/properties/${id}/availability`, payload);
+  return res;
+}
+
 // Create a new property
 export async function createProperty(propertyData) {
   const res = await api.post("/properties", propertyData, {

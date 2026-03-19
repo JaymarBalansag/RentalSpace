@@ -423,6 +423,7 @@ export default {
       try {
         const status = this.confirmConfig.action === "verify" ? "verified" : "rejected";
         await updateUserVerification(user.id, status, this.confirmInput.trim());
+        this.isActionLoading = false;
         this.closeConfirmModal();
         await this.getToggleUserStatus(this.filterStatus);
         if (this.showUserModal && this.selectedUserDetails?.id === user.id) {

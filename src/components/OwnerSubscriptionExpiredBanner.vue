@@ -1,8 +1,8 @@
 <template>
-  <div v-if="showWarning" class="container pt-3">
+  <div v-if="showExpired" class="container pt-3">
     <div class="alert alert-warning bg-warning-subtle border-0 rounded-3 mb-3 small" role="alert">
       <i class="bi bi-exclamation-triangle-fill me-2"></i>
-      <span>{{ warningMessage }}</span>
+      <span>Your subscription has expired. Properties are hidden until you renew.</span>
     </div>
   </div>
 </template>
@@ -12,10 +12,10 @@ import { useUserInfo } from "@/store/userInfo";
 import { getOwnerSubscriptionStatus } from "@/api/subscription";
 
 export default {
-  name: "SubscriptionWarningBanner",
+  name: "OwnerSubscriptionExpiredBanner",
   data() {
     return {
-      isLoading: false
+      isLoading: false,
     };
   },
   computed: {
@@ -28,20 +28,14 @@ export default {
     subscription() {
       return this.info.subscription || null;
     },
-    showWarning() {
-      return this.isOwner && !!this.subscription?.is_expiring_soon;
+    showExpired() {
+      if (!this.isOwner || !this.subscription) return false;
+      const canManage = this.subscription?.can_manage_properties;
+      const hasStatus = typeof this.subscription?.status !== "undefined" && this.subscription?.status !== null;
+      const status = hasStatus ? String(this.subscription.status).toLowerCase() : "";
+      const statusInactive = hasStatus && !["active", "trialing", "trial", "ongoing"].includes(status);
+      return canManage === false || statusInactive;
     },
-    warningMessage() {
-      if (this.subscription?.message) return this.subscription.message;
-      const days = this.subscription?.days_left;
-      if (typeof days === "number") {
-        if (days === 0) {
-          return "Your subscription expires today.";
-        }
-        return `Your subscription will expire in ${days} day(s).`;
-      }
-      return "Your subscription is about to end.";
-    }
   },
   async mounted() {
     if (!this.isOwner || this.subscription || this.isLoading) return;
@@ -52,10 +46,10 @@ export default {
         this.info.setSubscriptionStatus(subscription);
       }
     } catch (error) {
-      console.warn("Subscription warning check failed:", error);
+      console.warn("Subscription expired check failed:", error);
     } finally {
       this.isLoading = false;
     }
-  }
+  },
 };
 </script>

@@ -12,6 +12,7 @@
       </div>
     </section>
 
+    <OwnerSubscriptionExpiredBanner />
     <SubscriptionWarningBanner />
 
     <div class="container py-5">
@@ -120,10 +121,11 @@
 import { RouterLink } from "vue-router";
 import Header from "@/components/Header.vue";
 import SubscriptionWarningBanner from "@/components/SubscriptionWarningBanner.vue";
+import OwnerSubscriptionExpiredBanner from "@/components/OwnerSubscriptionExpiredBanner.vue";
 
 export default {
   name: "ContactUsPage",
-  components: { RouterLink, Header, SubscriptionWarningBanner },
+  components: { RouterLink, Header, SubscriptionWarningBanner, OwnerSubscriptionExpiredBanner },
   data() {
     return {
       form: {

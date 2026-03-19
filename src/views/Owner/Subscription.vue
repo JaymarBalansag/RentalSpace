@@ -5,6 +5,7 @@
       <p class="text-muted small mb-0">Manage your plan, limits, and renewal timeline.</p>
     </div>
 
+    <OwnerSubscriptionExpiredBanner />
     <SubscriptionWarningBanner />
 
     <div class="row g-3 g-lg-4 align-items-stretch">
@@ -213,10 +214,11 @@
 import { getOwnerSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
 import SubscriptionWarningBanner from "@/components/SubscriptionWarningBanner.vue";
+import OwnerSubscriptionExpiredBanner from "@/components/OwnerSubscriptionExpiredBanner.vue";
 
 export default {
   name: "OwnerSubscription",
-  components: { SubscriptionWarningBanner },
+  components: { SubscriptionWarningBanner, OwnerSubscriptionExpiredBanner },
   data() {
     return {
       showUpgradeModal: false,
@@ -254,7 +256,7 @@ export default {
       return info.subscription || null;
     },
     hasSubscription() {
-      return !!this.subscription;
+      return !!(this.subscription && this.subscription.plan_name);
     },
     planName() {
       return this.subscription?.plan_name || "No active plan";
@@ -263,12 +265,13 @@ export default {
       return this.subscription?.message || "Review your plan status and limits.";
     },
     statusLabel() {
+      if (!this.hasSubscription) return "No Plan";
       const status = String(this.subscription?.status || "inactive").toLowerCase();
       if (status.includes("active")) return "Active";
       if (status.includes("trial")) return "Trial";
       if (status.includes("expired")) return "Expired";
       if (status.includes("pending")) return "Pending";
-      return this.hasSubscription ? "Inactive" : "No Plan";
+      return "Inactive";
     },
     statusTone() {
       const label = this.statusLabel.toLowerCase();

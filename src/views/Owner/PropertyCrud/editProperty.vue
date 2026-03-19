@@ -8,6 +8,7 @@
       </div>
       <span class="badge bg-dark rounded-pill px-3 shadow-sm">ID: {{ $route.params.id }}</span>
     </div>
+    <OwnerSubscriptionExpiredBanner />
 
     <div v-if="initialLoading" class="text-center py-5 my-5">
       <div class="spinner-grow text-primary" role="status"></div>
@@ -920,7 +921,7 @@
           <button
             class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow"
             @click="validateForm"
-            :disabled="isValidating || isSubmitting"
+            :disabled="isValidating || isSubmitting || isSubscriptionExpired"
           >
             <template v-if="isValidating || isSubmitting">
               <span class="spinner-border spinner-border-sm me-2"></span>
@@ -956,11 +957,14 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getAmenities, getFacilities, getPropertyTypes } from "@/api/property";
 import { fetchPropertyData, updatePropertyData } from "@/api/Owner/property";
+import { getOwnerSubscriptionStatus } from "@/api/subscription";
+import { useUserInfo } from "@/store/userInfo";
+import OwnerSubscriptionExpiredBanner from "@/components/OwnerSubscriptionExpiredBanner.vue";
 
 
 export default {
   name: "EditProperty",
-  components: { Header, confirmModal },
+  components: { Header, confirmModal, OwnerSubscriptionExpiredBanner },
   data() {
     return {
       initialLoading: true, 
@@ -1063,7 +1067,33 @@ export default {
       ],
     };
   },
+  computed: {
+    info() {
+      return useUserInfo();
+    },
+    subscription() {
+      return this.info.subscription || null;
+    },
+    isSubscriptionExpired() {
+      if (!this.subscription) return false;
+      const canManage = this.subscription?.can_manage_properties;
+      const hasStatus = typeof this.subscription?.status !== "undefined" && this.subscription?.status !== null;
+      const status = hasStatus ? String(this.subscription.status).toLowerCase() : "";
+      const statusInactive = hasStatus && !["active", "trialing", "trial", "ongoing"].includes(status);
+      return canManage === false || statusInactive;
+    },
+  },
   methods: {
+    async refreshSubscription() {
+      try {
+        const subscription = await getOwnerSubscriptionStatus();
+        if (subscription) {
+          this.info.setSubscriptionStatus(subscription);
+        }
+      } catch (error) {
+        console.warn("Failed to refresh subscription status:", error);
+      }
+    },
     // For Custom Amenity
     addCustomAmenity() {
       if (!this.customAmenity.trim()) return;
@@ -1452,6 +1482,11 @@ export default {
       this.isValidating = true;
       try {
         this.resetValidation();
+        if (this.isSubscriptionExpired) {
+          this.pushValidation("form", "Your subscription has expired. Renew to edit properties.");
+          this.scrollToValidationSummary();
+          return;
+        }
         const stepsToValidate = [1, 2, 3, 4];
         let firstInvalidStep = null;
 
@@ -1507,6 +1542,7 @@ export default {
     },
     async submitForm() {
       if (this.isSubmitting) return;
+      if (this.isSubscriptionExpired) return;
       this.isSubmitting = true;
       this.submitStatusMessage = "Preparing update payload...";
 
@@ -1712,6 +1748,7 @@ export default {
     }
   },
   mounted() {
+    this.refreshSubscription();
     this.getAmenities();
     this.getFacilities();
     this.getPropertyTypes();

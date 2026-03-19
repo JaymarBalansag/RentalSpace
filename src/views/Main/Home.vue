@@ -59,6 +59,7 @@
     </div>
   </section>
 
+  <OwnerSubscriptionExpiredBanner />
   <SubscriptionWarningBanner />
 
   <div v-if="showMap" class="container-md container-sm px-0 mb-4 map-shell">
@@ -324,10 +325,11 @@ import successToast from '@/components/successToast.vue';
 import Header from '@/components/Header.vue';
 import MapSection from '@/components/MapSection.vue';
 import SubscriptionWarningBanner from '@/components/SubscriptionWarningBanner.vue';
+import OwnerSubscriptionExpiredBanner from '@/components/OwnerSubscriptionExpiredBanner.vue';
 
 export default {
   name: 'Home',
-  components: { RouterLink, successToast, Header, MapSection, SubscriptionWarningBanner },
+  components: { RouterLink, successToast, Header, MapSection, SubscriptionWarningBanner, OwnerSubscriptionExpiredBanner },
   data() {
     return {
       showMap: false,
@@ -417,12 +419,16 @@ export default {
       hasFilters ? this.getFilteredProperties(page) : this.getProperties(page);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
+    isPropertyVisible(property) {
+      const status = String(property?.status || "").toLowerCase();
+      return property?.is_available !== false && status !== "pending";
+    },
     async getProperties(page = 1) {
       this.loading = true;
       try {
         const response = await getProperties(page);
         const paginated = response.data.properties;
-        this.properties = paginated.data;
+        this.properties = (paginated.data || []).filter(this.isPropertyVisible);
         this.currentPage = paginated.current_page;
         this.lastPage = paginated.last_page;
         this.total = paginated.total;
@@ -471,7 +477,7 @@ export default {
           page
         );
         const paginated = response.data.properties;
-        this.properties = paginated.data;
+        this.properties = (paginated.data || []).filter(this.isPropertyVisible);
         this.currentPage = paginated.current_page;
         this.lastPage = paginated.last_page;
         this.total = paginated.total;
@@ -485,7 +491,7 @@ export default {
       try {
         const response = await searchProperties(this.searchQuery, page);
         const paginated = response.data.properties;
-        this.properties = paginated.data;
+        this.properties = (paginated.data || []).filter(this.isPropertyVisible);
         this.currentPage = paginated.current_page;
         this.lastPage = paginated.last_page;
         this.total = paginated.total;

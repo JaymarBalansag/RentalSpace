@@ -13,6 +13,7 @@
       </div>
     </div>
 
+    <OwnerSubscriptionExpiredBanner />
     <SubscriptionWarningBanner />
 
     <div class="container-fluid p-5 pt-0">
@@ -219,6 +220,7 @@ import {
 } from '@/api/experienceScript';
 import Header from '@/components/Header.vue';
 import SubscriptionWarningBanner from '@/components/SubscriptionWarningBanner.vue';
+import OwnerSubscriptionExpiredBanner from '@/components/OwnerSubscriptionExpiredBanner.vue';
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -228,7 +230,7 @@ dayjs.extend(relativeTime);
 
 export default {
   name: "Experience",
-  components: { Header, SubscriptionWarningBanner },
+  components: { Header, SubscriptionWarningBanner, OwnerSubscriptionExpiredBanner },
   data() {
     return {
       message: '',
@@ -278,13 +280,24 @@ export default {
       const value = Number(property?.total_reviews ?? property?.review_count ?? 0);
       return Number.isFinite(value) ? value : 0;
     },
+    filterAvailableProperties(list) {
+      const data = Array.isArray(list) ? list : [];
+      return data.filter((property) => {
+        const status = String(property?.status || "").toLowerCase();
+        return property?.is_available !== false && status !== "pending";
+      });
+    },
 
     async handleLoad(apiCall, targetKey, filterName = '') {
       this.loading = true;
       if (filterName) this.activeFilter = filterName;
       try {
         const response = await apiCall();
-        this[targetKey] = response.data.data;
+        const list = response.data.data;
+        const filtered = ["recommendedProperties", "recentProperties", "trendingProperties"].includes(targetKey)
+          ? this.filterAvailableProperties(list)
+          : list;
+        this[targetKey] = filtered;
         this.message = response.data.message || '';
       } catch (error) {
         console.error(`Error loading ${targetKey}:`, error);
@@ -311,7 +324,8 @@ export default {
       try {
         const response = await getTrendingProperties(2);
         const list = Array.isArray(response?.data?.data) ? response.data.data : [];
-        this.trendingProperties = list
+        const filtered = this.filterAvailableProperties(list);
+        this.trendingProperties = filtered
           .sort((a, b) => this.getViewCount(b) - this.getViewCount(a))
           .slice(0, 2);
       } catch (error) {

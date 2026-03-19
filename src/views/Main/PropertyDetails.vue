@@ -317,7 +317,7 @@
       <div v-else-if="reviews.length === 0" class="text-muted small">No reviews yet for this property.</div>
 
       <div v-else class="row">
-        <div v-for="(review, i) in reviews" :key="review.id || i" class="col-md-6 mb-3">
+        <div v-for="(review, i) in displayedReviews" :key="review.id || i" class="col-md-6 mb-3">
           <div class="p-3 border rounded-4 bg-white shadow-sm h-100">
             <div class="d-flex align-items-center gap-3 mb-2">
               <img :src="review.user_img || placeholderImg" class="rounded-circle" width="40" height="40" />
@@ -331,6 +331,79 @@
             </div>
             <p class="mb-0 text-muted small">{{ review.comment }}</p>
           </div>
+        </div>
+      </div>
+
+      <div v-if="canViewAllReviews" class="mt-3">
+        <button class="btn btn-outline-primary rounded-pill px-4" @click="openReviewsModal">
+          View All Reviews
+        </button>
+      </div>
+    </div>
+
+    <div v-if="showReviewsModal" class="modal-overlay-custom">
+      <div class="modal-body-custom rounded-4 shadow-lg p-4 reviews-modal">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">All Reviews</h5>
+          <button class="btn-close" @click="closeReviewsModal"></button>
+        </div>
+
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="display-6 fw-bold text-primary mb-0">
+            {{ modalSummary.average_rating.toFixed(1) }}
+          </div>
+          <div>
+            <div class="text-warning">
+              <i v-for="star in 5" :key="`modal-summary-${star}`" :class="star <= Math.round(modalSummary.average_rating) ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+            </div>
+            <div class="text-muted small">
+              {{ modalSummary.total_reviews }} review{{ modalSummary.total_reviews === 1 ? "" : "s" }}
+            </div>
+          </div>
+        </div>
+
+        <div class="review-pill-row mb-3">
+          <button
+            v-for="pill in modalStarPills"
+            :key="`pill-${pill.stars}`"
+            class="review-pill"
+            :class="selectedStarFilter === pill.stars ? 'active' : ''"
+            @click="toggleStarFilter(pill.stars)"
+          >
+            {{ pill.stars }} star{{ pill.stars === 1 ? "" : "s" }} · {{ pill.count }}
+          </button>
+        </div>
+
+        <div v-if="modalReviewsLoading" class="text-muted small">Loading reviews...</div>
+        <div v-else-if="modalReviewsError" class="alert alert-warning mb-0">{{ modalReviewsError }}</div>
+        <div v-else-if="modalFilteredReviews.length === 0" class="text-muted small">No reviews with this rating.</div>
+
+        <div v-else class="row">
+          <div v-for="(review, i) in modalFilteredReviews" :key="review.id || i" class="col-md-6 mb-3">
+            <div class="p-3 border rounded-4 bg-white shadow-sm h-100">
+              <div class="d-flex align-items-center gap-3 mb-2">
+                <img :src="review.user_img || placeholderImg" class="rounded-circle" width="40" height="40" />
+                <div class="flex-grow-1">
+                  <p class="mb-0 fw-bold small">{{ review.user_name }}</p>
+                  <div class="text-warning small">
+                    <i v-for="star in 5" :key="`modal-${i}-star-${star}`" :class="star <= review.rating ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+                  </div>
+                </div>
+                <small class="text-muted">{{ formatReviewDate(review.created_at) }}</small>
+              </div>
+              <p class="mb-0 text-muted small">{{ review.comment }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="!modalReviewsLoading && !modalReviewsError && modalLastPage > 1" class="d-flex align-items-center justify-content-between mt-3">
+          <button class="btn btn-outline-secondary btn-sm" :disabled="modalPage <= 1" @click="changeModalPage(modalPage - 1)">
+            <i class="bi bi-chevron-left me-1"></i> Prev
+          </button>
+          <span class="small text-muted">Page {{ modalPage }} of {{ modalLastPage }}</span>
+          <button class="btn btn-outline-secondary btn-sm" :disabled="modalPage >= modalLastPage" @click="changeModalPage(modalPage + 1)">
+            Next <i class="bi bi-chevron-right ms-1"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -425,6 +498,18 @@ export default {
         average_rating: 0,
         total_reviews: 0,
       },
+      showReviewsModal: false,
+      modalReviews: [],
+      modalReviewsLoading: false,
+      modalReviewsError: "",
+      modalSummary: {
+        average_rating: 0,
+        total_reviews: 0,
+      },
+      modalCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      modalPage: 1,
+      modalLastPage: 1,
+      selectedStarFilter: null,
       isSubmittingReview: false,
       reviewForm: {
         rating: 0,
@@ -657,12 +742,35 @@ export default {
       const average = Number(payload?.average_rating || payload?.summary?.average_rating || 0);
       const total = Number(payload?.total_reviews || payload?.summary?.total_reviews || reviews.length);
 
+      const rawCounts = payload?.summary?.counts || payload?.summary?.rating_counts || payload?.counts || payload?.rating_counts || null;
+      const counts = {
+        1: Number(rawCounts?.[1] || rawCounts?.one || 0),
+        2: Number(rawCounts?.[2] || rawCounts?.two || 0),
+        3: Number(rawCounts?.[3] || rawCounts?.three || 0),
+        4: Number(rawCounts?.[4] || rawCounts?.four || 0),
+        5: Number(rawCounts?.[5] || rawCounts?.five || 0),
+      };
+      const hasCounts = Object.values(counts).some((value) => value > 0);
+      if (!hasCounts) {
+        reviews.forEach((review) => {
+          const rating = Math.max(1, Math.min(5, Math.round(Number(review.rating || 0))));
+          counts[rating] = (counts[rating] || 0) + 1;
+        });
+      }
+
+      const meta = payload?.meta || payload?.pagination || payload || {};
+      const currentPage = Number(meta?.current_page || meta?.currentPage || payload?.current_page || 1);
+      const lastPage = Number(meta?.last_page || meta?.lastPage || payload?.last_page || 1);
+
       return {
         reviews,
         summary: {
           average_rating: Number.isFinite(average) ? average : 0,
           total_reviews: Number.isFinite(total) ? total : reviews.length,
         },
+        counts,
+        currentPage: Number.isFinite(currentPage) ? currentPage : 1,
+        lastPage: Number.isFinite(lastPage) ? lastPage : 1,
       };
     },
     formatReviewDate(date) {
@@ -679,7 +787,7 @@ export default {
       this.reviewsError = "";
 
       try {
-        const response = await getPropertyReviews(propertyId);
+        const response = await getPropertyReviews(propertyId, 1);
         const payload = response?.data || {};
         const normalized = this.normalizeReviews(payload);
         this.reviews = normalized.reviews;
@@ -691,6 +799,55 @@ export default {
       } finally {
         this.reviewsLoading = false;
       }
+    },
+    async openReviewsModal() {
+      this.showReviewsModal = true;
+      this.selectedStarFilter = null;
+      this.modalPage = 1;
+      this.modalLastPage = 1;
+      await this.fetchModalReviewsPage(1);
+    },
+    closeReviewsModal() {
+      this.showReviewsModal = false;
+    },
+    async fetchModalReviewsPage(page = 1) {
+      const propertyId = this.$route.params.id;
+      if (!propertyId) return;
+
+      this.modalReviewsLoading = true;
+      this.modalReviewsError = "";
+      this.modalReviews = [];
+      this.modalSummary = { average_rating: 0, total_reviews: 0 };
+      this.modalCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+      try {
+        const response = await getPropertyReviews(propertyId, page, this.selectedStarFilter);
+        const payload = response?.data || {};
+        const normalized = this.normalizeReviews(payload);
+        this.modalReviews = normalized.reviews;
+        this.modalSummary = normalized.summary;
+        this.modalCounts = normalized.counts;
+        this.modalPage = normalized.currentPage;
+        this.modalLastPage = normalized.lastPage;
+      } catch (error) {
+        this.modalReviews = [];
+        this.modalSummary = { average_rating: 0, total_reviews: 0 };
+        this.modalCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        this.modalPage = 1;
+        this.modalLastPage = 1;
+        this.modalReviewsError = error?.response?.data?.message || "Unable to load reviews right now.";
+      } finally {
+        this.modalReviewsLoading = false;
+      }
+    },
+    async changeModalPage(page) {
+      if (page < 1 || page > this.modalLastPage || this.modalReviewsLoading) return;
+      await this.fetchModalReviewsPage(page);
+    },
+    async toggleStarFilter(star) {
+      this.selectedStarFilter = this.selectedStarFilter === star ? null : star;
+      this.modalPage = 1;
+      await this.fetchModalReviewsPage(1);
     },
     async submitReview() {
       const info = useUserInfo();
@@ -1052,6 +1209,23 @@ export default {
         return "bg-danger-subtle text-danger border border-danger-subtle";
       }
       return "bg-secondary-subtle text-secondary border border-secondary-subtle";
+    },
+    displayedReviews() {
+      return (this.reviews || []).slice(0, 3);
+    },
+    canViewAllReviews() {
+      return Number(this.reviewSummary?.total_reviews || 0) > 3;
+    },
+    modalStarPills() {
+      const counts = this.modalCounts || {};
+      return [5, 4, 3, 2, 1].map((stars) => ({
+        stars,
+        count: Number(counts?.[stars] || 0),
+      }));
+    },
+    modalFilteredReviews() {
+      if (!this.selectedStarFilter) return this.modalReviews;
+      return (this.modalReviews || []).filter((review) => Number(review?.rating || 0) === this.selectedStarFilter);
     }
   },
   watch: {
@@ -1105,6 +1279,39 @@ export default {
 .modal-body-custom {
   background: white; width: 90%; max-width: 500px;
   max-height: 90vh; overflow-y: auto;
+}
+
+.reviews-modal {
+  max-width: 900px;
+}
+
+.review-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.review-pill {
+  border: 1px solid #d7dde5;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  transition: all 0.2s ease;
+}
+
+.review-pill:hover {
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+
+.review-pill.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
 }
 
 .booking-overlay {

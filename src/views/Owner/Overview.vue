@@ -34,7 +34,7 @@
     </div>
 
     <div class="row mt-4 g-3 g-md-4">
-      <div class="col-12 col-lg-7">
+      <div v-if="!isMonthlyPlan" class="col-12 col-lg-7">
         <div class="card border-0 glass-card activity-card h-100">
           <div class="card-body p-4">
             <div class="d-flex align-items-center justify-content-between mb-3">
@@ -60,14 +60,15 @@
             <p class="text-muted small mb-3">Jump to the tasks you do most often.</p>
             <div class="d-flex flex-column gap-2">
               <RouterLink to="/dashboard/properties/add" class="btn btn-primary fw-semibold">Add Property</RouterLink>
-              <RouterLink to="/bookings" class="btn btn-outline-primary fw-semibold">View Bookings</RouterLink>
-              <RouterLink to="/ledger" class="btn btn-outline-dark fw-semibold">Go to Ledger</RouterLink>
-              <RouterLink to="/tenants?tab=moveout" class="btn btn-outline-secondary fw-semibold">Move-Out Notices</RouterLink>
+              <RouterLink to="/properties" class="btn btn-outline-primary fw-semibold">View Reviews</RouterLink>
+              <RouterLink v-if="!isMonthlyPlan" to="/bookings" class="btn btn-outline-primary fw-semibold">View Bookings</RouterLink>
+              <RouterLink v-if="!isMonthlyPlan" to="/ledger" class="btn btn-outline-dark fw-semibold">Go to Ledger</RouterLink>
+              <RouterLink v-if="!isMonthlyPlan" to="/tenants?tab=moveout" class="btn btn-outline-secondary fw-semibold">Move-Out Notices</RouterLink>
             </div>
           </div>
         </div>
       </div>
-      <div class="col-12">
+      <div v-if="!isMonthlyPlan" class="col-12">
         <div class="card border-0 glass-card banner-card p-4">
           <div class="d-flex align-items-center flex-wrap gap-3">
             <div class="me-3">
@@ -87,6 +88,8 @@
 
 <script>
 import { getOwnerDashboardSummary } from '@/api/billings';
+import { getOwnerProperties } from "@/api/property";
+import { useUserInfo } from "@/store/userInfo";
 
 export default {
   data() {
@@ -97,6 +100,7 @@ export default {
         pending_bookings_count: 0,
         pending_payments_count: 0,
         monthly_verified_total: 0,
+        reviews_count: 0,
       },
       activityItems: [
         "Loading your latest activity.",
@@ -112,29 +116,62 @@ export default {
   async mounted() {
     await this.loadSummary();
   },
+  computed: {
+    subscription() {
+      return useUserInfo().subscription || null;
+    },
+    isMonthlyPlan() {
+      return String(this.subscription?.billing_cycle || "").toLowerCase() === "monthly";
+    },
+  },
   methods: {
     async loadSummary() {
       try {
         const res = await getOwnerDashboardSummary();
         this.summary = res?.data?.data || this.summary;
-        this.overviewItems = [
-          { title: 'Properties', count: this.summary.properties_count, link: '/properties', icon: 'house-door-fill', color: 'primary' },
-          { title: 'Tenants', count: this.summary.active_tenants_count, link: '/tenants', icon: 'people-fill', color: 'info' },
-          { title: 'Monthly Verified', count: `PHP ${Number(this.summary.monthly_verified_total || 0).toLocaleString()}`, link: '/ledger', icon: 'wallet2', color: 'success' },
-          { title: 'Pending Bookings', count: this.summary.pending_bookings_count, link: '/bookings', icon: 'bar-chart-line-fill', color: 'warning' },
-        ];
-        this.activityItems = [
-          `${this.summary.pending_bookings_count} pending booking request(s)`,
-          `${this.summary.pending_payments_count} pending payment proof(s) for review`,
-          `${this.summary.active_tenants_count} active tenant(s) across your listings`,
-          `${this.summary.properties_count} total properties listed`,
-        ];
+        await this.loadReviewCount();
+        if (this.isMonthlyPlan) {
+          this.overviewItems = [
+            { title: 'Properties', count: this.summary.properties_count, link: '/properties', icon: 'house-door-fill', color: 'primary' },
+            { title: 'Reviews', count: this.summary.reviews_count, link: '/properties', icon: 'chat-left-text-fill', color: 'warning' },
+          ];
+        } else {
+          this.overviewItems = [
+            { title: 'Properties', count: this.summary.properties_count, link: '/properties', icon: 'house-door-fill', color: 'primary' },
+            { title: 'Tenants', count: this.summary.active_tenants_count, link: '/tenants', icon: 'people-fill', color: 'info' },
+            { title: 'Monthly Verified', count: `PHP ${Number(this.summary.monthly_verified_total || 0).toLocaleString()}`, link: '/ledger', icon: 'wallet2', color: 'success' },
+            { title: 'Pending Bookings', count: this.summary.pending_bookings_count, link: '/bookings', icon: 'bar-chart-line-fill', color: 'warning' },
+            { title: 'Reviews', count: this.summary.reviews_count, link: '/properties', icon: 'chat-left-text-fill', color: 'primary' },
+          ];
+        }
+        if (!this.isMonthlyPlan) {
+          this.activityItems = [
+            `${this.summary.pending_bookings_count} pending booking request(s)`,
+            `${this.summary.pending_payments_count} pending payment proof(s) for review`,
+            `${this.summary.active_tenants_count} active tenant(s) across your listings`,
+            `${this.summary.properties_count} total properties listed`,
+          ];
+        }
       } catch (error) {
         console.error("Failed to load owner summary:", error);
         this.activityItems = [
           "Unable to load activity right now.",
           "Check your connection or try again later.",
         ];
+      }
+    },
+    async loadReviewCount() {
+      try {
+        const response = await getOwnerProperties();
+        const properties = response?.data?.properties || [];
+        const total = properties.reduce((sum, property) => {
+          const value = Number(property?.total_reviews ?? property?.review_count ?? 0);
+          return sum + (Number.isFinite(value) ? value : 0);
+        }, 0);
+        this.summary.reviews_count = total;
+      } catch (error) {
+        console.warn("Failed to load review count:", error);
+        this.summary.reviews_count = 0;
       }
     },
   },

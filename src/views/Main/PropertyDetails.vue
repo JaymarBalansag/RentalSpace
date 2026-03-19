@@ -345,43 +345,12 @@
         <p class="text-muted small mb-4">Please provide details for your <strong>{{ property_type }}</strong> rental request.</p>
 
         <form @submit.prevent="validateAgreement">
-          <div v-if="property_type === 'Boarding House'" class="d-grid gap-3">
+          <div class="d-grid gap-3">
             <div>
               <label class="form-label small fw-bold">Move-in Date</label>
               <input type="date" required v-model="agreement.move_in_date" class="form-control rounded-3" />
             </div>
           </div>
-
-          <div v-else-if="['Apartment', 'Condo', 'House'].includes(property_type)" class="d-grid gap-3">
-            <div>
-              <label class="form-label small fw-bold">Lease Duration (Months)</label>
-              <input type="number" required v-model="agreement.lease_duration" min="1" class="form-control rounded-3" />
-            </div>
-            <div>
-              <label class="form-label small fw-bold">Number of Occupants</label>
-              <input type="number" required v-model="agreement.occupant_num" min="1" class="form-control rounded-3" />
-            </div>
-            <div>
-              <label class="form-label small fw-bold">Move-in Date</label>
-              <input type="date" required v-model="agreement.move_in_date" class="form-control rounded-3" />
-            </div>
-          </div>
-
-          <!-- <div v-else-if="property_type === 'Commercial Space'" class="d-grid gap-3">
-            <div>
-              <label class="form-label small fw-bold">Lease Duration (Months)</label>
-              <input type="number" required v-model="agreement.lease_duration" min="1" class="form-control rounded-3" />
-            </div>
-            <div>
-              <label class="form-label small fw-bold">Area Needed (sqm)</label>
-              <input type="number" required v-model="agreement.occupant_num" min="1" class="form-control rounded-3" />
-            </div>
-            <div>
-              <label class="form-label small fw-bold">Move-in Date</label>
-              <input type="date" required v-model="agreement.move_in_date" class="form-control rounded-3" />
-            </div>
-          </div> -->
-
           <div class="mt-3">
             <label class="form-label small fw-bold">Additional Notes</label>
             <textarea v-model="agreement.notes" class="form-control rounded-3" rows="2" placeholder="Any special requests?"></textarea>

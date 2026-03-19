@@ -12,6 +12,8 @@
       </div>
     </section>
 
+    <SubscriptionWarningBanner />
+
     <div class="container py-5">
       <div class="row justify-content-center">
         <div class="col-lg-11">
@@ -117,10 +119,11 @@
 <script>
 import { RouterLink } from "vue-router";
 import Header from "@/components/Header.vue";
+import SubscriptionWarningBanner from "@/components/SubscriptionWarningBanner.vue";
 
 export default {
   name: "ContactUsPage",
-  components: { RouterLink, Header },
+  components: { RouterLink, Header, SubscriptionWarningBanner },
   data() {
     return {
       form: {

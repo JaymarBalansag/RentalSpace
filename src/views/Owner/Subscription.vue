@@ -5,6 +5,8 @@
       <p class="text-muted small mb-0">Manage your plan, limits, and renewal timeline.</p>
     </div>
 
+    <SubscriptionWarningBanner />
+
     <div class="row g-3 g-lg-4 align-items-stretch">
       <div class="col-12 col-lg-7">
         <div class="card border-0 glass-card h-100">
@@ -210,9 +212,11 @@
 <script>
 import { getOwnerSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
+import SubscriptionWarningBanner from "@/components/SubscriptionWarningBanner.vue";
 
 export default {
   name: "OwnerSubscription",
+  components: { SubscriptionWarningBanner },
   data() {
     return {
       showUpgradeModal: false,

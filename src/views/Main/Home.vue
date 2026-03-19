@@ -59,6 +59,8 @@
     </div>
   </section>
 
+  <SubscriptionWarningBanner />
+
   <div v-if="showMap" class="container-md container-sm px-0 mb-4 map-shell">
     <MapSection :properties="properties" />
   </div>
@@ -321,10 +323,11 @@ import {
 import successToast from '@/components/successToast.vue';
 import Header from '@/components/Header.vue';
 import MapSection from '@/components/MapSection.vue';
+import SubscriptionWarningBanner from '@/components/SubscriptionWarningBanner.vue';
 
 export default {
   name: 'Home',
-  components: { RouterLink, successToast, Header, MapSection },
+  components: { RouterLink, successToast, Header, MapSection, SubscriptionWarningBanner },
   data() {
     return {
       showMap: false,

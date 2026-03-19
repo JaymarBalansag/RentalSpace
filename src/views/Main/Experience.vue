@@ -13,6 +13,8 @@
       </div>
     </div>
 
+    <SubscriptionWarningBanner />
+
     <div class="container-fluid p-5 pt-0">
       <div class="row g-4">
         <div class="col-lg-8">
@@ -216,6 +218,7 @@ import {
   getTrendingProperties
 } from '@/api/experienceScript';
 import Header from '@/components/Header.vue';
+import SubscriptionWarningBanner from '@/components/SubscriptionWarningBanner.vue';
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -225,7 +228,7 @@ dayjs.extend(relativeTime);
 
 export default {
   name: "Experience",
-  components: { Header },
+  components: { Header, SubscriptionWarningBanner },
   data() {
     return {
       message: '',

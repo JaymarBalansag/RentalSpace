@@ -202,10 +202,10 @@ export async function recordView(id){
   }
 }
 
-export async function getPropertyReviews(propertyId, page = 1) {
+export async function getPropertyReviews(propertyId, page = 1, rating = null) {
   try {
     const response = await api.get(`/properties/${propertyId}/reviews`, {
-      params: { page },
+      params: rating ? { page, rating } : { page },
     });
     return response;
   } catch (error) {

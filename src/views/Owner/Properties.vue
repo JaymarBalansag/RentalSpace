@@ -106,6 +106,19 @@
               </button>
             </div>
 
+            <div class="pt-3 mt-3 border-top d-flex align-items-center justify-content-between">
+              <span class="small text-muted">
+                {{ getPropertyTotalReviews(property) }} review{{ getPropertyTotalReviews(property) === 1 ? "" : "s" }}
+              </span>
+              <button
+                class="btn btn-outline-primary btn-sm"
+                :disabled="reviewsLoading && selectedProperty?.id === property.id"
+                @click="openReviewsModal(property)"
+              >
+                <i class="bi bi-chat-left-text me-1"></i> View Reviews
+              </button>
+            </div>
+
             <div class="pt-3 mt-3 border-top">
               <div class="d-flex align-items-center justify-content-between">
                 <span class="small fw-semibold text-muted">Availability</span>
@@ -130,10 +143,87 @@
       </div>
     </div>
   </div>
+
+  <div v-if="showReviewsModal" class="modal-backdrop-custom">
+    <div class="modal-custom modal-reviews">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h5 class="fw-bold mb-1">Property Reviews</h5>
+          <p class="text-muted small mb-0">{{ selectedProperty?.title || "Selected Property" }}</p>
+        </div>
+        <button class="btn btn-light btn-sm" @click="closeReviewsModal">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="display-6 fw-bold text-primary mb-0">
+          {{ reviewSummary.average_rating.toFixed(1) }}
+        </div>
+        <div>
+          <div class="text-warning">
+            <i v-for="star in 5" :key="`summary-star-${star}`" :class="star <= Math.round(reviewSummary.average_rating) ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+          </div>
+          <div class="text-muted small">
+            {{ reviewSummary.total_reviews }} review{{ reviewSummary.total_reviews === 1 ? "" : "s" }}
+          </div>
+        </div>
+      </div>
+
+      <div class="star-breakdown mb-4">
+        <span v-for="row in starBreakdown" :key="`breakdown-${row.stars}`" class="star-pill">
+          {{ row.stars }} star{{ row.stars === 1 ? "" : "s" }} · {{ row.count }}
+        </span>
+      </div>
+
+      <div class="star-filter mb-3">
+        <button
+          v-for="star in 5"
+          :key="`filter-${star}`"
+          class="star-filter-btn"
+          :class="selectedStarFilter === star ? 'active' : ''"
+          @click="toggleStarFilter(star)"
+        >
+          {{ star }} star{{ star === 1 ? "" : "s" }}
+        </button>
+      </div>
+
+      <div v-if="reviewsLoading" class="text-muted small">Loading reviews...</div>
+      <div v-else-if="reviewsError" class="alert alert-warning mb-0">{{ reviewsError }}</div>
+      <div v-else-if="filteredReviews.length === 0" class="text-muted small">No reviews with this rating.</div>
+      <div v-else class="review-list">
+        <div v-for="(review, i) in filteredReviews" :key="review.id || i" class="review-item">
+          <img :src="review.user_img || avatarFallback(review.user_name)" class="rounded-circle" width="40" height="40" />
+          <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <p class="mb-0 fw-bold small">{{ review.user_name }}</p>
+                <div class="text-warning small">
+                  <i v-for="star in 5" :key="`review-${i}-star-${star}`" :class="star <= review.rating ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+                </div>
+              </div>
+              <small class="text-muted">{{ formatReviewDate(review.created_at) }}</small>
+            </div>
+            <p class="mb-0 text-muted small mt-1">{{ review.comment }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="!reviewsLoading && !reviewsError && reviewLastPage > 1" class="d-flex align-items-center justify-content-between mt-4">
+        <button class="btn btn-outline-secondary btn-sm" :disabled="reviewPage <= 1" @click="changeReviewPage(reviewPage - 1)">
+          <i class="bi bi-chevron-left me-1"></i> Prev
+        </button>
+        <span class="small text-muted">Page {{ reviewPage }} of {{ reviewLastPage }}</span>
+        <button class="btn btn-outline-secondary btn-sm" :disabled="reviewPage >= reviewLastPage" @click="changeReviewPage(reviewPage + 1)">
+          Next <i class="bi bi-chevron-right ms-1"></i>
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
-import { deleteProperty as deleteOwnerPropertyApi, getOwnerProperties, getPropertyLimit, updateOwnerPropertyAvailability, updateOwnerPropertyState } from '@/api/property';
+import { deleteProperty as deleteOwnerPropertyApi, getOwnerProperties, getPropertyLimit, getPropertyReviews, updateOwnerPropertyAvailability, updateOwnerPropertyState } from '@/api/property';
 import { getOwnerSubscriptionStatus } from "@/api/subscription";
 import SuccessToast from '@/components/successToast.vue';
 import OwnerSubscriptionExpiredBanner from "@/components/OwnerSubscriptionExpiredBanner.vue";
@@ -153,6 +243,19 @@ export default {
       placeholderImg: placeholderImg,
       isLoading: true, // Added loading state,
       toastMessage: "",
+      showReviewsModal: false,
+      reviewsLoading: false,
+      reviewsError: "",
+      reviews: [],
+      reviewSummary: {
+        average_rating: 0,
+        total_reviews: 0,
+      },
+      reviewCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      reviewPage: 1,
+      reviewLastPage: 1,
+      selectedStarFilter: null,
+      selectedProperty: null,
     };
   },
   components: { SuccessToast, OwnerSubscriptionExpiredBanner },
@@ -187,8 +290,134 @@ export default {
       if (this.ownerVerificationStatus === "rejected") return "bg-danger-subtle text-danger";
       return "bg-secondary-subtle text-secondary";
     },
+    starBreakdown() {
+      const counts = this.reviewCounts || {};
+      const total = Number(this.reviewSummary?.total_reviews || 0) || Object.values(counts).reduce((sum, value) => sum + Number(value || 0), 0);
+      return [5, 4, 3, 2, 1].map((stars) => {
+        const count = Number(counts?.[stars] || 0);
+        const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+        return { stars, count, percent };
+      });
+    },
+    filteredReviews() {
+      if (!this.selectedStarFilter) return this.reviews;
+      return (this.reviews || []).filter((review) => Number(review?.rating || 0) === this.selectedStarFilter);
+    },
   },
   methods: {
+    getPropertyTotalReviews(property) {
+      const value = Number(property?.total_reviews ?? property?.review_count ?? 0);
+      return Number.isFinite(value) ? value : 0;
+    },
+    normalizeReviews(payload) {
+      const reviewList = Array.isArray(payload?.reviews)
+        ? payload.reviews
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+
+      const reviews = reviewList.map((review) => ({
+        id: review.id,
+        user_name: review.user_name || review.user?.name || "Anonymous User",
+        user_img: review.user_img || review.user?.user_img_url || null,
+        rating: Number(review.rating || 0),
+        comment: review.comment || "",
+        created_at: review.created_at || null,
+      }));
+
+      const average = Number(payload?.average_rating || payload?.summary?.average_rating || 0);
+      const total = Number(payload?.total_reviews || payload?.summary?.total_reviews || reviews.length);
+
+      const rawCounts = payload?.summary?.counts || payload?.summary?.rating_counts || payload?.counts || payload?.rating_counts || null;
+      const counts = {
+        1: Number(rawCounts?.[1] || rawCounts?.one || 0),
+        2: Number(rawCounts?.[2] || rawCounts?.two || 0),
+        3: Number(rawCounts?.[3] || rawCounts?.three || 0),
+        4: Number(rawCounts?.[4] || rawCounts?.four || 0),
+        5: Number(rawCounts?.[5] || rawCounts?.five || 0),
+      };
+      const hasCounts = Object.values(counts).some((value) => value > 0);
+      if (!hasCounts) {
+        reviews.forEach((review) => {
+          const rating = Math.max(1, Math.min(5, Math.round(Number(review.rating || 0))));
+          counts[rating] = (counts[rating] || 0) + 1;
+        });
+      }
+
+      const meta = payload?.meta || payload?.pagination || payload || {};
+      const currentPage = Number(meta?.current_page || meta?.currentPage || payload?.current_page || 1);
+      const lastPage = Number(meta?.last_page || meta?.lastPage || payload?.last_page || 1);
+
+      return {
+        reviews,
+        summary: {
+          average_rating: Number.isFinite(average) ? average : 0,
+          total_reviews: Number.isFinite(total) ? total : reviews.length,
+        },
+        counts,
+        currentPage: Number.isFinite(currentPage) ? currentPage : 1,
+        lastPage: Number.isFinite(lastPage) ? lastPage : 1,
+      };
+    },
+    formatReviewDate(date) {
+      if (!date) return "";
+      const parsed = new Date(date);
+      if (Number.isNaN(parsed.getTime())) return "";
+      return parsed.toLocaleDateString();
+    },
+    avatarFallback(name) {
+      const safeName = encodeURIComponent(name || "User");
+      return `https://ui-avatars.com/api/?name=${safeName}&background=E2E8F0&color=1E293B`;
+    },
+    async openReviewsModal(property) {
+      this.selectedProperty = property;
+      this.reviewPage = 1;
+      this.reviewLastPage = 1;
+      this.selectedStarFilter = null;
+      this.showReviewsModal = true;
+      await this.fetchReviewsPage(1);
+    },
+    async fetchReviewsPage(page = 1) {
+      if (!this.selectedProperty) return;
+      this.reviewsLoading = true;
+      this.reviewsError = "";
+      this.reviews = [];
+      this.reviewSummary = { average_rating: 0, total_reviews: 0 };
+      this.reviewCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+      try {
+        const response = await getPropertyReviews(this.selectedProperty.id, page, this.selectedStarFilter);
+        const payload = response?.data || {};
+        const normalized = this.normalizeReviews(payload);
+        this.reviews = normalized.reviews;
+        this.reviewSummary = normalized.summary;
+        this.reviewCounts = normalized.counts;
+        this.reviewPage = normalized.currentPage;
+        this.reviewLastPage = normalized.lastPage;
+      } catch (error) {
+        this.reviews = [];
+        this.reviewSummary = { average_rating: 0, total_reviews: 0 };
+        this.reviewCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        this.reviewPage = 1;
+        this.reviewLastPage = 1;
+        this.reviewsError = error?.response?.data?.message || "Unable to load reviews right now.";
+      } finally {
+        this.reviewsLoading = false;
+      }
+    },
+    closeReviewsModal() {
+      this.showReviewsModal = false;
+      this.selectedProperty = null;
+    },
+    async changeReviewPage(page) {
+      if (page < 1 || page > this.reviewLastPage || this.reviewsLoading) return;
+      await this.fetchReviewsPage(page);
+    },
+    async toggleStarFilter(star) {
+      this.selectedStarFilter = this.selectedStarFilter === star ? null : star;
+      this.reviewPage = 1;
+      await this.fetchReviewsPage(1);
+    },
     async refreshSubscription() {
       try {
         const subscription = await getOwnerSubscriptionStatus();
@@ -353,4 +582,89 @@ export default {
 .cursor-not-allowed {
   cursor: not-allowed;
 }
+
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-custom {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 720px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-reviews {
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.star-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.star-pill {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.star-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.star-filter-btn {
+  border: 1px solid #d7dde5;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  transition: all 0.2s ease;
+}
+
+.star-filter-btn:hover {
+  border-color: #f5a524;
+  color: #b45309;
+}
+
+.star-filter-btn.active {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(245, 158, 11, 0.25);
+}
+
+.review-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  background: #fbfdff;
+}
 </style>
+

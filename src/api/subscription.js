@@ -10,6 +10,11 @@ export async function getSubscriptionStatus(subscriptionId) {
   return response.data || null;
 }
 
+export async function getOwnerSubscriptionHistory() {
+  const response = await api.get("/owner/subscription-history");
+  return response.data || null;
+}
+
 export async function createListingAddonIntent(qty) {
   const response = await api.post("/owner/listing-addon/intent", { qty });
   return response.data || null;

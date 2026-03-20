@@ -2,7 +2,8 @@
   <div v-if="showWarning" class="container pt-3">
     <div class="alert alert-warning bg-warning-subtle border-0 rounded-3 mb-3 small" role="alert">
       <i class="bi bi-exclamation-triangle-fill me-2"></i>
-      <span>{{ warningMessage }}</span>
+      <span>{{ warningMessage }} </span>
+      <RouterLink to="/subscription/renew" class="alert-link fw-semibold">Renew now</RouterLink>
     </div>
   </div>
 </template>

@@ -41,9 +41,9 @@
                   <div class="icon-box icon-success me-3"><i class="bi bi-envelope-fill"></i></div>
                   <div>
                     <h6 class="fw-bold mb-1">Email</h6>
-                    <p class="text-muted mb-0">support@rentahub.com</p>
+                    <p class="text-muted mb-0">rentahubsupport@gmail.com</p>
                   </div>
-                </div>
+                </div> 
 
                 <div class="contact-item d-flex align-items-start mb-4">
                   <div class="icon-box icon-danger me-3"><i class="bi bi-geo-alt-fill"></i></div>
@@ -56,9 +56,9 @@
                 <div class="social-block mt-4">
                   <h6 class="fw-bold mb-3">Follow Us</h6>
                   <div class="d-flex gap-2">
-                    <a href="#" class="social-btn" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
-                    <a href="#" class="social-btn" aria-label="Twitter"><i class="bi bi-twitter"></i></a>
-                    <a href="#" class="social-btn" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+                    <a href="https://www.facebook.com/profile.php?id=61577415020480" class="social-btn" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+                    <!-- <a href="#" class="social-btn" aria-label="Twitter"><i class="bi bi-twitter"></i></a>
+                    <a href="#" class="social-btn" aria-label="Instagram"><i class="bi bi-instagram"></i></a> -->
                   </div>
                 </div>
               </section>

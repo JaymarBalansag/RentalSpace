@@ -107,7 +107,7 @@
 
                     <div class="d-flex justify-content-between mb-2">
                       <span class="text-muted">Selected Plan:</span>
-                      <span class="fw-bold">{{ selectedPlan }}</span>
+                      <span class="fw-bold">{{ displayPlanName }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-4">
                       <span class="text-muted">Billing Cycle:</span>
@@ -124,9 +124,9 @@
                     <div class="bg-white p-3 rounded-3 shadow-sm mb-0">
                       <h6 class="fw-bold small mb-2 text-uppercase text-muted">Plan Benefits:</h6>
                       <ul class="list-unstyled small mb-0">
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-primary me-2"></i> Property Listing Management</li>
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-primary me-2"></i> Real-time Tenant Inquiries</li>
-                        <li><i class="bi bi-patch-check-fill text-primary me-2"></i> Verified Badge on Listings</li>
+                        <li v-for="(benefit, idx) in planBenefits" :key="`benefit-${idx}`" class="mb-2">
+                          <i class="bi bi-patch-check-fill text-primary me-2"></i> {{ benefit }}
+                        </li>
                       </ul>
                     </div>
                   </div>
@@ -162,6 +162,30 @@ import { useUserInfo } from '@/store/userInfo';
 export default {
   name: "PaymentCheckout",
   components: { Header, ConfirmModal },
+  computed: {
+    displayPlanName() {
+      return this.selectedPlan === "annual" ? "Annual Pro" : "Monthly Starter";
+    },
+    planBenefits() {
+      if (this.selectedPlan === "annual") {
+        return [
+          "Up to 5 property listings",
+          "Property management",
+          "Reviews management",
+          "Tenant management",
+          "Booking management",
+          "Billings management",
+          "Payment ledger management",
+          "Reports & Analytics",
+        ];
+      }
+      return [
+        "2 property listing limit",
+        "Property management",
+        "Reviews management",
+      ];
+    },
+  },
   data() {
     return {
       isProcessingPayment: false,
@@ -174,9 +198,9 @@ export default {
       paymentType: "gcash",
       phoneNumber: "",
       permitAcknowledged: false,
-      selectedPlan: this.$route.query.plan || 'Monthly',
-      planPrice: this.$route.query.plan === 'Annual' ? 2000 : 200,
-      planBilling: this.$route.query.plan === 'Annual' ? 'per year' : 'per month'
+      selectedPlan: this.$route.query.plan || 'monthly',
+      planPrice: this.$route.query.plan === 'annual' ? 1800 : 200,
+      planBilling: this.$route.query.plan === 'annual' ? 'per year' : 'per month'
     };
   },
   mounted() {
@@ -214,7 +238,8 @@ export default {
 
       try {
         const fd = new FormData();
-        fd.append('plan', this.selectedPlan);
+        const backendPlan = this.selectedPlan === 'annual' ? 'Annual' : 'Monthly';
+        fd.append('plan', backendPlan);
         fd.append('amount', this.planPrice);
         fd.append('paymentType', this.paymentType);
         fd.append('phone', this.phoneNumber);

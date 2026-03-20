@@ -228,21 +228,21 @@ export default {
       upgradePlans: [
         {
           tag: "Starter",
-          name: "Monthly",
+          name: "Monthly Starter",
           desc: "Best for new property owners.",
           price: "PHP 200", 
           cycle: "monthly",
           icon: "bi bi-stars",
-          features: ["Up to 2 listings"],
+          features: ["Up to 2 listings", "Property management", "Reviews management"],
         },
         {
           tag: "Popular",
-          name: "Annual",
+          name: "Annual Pro",
           desc: "For steady rental growth.",
           price: "PHP 1800",
           cycle: "annual",
           icon: "bi bi-graph-up-arrow",
-          features: ["Up to 5 listings", "System Management"],
+          features: ["Up to 5 listings", "Property management", "Reviews management", "Booking management", "Tenant management", "Billings management", "Payment ledger Management", "Reports & Analyticss"],
         },
       ],
     };
@@ -259,7 +259,11 @@ export default {
       return !!(this.subscription && this.subscription.plan_name);
     },
     planName() {
-      return this.subscription?.plan_name || "No active plan";
+      const raw = String(this.subscription?.plan_name || "");
+      if (!raw) return "No active plan";
+      if (raw.toLowerCase().includes("monthly")) return "Monthly Starter";
+      if (raw.toLowerCase().includes("annual")) return "Annual Pro";
+      return raw;
     },
     subscriptionMessage() {
       return this.subscription?.message || "Review your plan status and limits.";
@@ -344,7 +348,7 @@ export default {
       return String(plan.cycle || "").toLowerCase() === this.currentCycle;
     },
     planButtonLabel(plan) {
-      return this.isCurrentPlan(plan) ? "Current Plan" : "Upgrade to this plan";
+      return this.isCurrentPlan(plan) ? "Current Plan" : "Change to this plan";
     },
     planButtonClass(plan) {
       return this.isCurrentPlan(plan) ? "btn-primary" : "btn-light border";

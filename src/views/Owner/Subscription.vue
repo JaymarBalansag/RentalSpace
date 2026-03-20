@@ -56,6 +56,11 @@
                   </span>
                 </div>
               </div>
+              <div v-if="showRenewCTA" class="col-12">
+                <button class="btn btn-primary w-100 fw-semibold" @click="goToRenew">
+                  Renew Now
+                </button>
+              </div>
             </div>
 
             <div v-else class="empty-state">
@@ -165,6 +170,40 @@
           </div>
         </div>
       </div>
+      <div class="col-12">
+        <div class="card border-0 glass-card">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+              <div>
+                <h6 class="fw-bold mb-1">Renewal History</h6>
+                <p class="text-muted small mb-0">Track your past renewals and billing periods.</p>
+              </div>
+            </div>
+            <div v-if="historyLoading" class="text-muted small">Loading history...</div>
+            <div v-else-if="history.length === 0" class="text-muted small">No renewal history yet.</div>
+            <div v-else class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr class="text-muted small">
+                    <th>Date</th>
+                    <th>Plan</th>
+                    <th>Period</th>
+                    <th class="text-end">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in history" :key="item.id">
+                    <td>{{ formatDate(item.created_at) }}</td>
+                    <td>{{ formatPlanLabel(item.plan_name) }}</td>
+                    <td>{{ formatDate(item.period_start) }} – {{ formatDate(item.period_end) }}</td>
+                    <td class="text-end">{{ formatAmount(item.amount) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -211,7 +250,7 @@
 </template>
 
 <script>
-import { getOwnerSubscriptionStatus } from "@/api/subscription";
+import { getOwnerSubscriptionHistory, getOwnerSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
 import SubscriptionWarningBanner from "@/components/SubscriptionWarningBanner.vue";
 import OwnerSubscriptionExpiredBanner from "@/components/OwnerSubscriptionExpiredBanner.vue";
@@ -225,12 +264,14 @@ export default {
       addonQty: 1,
       addonMin: 1,
       addonMax: 10,
+      history: [],
+      historyLoading: false,
       upgradePlans: [
         {
-          tag: "Starter",
-          name: "Monthly Starter",
+          tag: "Standard",
+          name: "Monthly Standard",
           desc: "Best for new property owners.",
-          price: "PHP 200", 
+          price: "PHP 200",
           cycle: "monthly",
           icon: "bi bi-stars",
           features: ["Up to 2 listings", "Property management", "Reviews management"],
@@ -249,6 +290,7 @@ export default {
   },
   async mounted() {
     await this.refreshSubscription();
+    await this.refreshHistory();
   },
   computed: {
     subscription() {
@@ -261,7 +303,7 @@ export default {
     planName() {
       const raw = String(this.subscription?.plan_name || "");
       if (!raw) return "No active plan";
-      if (raw.toLowerCase().includes("monthly")) return "Monthly Starter";
+      if (raw.toLowerCase().includes("monthly")) return "Monthly Standard";
       if (raw.toLowerCase().includes("annual")) return "Annual Pro";
       return raw;
     },
@@ -298,6 +340,11 @@ export default {
       if (typeof days !== "number") return "Renewal date is being updated.";
       if (days <= 0) return "Your subscription is due for renewal.";
       return `${days} day(s) remaining until renewal.`;
+    },
+    showRenewCTA() {
+      if (!this.hasSubscription) return false;
+      const status = String(this.subscription?.status || "").toLowerCase();
+      return Boolean(this.subscription?.is_expiring_soon) || status === "expired";
     },
     currentCycle() {
       return String(this.subscription?.billing_cycle || "").toLowerCase();
@@ -362,6 +409,22 @@ export default {
         console.warn("Failed to refresh subscription status:", error);
       }
     },
+    async refreshHistory() {
+      this.historyLoading = true;
+      try {
+        const response = await getOwnerSubscriptionHistory();
+        this.history = response?.data || response?.history || [];
+      } catch (error) {
+        console.warn("Failed to load subscription history:", error);
+        this.history = [];
+      } finally {
+        this.historyLoading = false;
+      }
+    },
+    goToRenew() {
+      const cycle = this.currentCycle === "annual" ? "annual" : "monthly";
+      this.$router.push({ path: "/subscription/renew", query: { plan: cycle } });
+    },
     formatAmount(amount) {
       if (amount === null || amount === undefined || amount === "") return "—";
       const value = Number(amount || 0);
@@ -376,6 +439,13 @@ export default {
     formatLimit(value) {
       if (value === null || value === undefined) return "—";
       if (value === 0) return "No limit";
+      return value;
+    },
+    formatPlanLabel(value) {
+      if (!value) return "—";
+      const raw = String(value).toLowerCase();
+      if (raw.includes("monthly")) return "Monthly Standard";
+      if (raw.includes("annual")) return "Annual Pro";
       return value;
     },
   },
@@ -608,3 +678,5 @@ export default {
   }
 }
 </style>
+
+

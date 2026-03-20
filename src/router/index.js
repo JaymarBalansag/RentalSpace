@@ -159,6 +159,7 @@ const routes = [
     children: [
       { path: "/overview", name: "OwnerOverview", component: () => import('@/views/Owner/Overview.vue') },
       { path: "/subscription", name: "OwnerSubscription", component: () => import('@/views/Owner/Subscription.vue') },
+      { path: "/subscription/renew", name: "OwnerSubscriptionRenew", component: () => import('@/views/Owner/RenewSubscription.vue') },
       { path: "/owner/addon-payment", name: "OwnerAddonPayment", component: () => import('@/views/Owner/AddonPayment.vue') },
       { path: "/properties", name: "OwnerProperties", component: () => import('@/views/Owner/Properties.vue') },
       { path: "/dashboard/properties/add", name: "AddProperty", component: () => import('@/views/Owner/PropertyCrud/addProperty.vue') },
@@ -283,19 +284,37 @@ router.beforeEach(async (to, from, next) => {
       await applyExpiredOwnerAvailability(subscription, user);
 
       const isMonthlyPlan = String(subscription?.billing_cycle || "").toLowerCase() === "monthly";
+      const isOwnerDashboardRoute = [
+        "/overview",
+        "/subscription",
+        "/subscription/renew",
+        "/properties",
+        "/tenants",
+        "/bookings",
+        "/billing",
+        "/ledger",
+        "/reports",
+        "/dashboard/properties/add",
+      ].includes(to.path) || /^\/dashboard\/properties\/\d+\/edit$/.test(to.path);
+
       if (isMonthlyPlan) {
         const allowedMonthly = [
           "/overview",
           "/properties",
           "/dashboard/properties/add",
           "/subscription",
+          "/subscription/renew",
         ];
         const isAllowed =
           allowedMonthly.includes(to.path) ||
           /^\/dashboard\/properties\/\d+\/edit$/.test(to.path);
-        if (!isAllowed) {
+        if (isOwnerDashboardRoute && !isAllowed) {
           return next("/subscription");
         }
+      }
+
+      if (to.path === "/subscription/renew" && !subscription?.plan_name) {
+        return next("/subscription");
       }
 
       if (isOwnerPropertyManagementRoute && !subscription?.can_manage_properties) {

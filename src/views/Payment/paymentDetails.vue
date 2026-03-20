@@ -164,7 +164,7 @@ export default {
   components: { Header, ConfirmModal },
   computed: {
     displayPlanName() {
-      return this.selectedPlan === "annual" ? "Annual Pro" : "Monthly Starter";
+      return this.selectedPlan === "annual" ? "Annual Pro" : "Monthly Standard";
     },
     planBenefits() {
       if (this.selectedPlan === "annual") {
@@ -198,6 +198,7 @@ export default {
       paymentType: "gcash",
       phoneNumber: "",
       permitAcknowledged: false,
+      isRenewal: this.$route.query.renewal === '1',
       selectedPlan: this.$route.query.plan || 'monthly',
       planPrice: this.$route.query.plan === 'annual' ? 1800 : 200,
       planBilling: this.$route.query.plan === 'annual' ? 'per year' : 'per month'
@@ -245,7 +246,8 @@ export default {
         fd.append('phone', this.phoneNumber);
         fd.append('permit_acknowledged', this.permitAcknowledged ? '1' : '0');
 
-        const response = await api.post('/paymongo/create-payment', fd);
+        const endpoint = this.isRenewal ? "/paymongo/renew-payment" : "/paymongo/create-payment";
+        const response = await api.post(endpoint, fd);
 
         this.qrCodeUrl = response.data.qr_code;
         this.subscriptionId = response.data.subscription_id;

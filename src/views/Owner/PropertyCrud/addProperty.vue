@@ -638,14 +638,7 @@
             <h6 class="mb-0 fw-bold text-primary">Step 4: Property Location</h6>
             <small class="text-muted">Pin your exact map location and confirm address details.</small>
           </div>
-          <button
-            class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm"
-            type="button"
-            @click="requestCurrentLocation"
-            :disabled="isGeocoding || isSubmitting || isCheckingAccess"
-          >
-            <i class="bi bi-geo-alt-fill me-1"></i> My Location
-          </button>
+          
         </div>
 
         <div class="step4-checklist mt-3">
@@ -677,7 +670,18 @@
               <i class="bi bi-info-circle me-1"></i>
               Drag marker or click map to set location
             </span>
+
+            
           </div>
+
+          <button
+            class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm mx-md-3 mx-1 "
+            type="button"
+            @click="requestCurrentLocation"
+            :disabled="isGeocoding || isSubmitting || isCheckingAccess"
+          >
+            <i class="bi bi-geo-alt-fill me-1"></i> My Location
+          </button>
           <div
             class="property-map rounded-3"
             ref="propertyMap"
@@ -716,19 +720,19 @@
           <div class="row g-2">
             <div class="col-6 col-md-3">
               <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Region</label>
-              <input type="text" v-model="form.region_name" class="form-control-plaintext py-0 fw-semibold" readonly />
+              <input type="text" v-model="form.region_name" class="form-control-plaintext py-0 px-1  fw-semibold" readonly />
             </div>
             <div class="col-6 col-md-3">
               <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">State</label>
-              <input type="text" v-model="form.state_name" class="form-control-plaintext py-0 fw-semibold" readonly />
+              <input type="text" v-model="form.state_name" class="form-control-plaintext py-0 px-1  fw-semibold" readonly />
             </div>
             <div class="col-6 col-md-3 border-top border-md-top-0 pt-2 pt-md-0">
               <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Town</label>
-              <input type="text" v-model="form.town_name" class="form-control-plaintext py-0 fw-semibold" readonly />
+              <input type="text" v-model="form.town_name" class="form-control-plaintext py-0 px-1  fw-semibold" readonly />
             </div>
             <div class="col-6 col-md-3 border-top border-md-top-0 pt-2 pt-md-0">
-              <label class="form-label text-uppercase mb-0 smaller fw-bold text-muted">Village</label>
-              <input type="text" v-model="form.village_name" class="form-control-plaintext py-0 fw-semibold" />
+              <label class="form-label text-uppercase mb-0 smaller fw-bold ">Village</label>
+              <input type="text" v-model="form.village_name" class="form-control form-control-plaintext bg-white py-0 px-1 fw-semibold input-modern" />
             </div>
           </div>
         </div>
@@ -2079,6 +2083,17 @@ export default {
 
 <style scoped>
 /* Add custom styles here for better UX */
+
+.input-modern {
+  border: 1px solid #dbe5f5;
+  border-radius: 12px;
+}
+
+.input-modern:focus {
+  border-color: #4c82de;
+  box-shadow: 0 0 0 0.2rem rgba(76, 130, 222, 0.16);
+}
+
 .property-wizard-shell {
   background:
     radial-gradient(1200px 500px at -10% -20%, rgba(13, 110, 253, 0.08), transparent 55%),

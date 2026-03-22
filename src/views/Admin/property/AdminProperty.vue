@@ -79,10 +79,10 @@
                       <i class="bi bi-eye"></i>
                     </button>
                     <template v-if="property.status === 'pending'">
-                      <button class="btn-action approve" @click="openApproveModal(property)" title="Approve">
+                      <button class="btn-action approve" :disabled="isActionLoading" @click="openApproveModal(property)" title="Approve">
                         <i class="bi bi-check-lg"></i>
                       </button>
-                      <button class="btn-action reject" @click="openRejectModal(property)" title="Reject">
+                      <button class="btn-action reject" :disabled="isActionLoading" @click="openRejectModal(property)" title="Reject">
                         <i class="bi bi-x-lg"></i>
                       </button>
                       <button class="btn-action notify" @click="openNotifyOwnerModal(property)" title="Notify Owner">
@@ -125,8 +125,8 @@
             <div class="d-flex gap-2">
               <button class="btn-mobile-icon view" @click="viewDetails(property.property_id)"><i class="bi bi-eye"></i></button>
               <template v-if="property.status === 'pending'">
-                <button class="btn-mobile-icon approve" @click="openApproveModal(property)"><i class="bi bi-check-lg"></i></button>
-                <button class="btn-mobile-icon reject" @click="openRejectModal(property)"><i class="bi bi-x"></i></button>
+                <button class="btn-mobile-icon approve" :disabled="isActionLoading" @click="openApproveModal(property)"><i class="bi bi-check-lg"></i></button>
+                <button class="btn-mobile-icon reject" :disabled="isActionLoading" @click="openRejectModal(property)"><i class="bi bi-x"></i></button>
                 <button class="btn-mobile-icon notify" @click="openNotifyOwnerModal(property)"><i class="bi bi-chat-left-text"></i></button>
               </template>
             </div>
@@ -457,9 +457,30 @@ export default {
         confirmButtonText: "Approve",
         cancelButtonText: "Cancel",
         confirmButtonColor: "#198754",
+        showLoaderOnConfirm: true,
+        allowOutsideClick: () => !Swal.isLoading(),
+        allowEscapeKey: () => !Swal.isLoading(),
+        preConfirm: async () => {
+          const outcome = await this.runModerationAction("approve", property.property_id, property.title, "");
+          if (!outcome.ok) {
+            Swal.showValidationMessage(outcome.message || "Unable to approve this property.");
+            return false;
+          }
+          return outcome;
+        },
+        didOpen: () => {
+          const confirmButton = Swal.getConfirmButton();
+          if (confirmButton) confirmButton.dataset.defaultText = "Approve";
+        },
+        didRender: () => {
+          const confirmButton = Swal.getConfirmButton();
+          if (confirmButton && Swal.isLoading()) {
+            confirmButton.textContent = "Approving...";
+          }
+        },
       });
       if (!result.isConfirmed) return;
-      await this.runModerationAction("approve", property.property_id, property.title);
+      await this.showModerationSuccess(result.value);
     },
     async openRejectModal(property) {
       if (this.isActionLoading) return;
@@ -475,16 +496,36 @@ export default {
         confirmButtonText: "Reject",
         cancelButtonText: "Cancel",
         confirmButtonColor: "#dc3545",
+        showLoaderOnConfirm: true,
+        allowOutsideClick: () => !Swal.isLoading(),
+        allowEscapeKey: () => !Swal.isLoading(),
         preConfirm: (value) => {
           if (!String(value || "").trim()) {
             Swal.showValidationMessage("Rejection reason is required.");
             return false;
           }
-          return value.trim();
+          return this.runModerationAction("reject", property.property_id, property.title, value.trim())
+            .then((outcome) => {
+              if (!outcome.ok) {
+                Swal.showValidationMessage(outcome.message || "Unable to reject this property.");
+                return false;
+              }
+              return outcome;
+            });
+        },
+        didOpen: () => {
+          const confirmButton = Swal.getConfirmButton();
+          if (confirmButton) confirmButton.dataset.defaultText = "Reject";
+        },
+        didRender: () => {
+          const confirmButton = Swal.getConfirmButton();
+          if (confirmButton && Swal.isLoading()) {
+            confirmButton.textContent = "Rejecting...";
+          }
         },
       });
       if (!result.isConfirmed) return;
-      await this.runModerationAction("reject", property.property_id, property.title, result.value);
+      await this.showModerationSuccess(result.value);
     },
     async openNotifyOwnerModal(property) {
       if (this.isActionLoading) return;
@@ -543,6 +584,15 @@ export default {
       }
     },
 
+    async showModerationSuccess(outcome) {
+      await Swal.fire({
+        icon: "success",
+        title: outcome?.action === "approve" ? "Property Approved" : "Property Rejected",
+        text: `"${outcome?.title}" has been ${outcome?.action === "approve" ? "approved" : "rejected"}.`,
+        timer: 1300,
+        showConfirmButton: false,
+      });
+    },
     async runModerationAction(action, propertyId, title, reason = "") {
       this.isActionLoading = true;
       try {
@@ -554,21 +604,11 @@ export default {
         }
 
         if (!res || res.status < 200 || res.status >= 300) {
-          await Swal.fire({
-            icon: "error",
-            title: "Action failed",
-            text: res?.data?.message || "Unable to process this request.",
-          });
-          return;
+          return {
+            ok: false,
+            message: res?.data?.message || "Unable to process this request.",
+          };
         }
-
-        await Swal.fire({
-          icon: "success",
-          title: action === "approve" ? "Property Approved" : "Property Rejected",
-          text: `"${title}" has been ${action === "approve" ? "approved" : "rejected"}.`,
-          timer: 1300,
-          showConfirmButton: false,
-        });
 
         if (this.selectedPropertyDetails?.property?.property_id === propertyId) {
           this.selectedPropertyDetails.property.status = action === "approve" ? "active" : "rejected";
@@ -577,13 +617,17 @@ export default {
           this.fetchData(this.pagination.current_page || 1),
           this.fetchSummaryCounts(),
         ]);
+        return {
+          ok: true,
+          action,
+          title,
+        };
       } catch (error) {
         console.error(error);
-        await Swal.fire({
-          icon: "error",
-          title: "Action failed",
-          text: error?.response?.data?.message || "Unable to process this request.",
-        });
+        return {
+          ok: false,
+          message: error?.response?.data?.message || "Unable to process this request.",
+        };
       } finally {
         this.isActionLoading = false;
       }

@@ -57,6 +57,15 @@ export async function sendConversationMessage(conversationId, message){
     }
 }
 
+export async function markConversationAsRead(conversationId) {
+    try {
+        const response = await api.post(`/conversations/${conversationId}/read`);
+        return response;
+    } catch (error) {
+        return error;
+    }
+}
+
 export async function initiateConversation(receiver_id, property_id){
     try {
 

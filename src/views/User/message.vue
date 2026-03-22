@@ -122,7 +122,7 @@
 </template>
 
 <script>
-import { fetchConversation, fetchConversationMessages, fetchMessages, sendConversationMessage } from '@/api/messages';
+import { fetchConversation, fetchConversationMessages, fetchMessages, markConversationAsRead, sendConversationMessage } from '@/api/messages';
 import { getAuthUserId } from '@/api/user';
 import Header from '@/components/Header.vue';
 
@@ -180,6 +180,14 @@ export default {
           is_unread: false,
         };
       });
+    },
+    async markActiveConversationAsRead(conversationId) {
+      if (!conversationId) return;
+      this.clearUnreadForConversation(conversationId);
+      this.emitMessageIndicatorUpdate();
+      try {
+        await markConversationAsRead(conversationId);
+      } catch (_) {}
     },
     formatTime(date) {
       return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -248,8 +256,7 @@ export default {
 
         this.nextCursor = data.next_cursor || null;
         this.hasMoreMessages = !!data.has_more;
-        this.clearUnreadForConversation(this.selectedChat.conversation_id);
-        this.emitMessageIndicatorUpdate();
+        await this.markActiveConversationAsRead(this.selectedChat.conversation_id);
 
         this.$nextTick(() => {
           const box = this.$refs.messagesBox;
@@ -335,8 +342,7 @@ export default {
         if (this.selectedChat && Number(e.conversation_id) === Number(this.selectedChat.conversation_id)) {
           this.messages.push(e);
           this.scrollToBottom();
-          this.clearUnreadForConversation(e.conversation_id);
-          this.emitMessageIndicatorUpdate();
+          await this.markActiveConversationAsRead(e.conversation_id);
           return;
         }
 

@@ -97,7 +97,7 @@
 
               <div class="row g-2">
                 <div class="col-md-4"><input class="form-control form-control-sm bg-light" v-model="form.town_name" disabled placeholder="City"></div>
-                <div class="col-md-4"><input class="form-control form-control-sm bg-light" v-model="form.village_name" placeholder="Barangay"></div>
+                <div class="col-md-4"><input class="form-control form-control-sm input-modern" v-model="form.village_name" placeholder="Barangay"></div>
                 <div class="col-md-4"><input class="form-control form-control-sm input-modern" v-model="form.streets" placeholder="Street Name *"></div>
               </div>
             </div>

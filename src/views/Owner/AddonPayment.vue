@@ -53,6 +53,9 @@
               <p class="text-danger mt-3 small fw-bold">
                 <i class="bi bi-clock-history me-1"></i> Waiting for payment confirmation...
               </p>
+              <button class="btn btn-outline-primary btn-sm mt-2" @click="downloadQr">
+                <i class="bi bi-download me-2"></i>Download QR
+              </button>
             </div>
 
             <button class="btn btn-light border fw-semibold mt-auto" @click="goBack">
@@ -68,6 +71,7 @@
 <script>
 import { createListingAddonIntent, getListingAddonStatus, getOwnerSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
+import { downloadQrImage } from "@/utils/qrDownload";
 
 export default {
   name: "OwnerAddonPayment",
@@ -145,6 +149,13 @@ export default {
     },
     goBack() {
       this.$router.push("/subscription");
+    },
+    async downloadQr() {
+      try {
+        await downloadQrImage(this.qrCodeUrl, "renta-hub-listing-addon-qr.png");
+      } catch (error) {
+        this.errorMessage = error?.message || "Unable to download the QR right now.";
+      }
     },
   },
   beforeUnmount() {

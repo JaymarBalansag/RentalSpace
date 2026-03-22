@@ -88,6 +88,9 @@
                       <p class="text-danger mt-3 small fw-bold animate-pulse">
                         <i class="bi bi-clock-history me-1"></i> Waiting for your payment...
                       </p>
+                      <button @click="downloadQr" class="btn btn-outline-primary btn-sm mt-2">
+                        <i class="bi bi-download me-2"></i>Download QR
+                      </button>
                     </div>
 
                     <div v-else class="py-5">
@@ -158,6 +161,7 @@ import api from '@/api/api';
 import Header from '@/components/Header.vue';
 import ConfirmModal from '@/components/confirmModal.vue';
 import { useUserInfo } from '@/store/userInfo';
+import { downloadQrImage } from '@/utils/qrDownload';
 
 export default {
   name: "PaymentCheckout",
@@ -278,6 +282,13 @@ export default {
       clearInterval(this.checkStatusInterval);
       this.isProcessingPayment = false;
       this.qrCodeUrl = null;
+    },
+    async downloadQr() {
+      try {
+        await downloadQrImage(this.qrCodeUrl, "renta-hub-subscription-qr.png");
+      } catch (error) {
+        alert(error?.message || "Unable to download the QR right now.");
+      }
     }
   },
   watch: {

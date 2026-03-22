@@ -98,6 +98,9 @@
                 <p class="text-danger mt-3 small fw-bold animate-pulse">
                   <i class="bi bi-clock-history me-1"></i>{{ paymentStatusMessage }}
                 </p>
+                <button @click="downloadQr" class="btn btn-outline-primary btn-sm mt-2">
+                  <i class="bi bi-download me-2"></i>Download QR
+                </button>
               </div>
 
               <div v-else class="py-5">
@@ -175,6 +178,7 @@ import api from "@/api/api";
 import ConfirmModal from "@/components/confirmModal.vue";
 import { getOwnerSubscriptionStatus, getSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
+import { downloadQrImage } from "@/utils/qrDownload";
 
 export default {
   name: "RenewSubscription",
@@ -402,6 +406,13 @@ export default {
       this.isProcessingPayment = false;
       this.qrCodeUrl = null;
       this.paymentStatusMessage = "Waiting for your payment...";
+    },
+    async downloadQr() {
+      try {
+        await downloadQrImage(this.qrCodeUrl, "renta-hub-renewal-qr.png");
+      } catch (error) {
+        alert(error?.message || "Unable to download the QR right now.");
+      }
     },
   },
   watch: {

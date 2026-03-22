@@ -35,7 +35,10 @@
             </div>
             <div class="flex-grow-1 overflow-hidden">
               <div class="d-flex justify-content-between">
-                <h6 class="mb-0 text-truncate fw-bold">{{ chat.name }}</h6>
+                <div class="d-flex align-items-center gap-2 min-w-0">
+                  <h6 class="mb-0 text-truncate fw-bold">{{ chat.name }}</h6>
+                  <span v-if="chatUnreadCount(chat) > 0" class="chat-unread-pill">{{ chatUnreadCount(chat) }}</span>
+                </div>
                 <small class="text-muted" style="font-size: 0.7rem;">{{ chat.last_message_time ? formatTime(chat.last_message_time) : '' }}</small>
               </div>
               <small class="text-muted text-truncate d-block">{{ chat.lastMessage || 'Click to start chatting' }}</small>
@@ -119,7 +122,7 @@
 </template>
 
 <script>
-import { fetchConversation, fetchConversationMessages, fetchMessages, sendConversationMessage } from '@/api/messages';
+import { fetchConversation, fetchConversationMessages, fetchMessages, markConversationAsRead, sendConversationMessage } from '@/api/messages';
 import { getAuthUserId } from '@/api/user';
 import Header from '@/components/Header.vue';
 
@@ -152,6 +155,40 @@ export default {
     },
   },
   methods: {
+    chatUnreadCount(chat) {
+      const count = Number(
+        chat?.unread_count ??
+        chat?.unreadCount ??
+        chat?.unread_messages_count ??
+        0
+      );
+      if (Number.isFinite(count) && count > 0) return count;
+      return Boolean(chat?.has_unread || chat?.is_unread) ? 1 : 0;
+    },
+    emitMessageIndicatorUpdate() {
+      window.dispatchEvent(new CustomEvent("messages:updated"));
+    },
+    clearUnreadForConversation(conversationId) {
+      this.chats = this.chats.map((chat) => {
+        if (Number(chat.conversation_id) !== Number(conversationId)) return chat;
+        return {
+          ...chat,
+          unread_count: 0,
+          unreadCount: 0,
+          unread_messages_count: 0,
+          has_unread: false,
+          is_unread: false,
+        };
+      });
+    },
+    async markActiveConversationAsRead(conversationId) {
+      if (!conversationId) return;
+      this.clearUnreadForConversation(conversationId);
+      this.emitMessageIndicatorUpdate();
+      try {
+        await markConversationAsRead(conversationId);
+      } catch (_) {}
+    },
     formatTime(date) {
       return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     },
@@ -192,6 +229,7 @@ export default {
     async getMessages() {
       const res = await fetchMessages(null, this.chatsLimit);
       this.chats = res?.data?.chats || [];
+      this.emitMessageIndicatorUpdate();
     },
     async loadMessages({ appendOlder = false, keepScrollBottom = true } = {}) {
       if (!this.selectedChat?.conversation_id) return;
@@ -218,6 +256,7 @@ export default {
 
         this.nextCursor = data.next_cursor || null;
         this.hasMoreMessages = !!data.has_more;
+        await this.markActiveConversationAsRead(this.selectedChat.conversation_id);
 
         this.$nextTick(() => {
           const box = this.$refs.messagesBox;
@@ -303,13 +342,25 @@ export default {
         if (this.selectedChat && Number(e.conversation_id) === Number(this.selectedChat.conversation_id)) {
           this.messages.push(e);
           this.scrollToBottom();
+          await this.markActiveConversationAsRead(e.conversation_id);
           return;
         }
 
         const exists = this.chats.some((c) => Number(c.conversation_id) === Number(e.conversation_id));
         if (!exists) {
           await this.getMessages();
+          return;
         }
+        this.chats = this.chats.map((chat) => {
+          if (Number(chat.conversation_id) !== Number(e.conversation_id)) return chat;
+          return {
+            ...chat,
+            unread_count: this.chatUnreadCount(chat) + 1,
+            has_unread: true,
+            is_unread: true,
+          };
+        });
+        this.emitMessageIndicatorUpdate();
       });
     },
     unbindRealtimeChannel() {
@@ -362,6 +413,23 @@ export default {
 }
 .conversation-item:hover {
   background-color: #f8f9fa;
+}
+.min-w-0 {
+  min-width: 0;
+}
+.chat-unread-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.38rem;
+  border-radius: 999px;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 .active-chat {
   background-color: #f0f7ff !important;

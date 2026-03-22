@@ -199,16 +199,19 @@ export default {
     };
   },
   computed: {
+    visibleNotifications() {
+      return this.notifications.filter((n) => n.event_type !== "message_received");
+    },
     filteredNotifications() {
-      return this.notifications.filter((n) => n.type === this.activeTab);
+      return this.visibleNotifications.filter((n) => n.type === this.activeTab);
     },
     unreadCount() {
-      return this.notifications.filter((n) => !n.read).length;
+      return this.visibleNotifications.filter((n) => !n.read).length;
     },
     unreadByType() {
       return {
-        system: this.notifications.filter((n) => n.type === "system" && !n.read).length,
-        bookings: this.notifications.filter((n) => n.type === "bookings" && !n.read).length,
+        system: this.visibleNotifications.filter((n) => n.type === "system" && !n.read).length,
+        bookings: this.visibleNotifications.filter((n) => n.type === "bookings" && !n.read).length,
       };
     },
     filteredNotificationIds() {
@@ -312,6 +315,7 @@ export default {
           timer: 1300,
           showConfirmButton: false,
         });
+        window.dispatchEvent(new CustomEvent("notifications:updated"));
       } catch (error) {
         await Swal.fire({
           icon: "error",
@@ -348,6 +352,7 @@ export default {
           timer: 1300,
           showConfirmButton: false,
         });
+        window.dispatchEvent(new CustomEvent("notifications:updated"));
       } catch (error) {
         await Swal.fire({
           icon: "error",
@@ -379,7 +384,10 @@ export default {
       this.error = "";
       try {
         const res = await fetchNotifications();
-        this.notifications = mapNotificationListResponse(res?.data);
+        this.notifications = mapNotificationListResponse(res?.data).filter(
+          (notification) => notification.event_type !== "message_received"
+        );
+        window.dispatchEvent(new CustomEvent("notifications:updated"));
       } catch (error) {
         this.error = error?.response?.data?.message || "Failed to load notifications.";
       } finally {
@@ -400,6 +408,7 @@ export default {
       try {
         await markNotificationAsRead(notification.id);
       } catch (_) {}
+      window.dispatchEvent(new CustomEvent("notifications:updated"));
     },
     async markAllAsRead() {
       if (!this.hasUnreadInActiveTab) return;
@@ -409,10 +418,13 @@ export default {
       try {
         await markAllNotificationsAsRead(this.activeTab);
       } catch (_) {}
+      window.dispatchEvent(new CustomEvent("notifications:updated"));
     },
     handleRealtimeNotification(eventPayload) {
       const mapped = mapNotificationResponse(eventPayload?.notification || eventPayload || {});
+      if (mapped.event_type === "message_received") return;
       this.notifications = mergeNotificationOnTop(this.notifications, mapped);
+      window.dispatchEvent(new CustomEvent("notifications:updated"));
     },
     bindRealtimeNotifications() {
       if (!window.Echo || !this.authUserId) return;

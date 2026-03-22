@@ -91,17 +91,19 @@
                       <i class="bi bi-bell"></i>
                     </button>
                     <button
+                      v-if="normalizeVerificationStatus(owner) !== 'verified'"
                       class="btn-action approve"
                       title="Verify Owner"
-                      :disabled="isActionLoading || normalizeVerificationStatus(owner) === 'verified'"
+                      :disabled="isActionLoading"
                       @click="openVerifyOwnerModal(owner)"
                     >
                       <i class="bi bi-patch-check"></i>
                     </button>
                     <button
+                      v-if="normalizeVerificationStatus(owner) !== 'verified' && normalizeVerificationStatus(owner) !== 'rejected'"
                       class="btn-action reject"
                       title="Reject Verification"
-                      :disabled="isActionLoading || normalizeVerificationStatus(owner) === 'rejected'"
+                      :disabled="isActionLoading"
                       @click="openRejectOwnerModal(owner)"
                     >
                       <i class="bi bi-x-circle"></i>
@@ -146,15 +148,17 @@
                   <i class="bi bi-bell"></i>
                 </button>
                 <button
+                  v-if="normalizeVerificationStatus(owner) !== 'verified'"
                   class="btn-mobile-icon approve"
-                  :disabled="isActionLoading || normalizeVerificationStatus(owner) === 'verified'"
+                  :disabled="isActionLoading"
                   @click="openVerifyOwnerModal(owner)"
                 >
                   <i class="bi bi-patch-check"></i>
                 </button>
                 <button
+                  v-if="normalizeVerificationStatus(owner) !== 'verified' && normalizeVerificationStatus(owner) !== 'rejected'"
                   class="btn-mobile-icon reject"
-                  :disabled="isActionLoading || normalizeVerificationStatus(owner) === 'rejected'"
+                  :disabled="isActionLoading"
                   @click="openRejectOwnerModal(owner)"
                 >
                   <i class="bi bi-x-circle"></i>
@@ -235,15 +239,17 @@
             <i class="bi bi-bell me-1"></i> Notify Owner
           </button>
           <button
+            v-if="normalizeVerificationStatus(selectedOwner) !== 'verified'"
             class="btn btn-success"
-            :disabled="isActionLoading || normalizeVerificationStatus(selectedOwner) === 'verified'"
+            :disabled="isActionLoading"
             @click="openVerifyOwnerModal(selectedOwner)"
           >
             <i class="bi bi-patch-check me-1"></i> Verify
           </button>
           <button
+            v-if="normalizeVerificationStatus(selectedOwner) !== 'verified' && normalizeVerificationStatus(selectedOwner) !== 'rejected'"
             class="btn btn-outline-danger"
-            :disabled="isActionLoading || normalizeVerificationStatus(selectedOwner) === 'rejected'"
+            :disabled="isActionLoading"
             @click="openRejectOwnerModal(selectedOwner)"
           >
             <i class="bi bi-x-circle me-1"></i> Reject

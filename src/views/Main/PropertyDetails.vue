@@ -159,13 +159,23 @@
           </div>
 
           <div class="d-grid gap-2">
-            <button 
-              :disabled="property.owner_id === authId || isOwner == 'owner' || !property?.is_available || bookingSubmitting" 
+            <button
+              v-if="acceptsBookings"
+              :disabled="property.owner_id === authId || isOwner == 'owner' || !property?.is_available || bookingSubmitting"
               class="btn btn-primary btn-lg rounded-pill fw-bold py-3"
               @click="openAgreementModal"
             >
               <i class="bi bi-calendar-plus-fill me-2"></i> Book This Property
             </button>
+            <div v-else class="booking-disabled-note">
+              <div class="booking-disabled-head">
+                <i class="bi bi-chat-heart-fill"></i>
+                <span>Interested in this property?</span>
+              </div>
+              <p class="mb-0 small">
+                Message the owner to ask about availability, terms, and the next steps for this listing.
+              </p>
+            </div>
             <button 
               class="btn btn-outline-dark rounded-pill fw-bold py-2" 
               :disabled="property.owner_id === authId || isOwner == 'owner'" 
@@ -963,6 +973,15 @@ export default {
       }
     },
     async openAgreementModal() {
+      if (!this.acceptsBookings) {
+        await Swal.fire({
+          icon: "info",
+          title: "Inquiry only",
+          text: "Booking is not enabled for this owner's current plan.",
+        });
+        return;
+      }
+
       const info = useUserInfo();
       const isLoggedin = info.isLoggedIn;
       if(!isLoggedin){
@@ -1003,6 +1022,14 @@ export default {
       this.showConfirmModal = true;
     },
     async submitAgreement() {
+      if (!this.acceptsBookings) {
+        await Swal.fire({
+          icon: "info",
+          title: "Inquiry only",
+          text: "Booking is not enabled for this owner's current plan.",
+        });
+        return;
+      }
       if (this.bookingSubmitting) return;
       this.showConfirmModal = false;
       this.showUserAgreementModal = false;
@@ -1068,6 +1095,9 @@ export default {
   },
   computed: {
     isOwner() { return useUserInfo().role; },
+    acceptsBookings() {
+      return Boolean(this.property?.accepts_bookings);
+    },
     routeSourceLabel() {
       if (this.routeSource === "saved") return "Saved location";
       if (this.routeSource === "live") return "Current location";
@@ -1408,6 +1438,27 @@ export default {
   font-weight: 600;
   color: #314260;
   background: #fff;
+}
+
+.booking-disabled-note {
+  border: 1px solid rgba(44, 107, 237, 0.14);
+  background: linear-gradient(180deg, rgba(44, 107, 237, 0.05), rgba(44, 107, 237, 0.08));
+  color: #35537f;
+  border-radius: 1.25rem;
+  padding: 1rem 1.05rem;
+}
+
+.booking-disabled-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  color: #204f9b;
+}
+
+.booking-disabled-head i {
+  font-size: 1rem;
 }
 
 .route-source-chip {

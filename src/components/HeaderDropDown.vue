@@ -6,12 +6,12 @@
       id="profileDropdown" 
       data-bs-toggle="dropdown" 
       aria-expanded="false"
-      @click="loadNotificationIndicator"
+      @click="loadHeaderIndicators"
     >
       <div class="avatar-container shadow-sm">
         <img :src="Profile || placeholderImg" class="profile-img" alt="User" />
       </div>
-      <span v-if="hasUnreadNotifications" class="notif-badge" aria-label="Unread notifications">
+      <span v-if="hasUnreadHeaderItems" class="notif-badge" aria-label="Unread activity">
         <i class="bi bi-bell-fill"></i>
       </span>
       <i class="bi bi-chevron-down text-white small d-none d-md-block"></i>
@@ -53,8 +53,32 @@
       <template v-else></template>
 
       <li><hr class="dropdown-divider"></li>
-      <li><RouterLink class="dropdown-item" to="/messages"><i class="bi bi-chat"></i> Messages</RouterLink></li>
-      <li><RouterLink class="dropdown-item" to="/notifications"><i class="bi bi-bell"></i> Notifications</RouterLink></li>
+      <li>
+        <RouterLink
+          class="dropdown-item message-item"
+          :class="{ unread: hasUnreadMessages }"
+          to="/messages"
+        >
+          <span class="dropdown-item-main">
+            <i class="bi bi-chat"></i>
+            <span>Messages</span>
+          </span>
+          <span v-if="hasUnreadMessages" class="notification-pill">New</span>
+        </RouterLink>
+      </li>
+      <li>
+        <RouterLink
+          class="dropdown-item notification-item"
+          :class="{ unread: hasUnreadNotifications }"
+          to="/notifications"
+        >
+          <span class="dropdown-item-main">
+            <i class="bi bi-bell"></i>
+            <span>Notifications</span>
+          </span>
+          <span v-if="hasUnreadNotifications" class="notification-pill">New</span>
+        </RouterLink>
+      </li>
       <li><hr class="dropdown-divider"></li>
       <li><RouterLink class="dropdown-item" to="/settings"><i class="bi bi-gear"></i> Settings</RouterLink></li>
       <li><hr class="dropdown-divider"></li>
@@ -69,6 +93,7 @@ import { logout } from '@/api/auth';
 import { useUserInfo } from '@/store/userInfo';
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
 import { fetchNotifications } from "@/api/notifications";
+import { fetchMessages } from "@/api/messages";
 import { mapNotificationListResponse } from "@/observer/notifications/controller/notificationResponseController";
 import { getAuthUserId } from "@/api/user";
 
@@ -115,24 +140,36 @@ export default {
       if (this.userVerificationStatus === "rejected") return "text-danger";
       return "text-secondary";
     },
+    hasUnreadHeaderItems() {
+      return this.hasUnreadMessages || this.hasUnreadNotifications;
+    },
   },
   data() {
     return {
       userprofile : null,
       placeholderImg: placeholderImg,
       hasUnreadNotifications: false,
+      hasUnreadMessages: false,
       isNotifLoading: false,
+      isMessageLoading: false,
       authUserId: null,
       notificationChannelName: null,
+      chatChannelName: null,
     }
   },
   async mounted() {
     await this.loadAuthUserId();
-    await this.loadNotificationIndicator();
+    await this.loadHeaderIndicators();
     this.bindRealtimeNotifications();
+    this.bindRealtimeMessages();
+    window.addEventListener("notifications:updated", this.loadNotificationIndicator);
+    window.addEventListener("messages:updated", this.loadMessageIndicator);
   },
   beforeUnmount() {
     this.unbindRealtimeNotifications();
+    this.unbindRealtimeMessages();
+    window.removeEventListener("notifications:updated", this.loadNotificationIndicator);
+    window.removeEventListener("messages:updated", this.loadMessageIndicator);
   },
   methods: {
     async loadAuthUserId() {
@@ -147,25 +184,57 @@ export default {
         this.authUserId = null;
       }
     },
+    async loadHeaderIndicators() {
+      await Promise.all([
+        this.loadNotificationIndicator(),
+        this.loadMessageIndicator(),
+      ]);
+    },
     async loadNotificationIndicator() {
       if (!this.isLoggedIn || this.isNotifLoading) return;
       this.isNotifLoading = true;
       try {
         const res = await fetchNotifications(null, 50);
         const notifications = mapNotificationListResponse(res?.data);
-        this.hasUnreadNotifications = notifications.some((n) => !n.read);
+        this.hasUnreadNotifications = notifications.some((n) => n.event_type !== "message_received" && !n.read);
       } catch (error) {
         this.hasUnreadNotifications = false;
       } finally {
         this.isNotifLoading = false;
       }
     },
+    async loadMessageIndicator() {
+      if (!this.isLoggedIn || this.isMessageLoading) return;
+      this.isMessageLoading = true;
+      try {
+        const res = await fetchMessages(null, 50);
+        const chats = res?.data?.chats || [];
+        this.hasUnreadMessages = chats.some((chat) => {
+          const unreadCount = Number(
+            chat?.unread_count ??
+            chat?.unreadCount ??
+            chat?.unread_messages_count ??
+            0
+          );
+          return unreadCount > 0 || Boolean(chat?.has_unread || chat?.is_unread);
+        });
+      } catch (_) {
+        this.hasUnreadMessages = false;
+      } finally {
+        this.isMessageLoading = false;
+      }
+    },
     handleRealtimeNotification(eventPayload) {
       const raw = eventPayload?.notification || eventPayload || {};
+      const eventType = String(raw?.event_type || raw?.type || "").toLowerCase().trim();
+      if (eventType === "message_received" || eventType === "message") return;
       const isRead = Boolean(raw?.read_at || raw?.is_read);
       if (!isRead) {
         this.hasUnreadNotifications = true;
       }
+    },
+    handleRealtimeMessage() {
+      this.hasUnreadMessages = true;
     },
     bindRealtimeNotifications() {
       if (!window.Echo || !this.authUserId) return;
@@ -174,10 +243,22 @@ export default {
         this.handleRealtimeNotification(event);
       });
     },
+    bindRealtimeMessages() {
+      if (!window.Echo || !this.authUserId) return;
+      this.chatChannelName = `chat.${this.authUserId}`;
+      window.Echo.private(this.chatChannelName).listen("MessageSent", () => {
+        this.handleRealtimeMessage();
+      });
+    },
     unbindRealtimeNotifications() {
       if (!this.notificationChannelName || !window.Echo) return;
       window.Echo.leave(`private-${this.notificationChannelName}`);
       this.notificationChannelName = null;
+    },
+    unbindRealtimeMessages() {
+      if (!this.chatChannelName || !window.Echo) return;
+      window.Echo.leave(`private-${this.chatChannelName}`);
+      this.chatChannelName = null;
     },
     goToPaymentWall() {
       if (!this.isUserVerified) {
@@ -280,6 +361,52 @@ export default {
 .dropdown-item:hover {
   background-color: #f0f4ff;
   color: #4780d9;
+}
+
+.notification-item {
+  justify-content: space-between;
+}
+
+.message-item {
+  justify-content: space-between;
+}
+
+.dropdown-item-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.message-item.unread {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(14, 165, 233, 0.08));
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.message-item.unread i {
+  color: #1d4ed8;
+}
+
+.notification-item.unread {
+  background: linear-gradient(135deg, rgba(71, 128, 217, 0.12), rgba(29, 78, 216, 0.06));
+  color: #2459b7;
+  font-weight: 600;
+}
+
+.notification-item.unread i {
+  color: #2459b7;
+}
+
+.notification-pill {
+  margin-left: auto;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 /* Simple Slide Animation */

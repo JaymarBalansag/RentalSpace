@@ -54,7 +54,17 @@
 
       <li><hr class="dropdown-divider"></li>
       <li><RouterLink class="dropdown-item" to="/messages"><i class="bi bi-chat"></i> Messages</RouterLink></li>
-      <li><RouterLink class="dropdown-item" to="/notifications"><i class="bi bi-bell"></i> Notifications</RouterLink></li>
+      <li>
+        <RouterLink
+          class="dropdown-item notification-item"
+          :class="{ unread: hasUnreadNotifications }"
+          to="/notifications"
+        >
+          <i class="bi bi-bell"></i>
+          <span>Notifications</span>
+          <span v-if="hasUnreadNotifications" class="notification-pill">New</span>
+        </RouterLink>
+      </li>
       <li><hr class="dropdown-divider"></li>
       <li><RouterLink class="dropdown-item" to="/settings"><i class="bi bi-gear"></i> Settings</RouterLink></li>
       <li><hr class="dropdown-divider"></li>
@@ -280,6 +290,31 @@ export default {
 .dropdown-item:hover {
   background-color: #f0f4ff;
   color: #4780d9;
+}
+
+.notification-item {
+  justify-content: space-between;
+}
+
+.notification-item.unread {
+  background: linear-gradient(135deg, rgba(71, 128, 217, 0.12), rgba(29, 78, 216, 0.06));
+  color: #2459b7;
+  font-weight: 600;
+}
+
+.notification-item.unread i {
+  color: #2459b7;
+}
+
+.notification-pill {
+  margin-left: auto;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 /* Simple Slide Animation */

@@ -23,9 +23,21 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const method = String(originalRequest?.method || "get").toUpperCase();
+    const requestUrl = originalRequest?.url || "";
+
+    if (!error.response) {
+      window.dispatchEvent(new CustomEvent("rentahub:network-error", {
+        detail: {
+          method,
+          url: requestUrl,
+          online: navigator.onLine,
+        },
+      }));
+    }
 
     // ⛔ Prevent infinite loop: don't retry refresh if the failing request IS refresh
-    if (originalRequest.url.includes("/refresh")) {
+    if (originalRequest?.url?.includes("/refresh")) {
       return Promise.reject(error);
     }
 

@@ -33,6 +33,11 @@ const routes = [
     name: 'register',
     component: Register
   },
+  {
+    path: '/offline',
+    name: 'offline',
+    component: () => import('@/views/System/OfflinePage.vue'),
+  },
 
   // LAZY LOADED: Main & User
   { 

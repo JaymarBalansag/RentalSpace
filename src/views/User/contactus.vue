@@ -69,6 +69,13 @@
                 <p class="section-eyebrow mb-2">Message Form</p>
                 <h4 class="fw-bold mb-4">Send A Message</h4>
 
+                <div v-if="successMessage" class="alert alert-success rounded-4 border-0 shadow-sm mb-4" role="status">
+                  {{ successMessage }}
+                </div>
+                <div v-if="errorMessage" class="alert alert-danger rounded-4 border-0 shadow-sm mb-4" role="alert">
+                  {{ errorMessage }}
+                </div>
+
                 <form @submit.prevent="submitForm">
                   <div class="row g-3">
                     <div class="col-md-12">
@@ -77,9 +84,12 @@
                         type="text"
                         v-model="form.name"
                         class="form-control rounded-3 custom-input"
+                        :class="{ 'is-invalid': errors.name }"
                         placeholder="Juan Dela Cruz"
+                        :disabled="submitting"
                         required
                       >
+                      <div v-if="errors.name" class="invalid-feedback d-block">{{ errors.name }}</div>
                     </div>
                     <div class="col-md-12">
                       <label class="form-label small fw-bold text-muted">Email Address</label>
@@ -87,23 +97,30 @@
                         type="email"
                         v-model="form.email"
                         class="form-control rounded-3 custom-input"
+                        :class="{ 'is-invalid': errors.email }"
                         placeholder="juan@example.com"
+                        :disabled="submitting"
                         required
                       >
+                      <div v-if="errors.email" class="invalid-feedback d-block">{{ errors.email }}</div>
                     </div>
                     <div class="col-md-12">
                       <label class="form-label small fw-bold text-muted">Message</label>
                       <textarea
                         v-model="form.message"
                         class="form-control rounded-3 custom-input"
+                        :class="{ 'is-invalid': errors.message }"
                         rows="5"
                         placeholder="How can we help you?"
+                        :disabled="submitting"
                         required
                       ></textarea>
+                      <div v-if="errors.message" class="invalid-feedback d-block">{{ errors.message }}</div>
                     </div>
                     <div class="col-12 mt-3">
-                      <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold py-3 submit-btn">
-                        <i class="bi bi-send-fill me-2"></i>Send Message
+                      <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold py-3 submit-btn" :disabled="submitting">
+                        <span v-if="submitting" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                        <i v-else class="bi bi-send-fill me-2"></i>{{ submitting ? "Sending Message..." : "Send Message" }}
                       </button>
                     </div>
                   </div>
@@ -122,6 +139,7 @@ import { RouterLink } from "vue-router";
 import Header from "@/components/Header.vue";
 import SubscriptionWarningBanner from "@/components/SubscriptionWarningBanner.vue";
 import OwnerSubscriptionExpiredBanner from "@/components/OwnerSubscriptionExpiredBanner.vue";
+import { submitContactInquiry } from "@/api/contact";
 
 export default {
   name: "ContactUsPage",
@@ -133,14 +151,58 @@ export default {
         email: "",
         message: "",
       },
+      submitting: false,
+      successMessage: "",
+      errorMessage: "",
+      errors: {
+        name: "",
+        email: "",
+        message: "",
+      },
     };
   },
   methods: {
-    submitForm() {
-      alert(`Thank you, ${this.form.name}! Your message has been sent to the RentaHub support team.`);
+    resetForm() {
       this.form.name = "";
       this.form.email = "";
       this.form.message = "";
+    },
+    resetErrors() {
+      this.errorMessage = "";
+      this.errors = {
+        name: "",
+        email: "",
+        message: "",
+      };
+    },
+    async submitForm() {
+      this.submitting = true;
+      this.successMessage = "";
+      this.resetErrors();
+
+      try {
+        const response = await submitContactInquiry({
+          name: this.form.name,
+          email: this.form.email,
+          message: this.form.message,
+        });
+
+        this.successMessage = response?.data?.message || `Thank you, ${this.form.name}! Your message has been sent to the RentaHub support team.`;
+        this.resetForm();
+      } catch (error) {
+        const validationErrors = error?.response?.data?.errors || {};
+        this.errors = {
+          name: validationErrors?.name?.[0] || "",
+          email: validationErrors?.email?.[0] || "",
+          message: validationErrors?.message?.[0] || "",
+        };
+
+        this.errorMessage =
+          error?.response?.data?.message ||
+          "We could not send your message right now. Please try again in a moment.";
+      } finally {
+        this.submitting = false;
+      }
     },
   },
 };

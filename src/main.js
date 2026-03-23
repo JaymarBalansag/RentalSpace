@@ -1,6 +1,7 @@
 import './assets/main.css'
 
 import { createApp } from 'vue'
+import { registerSW } from 'virtual:pwa-register'
 import App from './App.vue'
 import {router} from './router'
 
@@ -43,6 +44,16 @@ window.Echo = new Echo({
       .catch((error) => callback(true, error));
     },
   }),
+});
+
+registerSW({
+  immediate: true,
+  onOfflineReady() {
+    window.dispatchEvent(new CustomEvent('rentahub:pwa-offline-ready'));
+  },
+  onNeedRefresh() {
+    window.dispatchEvent(new CustomEvent('rentahub:pwa-update-ready'));
+  },
 });
 
 const pinia = createPinia()

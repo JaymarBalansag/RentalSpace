@@ -1,11 +1,12 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import Header from './components/Header.vue';
 import { onMounted } from 'vue';
+import NetworkStatusBanner from '@/components/NetworkStatusBanner.vue';
+import PwaInstallBanner from '@/components/PwaInstallBanner.vue';
 import { useUserInfo } from '@/store/userInfo';
 import api from './api/api';
+import { RouterView } from 'vue-router';
 
-onMounted(async () => { 
+onMounted(async () => {
   const info = useUserInfo();
   const isLoggedIn = localStorage.getItem("access_token");
   
@@ -45,20 +46,10 @@ onMounted(async () => {
     }
   }
 });
-
-
-
 </script>
 
-<!-- Notes:
-RouterLink to
-RouterView
--->
-
 <template>
-
-  
-
-  <RouterView></RouterView>
-  
+  <NetworkStatusBanner />
+  <RouterView />
+  <PwaInstallBanner />
 </template>

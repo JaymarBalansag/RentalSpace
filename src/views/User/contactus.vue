@@ -187,7 +187,7 @@ export default {
           message: this.form.message,
         });
 
-        this.successMessage = response?.data?.message || `Thank you, ${this.form.name}! Your message has been sent to the RentaHub support team.`;
+        this.successMessage = response?.data?.message || `Thank you, ${this.form.name}! Your inquiry has been received by the RentaHub admin team.`;
         this.resetForm();
       } catch (error) {
         const validationErrors = error?.response?.data?.errors || {};

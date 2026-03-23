@@ -112,7 +112,7 @@ export default {
         { label: "Properties", link: "/admin/properties", icon: "bi bi-houses" },
         { label: "Bookings", link: "/admin/bookings", icon: "bi bi-calendar-check" },
         { label: "Reports", link: "/admin/reports", icon: "bi bi-graph-up" },
-        { label: "Feedback", link: "/admin/feedback", icon: "bi bi-chat-dots" },
+        { label: "Inquiries", link: "/admin/inquiries", icon: "bi bi-inboxes" },
       ],
     };
   },

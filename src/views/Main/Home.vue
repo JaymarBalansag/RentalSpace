@@ -116,7 +116,7 @@
 
       <!-- Filter button on Mobile -->
       <div class="col-12 d-lg-none mb-3">
-        <button class="btn btn-mobile-filter w-100 d-flex justify-content-between align-items-center px-4 py-2 rounded-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileFilters">
+        <button class="btn btn-mobile-filter w-100 d-flex justify-content-between align-items-center px-4 py-3 rounded-4" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileFilters" aria-controls="mobileFilters">
           <span><i class="bi bi-sliders2-vertical me-2"></i> Refine Search</span>
           <i class="bi bi-chevron-right"></i>
         </button>
@@ -252,16 +252,27 @@
     </div>
   </div>
 
-  <div class="offcanvas offcanvas-start" tabindex="-1" id="mobileFilters" aria-labelledby="mobileFiltersLabel">
-    <div class="offcanvas-header border-bottom">
-      <h5 class="offcanvas-title fw-bold" id="mobileFiltersLabel">Filters</h5>
-      <button type="button" class="btn-close shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  <div class="offcanvas offcanvas-start mobile-filters-offcanvas" tabindex="-1" id="mobileFilters" aria-labelledby="mobileFiltersLabel">
+    <div class="offcanvas-header border-bottom mobile-filters-header">
+      <div>
+        <p class="result-eyebrow mb-1">Search Controls</p>
+        <h5 class="offcanvas-title fw-bold mb-0" id="mobileFiltersLabel">Filters</h5>
+      </div>
+      <button
+        type="button"
+        class="btn mobile-close-btn rounded-pill d-inline-flex align-items-center gap-2"
+        data-bs-dismiss="offcanvas"
+        aria-label="Close filters"
+      >
+        <i class="bi bi-x-lg"></i>
+        <span>Close</span>
+      </button>
     </div>
-    <div class="offcanvas-body">
-      <p class="small text-muted my-4">Refine your search results</p>
+    <div class="offcanvas-body mobile-filters-body">
+      <p class="small text-muted mobile-filters-copy">Refine your search results without losing your place.</p>
       <aside class="col-lg-3 d-lg-block">
         <div class="sticky-top" style="top: 100px; z-index: 10;">
-          <div class="filter-card p-3 border rounded-4 shadow-sm bg-white mb-4">
+          <div class="filter-card mobile-filter-card p-3 border rounded-4 shadow-sm bg-white mb-3">
             <h6 class="fw-bold mb-3 d-flex align-items-center">
               <i class="bi bi-tags me-2 text-primary"></i> Price Range
             </h6>
@@ -277,7 +288,7 @@
             <button @click="resetPriceFilter" class="btn btn-link btn-sm w-100 text-muted text-decoration-none">Reset Price</button>
           </div>
 
-          <div class="filter-card p-3 border rounded-4 shadow-sm bg-white mb-4">
+          <div class="filter-card mobile-filter-card p-3 border rounded-4 shadow-sm bg-white mb-3">
             <h6 class="fw-bold mb-3">Amenities</h6>
             <div v-if="loadingAmenities" class="placeholder-glow">
               <div v-for="n in 5" :key="n" class="placeholder col-10 mb-2 rounded"></div>
@@ -290,7 +301,7 @@
             </div>
           </div>
 
-          <div class="filter-card p-3 border rounded-4 shadow-sm bg-white">
+          <div class="filter-card mobile-filter-card p-3 border rounded-4 shadow-sm bg-white">
             <h6 class="fw-bold mb-3">Facilities</h6>
             <div v-if="loadingFacilities" class="placeholder-glow">
               <div v-for="n in 5" :key="n" class="placeholder col-10 mb-2 rounded"></div>
@@ -304,6 +315,15 @@
           </div>
         </div>
       </aside>
+      <div class="mobile-filters-footer">
+        <button
+          type="button"
+          class="btn btn-primary rounded-pill fw-bold px-4 flex-fill"
+          data-bs-dismiss="offcanvas"
+        >
+          Done
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -591,10 +611,72 @@ input.form-control:focus {
   color: #204884;
   background: #f7fbff;
   font-weight: 700;
+  box-shadow: 0 10px 20px rgba(23, 54, 99, 0.08);
 }
 
 .btn-mobile-filter:hover {
   background: #eef5ff;
+}
+
+.mobile-filters-offcanvas {
+  width: min(88vw, 360px);
+  border-right: 1px solid #dce8fb;
+  border-top-right-radius: 24px;
+  border-bottom-right-radius: 24px;
+  overflow: hidden;
+  box-shadow: 14px 0 34px rgba(16, 45, 88, 0.16);
+}
+
+.mobile-filters-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding: 1rem 1rem 0.95rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+}
+
+.mobile-close-btn {
+  border: 1px solid #d8e6fb;
+  background: #eff5ff;
+  color: #204884;
+  font-weight: 700;
+  padding: 0.55rem 0.9rem;
+}
+
+.mobile-close-btn:hover {
+  background: #e3eefc;
+}
+
+.mobile-filters-body {
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, #f9fbff 0%, #ffffff 100%);
+  overflow-y: auto;
+}
+
+.mobile-filters-body .sticky-top {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+}
+
+.mobile-filters-copy {
+  margin: 0 0 1rem;
+  color: #6a85ac;
+}
+
+.mobile-filter-card {
+  padding: 1rem !important;
+}
+
+.mobile-filters-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  padding-bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px));
+  margin-top: 1rem;
+  background: linear-gradient(180deg, rgba(249, 251, 255, 0) 0%, #f9fbff 24%, #f9fbff 100%);
 }
 
 .filter-card {
@@ -718,6 +800,34 @@ input.form-control:focus {
 
   .search-hero {
     padding-top: 2rem !important;
+  }
+
+  .mobile-filters-offcanvas {
+    width: min(92vw, 340px);
+    border-top-right-radius: 22px;
+    border-bottom-right-radius: 22px;
+  }
+
+  .mobile-filter-card .filter-list {
+    max-height: 180px;
+  }
+}
+
+@media (max-width: 420px) {
+  .mobile-filters-offcanvas {
+    width: calc(100vw - 18px);
+  }
+
+  .mobile-close-btn span {
+    display: none;
+  }
+
+  .mobile-close-btn {
+    padding-inline: 0.8rem;
+  }
+
+  .mobile-filters-footer {
+    gap: 0.5rem;
   }
 }
 

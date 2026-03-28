@@ -165,6 +165,7 @@ const routes = [
       { path: "/overview", name: "OwnerOverview", component: () => import('@/views/Owner/Overview.vue') },
       { path: "/subscription", name: "OwnerSubscription", component: () => import('@/views/Owner/Subscription.vue') },
       { path: "/subscription/renew", name: "OwnerSubscriptionRenew", component: () => import('@/views/Owner/RenewSubscription.vue') },
+      { path: "/subscription/change", name: "OwnerSubscriptionChange", component: () => import('@/views/Owner/PlanChange.vue') },
       { path: "/owner/addon-payment", name: "OwnerAddonPayment", component: () => import('@/views/Owner/AddonPayment.vue') },
       { path: "/properties", name: "OwnerProperties", component: () => import('@/views/Owner/Properties.vue') },
       { path: "/dashboard/properties/add", name: "AddProperty", component: () => import('@/views/Owner/PropertyCrud/addProperty.vue') },
@@ -294,6 +295,7 @@ router.beforeEach(async (to, from, next) => {
         "/overview",
         "/subscription",
         "/subscription/renew",
+        "/subscription/change",
         "/properties",
         "/tenants",
         "/bookings",
@@ -310,6 +312,7 @@ router.beforeEach(async (to, from, next) => {
           "/dashboard/properties/add",
           "/subscription",
           "/subscription/renew",
+          "/subscription/change",
         ];
         const isAllowed =
           allowedMonthly.includes(to.path) ||
@@ -320,6 +323,10 @@ router.beforeEach(async (to, from, next) => {
       }
 
       if (to.path === "/subscription/renew" && !subscription?.plan_name) {
+        return next("/subscription");
+      }
+
+      if (to.path === "/subscription/change" && !subscription?.plan_name) {
         return next("/subscription");
       }
 

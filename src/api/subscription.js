@@ -24,3 +24,8 @@ export async function getListingAddonStatus(addonId) {
   const response = await api.get(`/owner/listing-addon/status/${addonId}`);
   return response.data || null;
 }
+
+export async function createPlanChangeIntent(payload) {
+  const response = await api.post("/paymongo/plan-change-payment", payload);
+  return response.data || null;
+}

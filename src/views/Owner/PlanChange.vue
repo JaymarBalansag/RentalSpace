@@ -121,9 +121,12 @@
 
 <script>
 import ConfirmModal from "@/components/confirmModal.vue";
-import { createPlanChangeIntent, getOwnerSubscriptionStatus, getSubscriptionStatus } from "@/api/subscription";
+import { cancelPendingSubscription, createPlanChangeIntent, getOwnerSubscriptionStatus, getSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
 import { downloadQrImage } from "@/utils/qrDownload";
+import Swal from "sweetalert2";
+
+const PLAN_CHANGE_PAYMENT_SESSION_KEY = "ownerPlanChangePaymentSession";
 
 export default {
   name: "OwnerPlanChange",
@@ -135,6 +138,8 @@ export default {
       qrCodeUrl: null,
       subscriptionId: null,
       checkStatusInterval: null,
+      bypassLeaveGuard: false,
+      isHandlingRouteLeave: false,
       name: "",
       email: "",
       selectedPlan: "annual",
@@ -185,6 +190,7 @@ export default {
   },
   async mounted() {
     await this.loadPlanChangeContext();
+    await this.restorePendingSession();
   },
   methods: {
     async loadPlanChangeContext() {
@@ -224,6 +230,81 @@ export default {
       this.selectedPlan = target;
       this.planPrice = target === "annual" ? 1800 : 200;
     },
+    persistPendingSession() {
+      if (!this.subscriptionId || !this.qrCodeUrl) return;
+
+      sessionStorage.setItem(
+        PLAN_CHANGE_PAYMENT_SESSION_KEY,
+        JSON.stringify({
+          flow: "plan_change",
+          subscriptionId: this.subscriptionId,
+          qrCodeUrl: this.qrCodeUrl,
+          selectedPlan: this.selectedPlan,
+        })
+      );
+    },
+    clearPendingSession() {
+      sessionStorage.removeItem(PLAN_CHANGE_PAYMENT_SESSION_KEY);
+    },
+    async restorePendingSession() {
+      const raw = sessionStorage.getItem(PLAN_CHANGE_PAYMENT_SESSION_KEY);
+      if (!raw) return;
+
+      let session = null;
+      try {
+        session = JSON.parse(raw);
+      } catch (error) {
+        this.clearPendingSession();
+        return;
+      }
+
+      if (!session?.subscriptionId || session?.flow !== "plan_change") {
+        this.clearPendingSession();
+        return;
+      }
+
+      this.subscriptionId = session.subscriptionId;
+      this.selectedPlan = session.selectedPlan || this.selectedPlan;
+      this.planPrice = this.selectedPlan === "annual" ? 1800 : 200;
+      this.qrCodeUrl = session.qrCodeUrl || null;
+      this.isProcessingPayment = true;
+      this.paymentStatusMessage = "Waiting for your payment...";
+
+      try {
+        const [tempSubscription, ownerSnapshot] = await Promise.all([
+          getSubscriptionStatus(this.subscriptionId),
+          getOwnerSubscriptionStatus(),
+        ]);
+
+        const tempStatus = String(tempSubscription?.status || "").toLowerCase();
+        const hasChangedPlan = this.hasChangedPlan(ownerSnapshot);
+
+        if (tempStatus === "pending") {
+          this.startPolling();
+          return;
+        }
+
+        if ((tempStatus === "active" || tempStatus === "cancelled") && hasChangedPlan) {
+          await this.finishPlanChange(ownerSnapshot);
+          return;
+        }
+
+        if (tempStatus === "active" || hasChangedPlan) {
+          await this.finishPlanChange(ownerSnapshot);
+          return;
+        }
+
+        if (["failed", "expired", "cancelled"].includes(tempStatus)) {
+          this.finishTerminalState(tempStatus, this.getTerminalStatusMessage(tempStatus));
+          return;
+        }
+
+        this.resetPaymentState();
+      } catch (error) {
+        console.error("Failed to restore plan change session...", error);
+        this.resetPaymentState(false);
+      }
+    },
     canChangePlan(subscription) {
       if (typeof subscription?.can_change_plan === "boolean") {
         return subscription.can_change_plan;
@@ -255,6 +336,7 @@ export default {
         this.qrCodeUrl = response.qr_code;
         this.subscriptionId = response.subscription_id;
         this.paymentStatusMessage = "Waiting for your payment...";
+        this.persistPendingSession();
         this.startPolling();
       } catch (error) {
         this.isProcessingPayment = false;
@@ -262,6 +344,7 @@ export default {
       }
     },
     startPolling() {
+      clearInterval(this.checkStatusInterval);
       this.checkStatusInterval = setInterval(async () => {
         try {
           const [tempSubscription, ownerSnapshot] = await Promise.all([
@@ -273,20 +356,17 @@ export default {
           const hasChangedPlan = this.hasChangedPlan(ownerSnapshot);
 
           if (tempStatus === "failed") {
-            clearInterval(this.checkStatusInterval);
-            this.isProcessingPayment = false;
-            this.qrCodeUrl = null;
-            this.paymentStatusMessage = "Plan change payment failed.";
-            alert("Plan change payment failed. Please try again.");
+            this.finishTerminalState(tempStatus, "Plan change payment failed. Please try again.");
             return;
           }
 
           if (tempStatus === "expired") {
-            clearInterval(this.checkStatusInterval);
-            this.isProcessingPayment = false;
-            this.qrCodeUrl = null;
-            this.paymentStatusMessage = "Plan change QR expired.";
-            alert("Plan change QR expired. Please generate a new one.");
+            this.finishTerminalState(tempStatus, "Plan change QR expired. Please generate a new one.");
+            return;
+          }
+
+          if (tempStatus === "cancelled" && !hasChangedPlan) {
+            this.finishTerminalState(tempStatus, "Plan change payment was cancelled. You can start again anytime.");
             return;
           }
 
@@ -321,15 +401,80 @@ export default {
         useUserInfo().setSubscriptionStatus(latestSubscription);
       }
 
+      clearInterval(this.checkStatusInterval);
+      this.checkStatusInterval = null;
+      this.clearPendingSession();
       this.paymentStatusMessage = "Plan change completed successfully.";
+      this.bypassLeaveGuard = true;
       alert(`Plan changed successfully to ${this.targetPlanName}.`);
       this.$router.push("/subscription");
     },
-    cancelPayment() {
+    resetPaymentState(clearSession = true) {
       clearInterval(this.checkStatusInterval);
+      this.checkStatusInterval = null;
       this.isProcessingPayment = false;
       this.qrCodeUrl = null;
+      this.subscriptionId = null;
       this.paymentStatusMessage = "Waiting for your payment...";
+
+      if (clearSession) {
+        this.clearPendingSession();
+      }
+    },
+    getTerminalStatusMessage(status) {
+      if (status === "failed") {
+        return "Plan change payment failed. Please try again.";
+      }
+      if (status === "expired") {
+        return "Plan change QR expired. Please generate a new one.";
+      }
+      if (status === "cancelled") {
+        return "Plan change payment was cancelled. You can start again anytime.";
+      }
+      return `Plan change payment ${status}.`;
+    },
+    finishTerminalState(status, message) {
+      this.resetPaymentState();
+      alert(message || this.getTerminalStatusMessage(status));
+      this.bypassLeaveGuard = true;
+      this.$router.push("/subscription");
+    },
+    shouldGuardPendingLeave() {
+      return this.isProcessingPayment && !!this.subscriptionId;
+    },
+    async resolvePendingLeaveChoice() {
+      const result = await Swal.fire({
+        title: "Leave this payment?",
+        text: "Your QR payment is still pending. You can keep it open and resume later, or cancel it now.",
+        icon: "question",
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonText: "Cancel Payment",
+        denyButtonText: "Keep Payment Open",
+        cancelButtonText: "Stay Here",
+        reverseButtons: true,
+        allowOutsideClick: false,
+      });
+
+      if (result.isDenied) return "keep";
+      if (result.isConfirmed) return "cancel";
+      return "stay";
+    },
+    async cancelPayment() {
+      if (this.subscriptionId) {
+        try {
+          await cancelPendingSubscription(this.subscriptionId);
+        } catch (error) {
+          const message = error?.response?.data?.message || "Unable to cancel this plan change right now.";
+          alert(message);
+          return;
+        }
+      }
+
+      this.resetPaymentState();
+      this.bypassLeaveGuard = true;
+      alert("Plan change payment was cancelled. You can start again anytime.");
+      this.$router.push("/subscription");
     },
     async downloadQr() {
       try {
@@ -338,6 +483,51 @@ export default {
         alert(error?.message || "Unable to download the QR right now.");
       }
     },
+  },
+  async beforeRouteLeave(to, from, next) {
+    if (!this.shouldGuardPendingLeave() || this.bypassLeaveGuard) {
+      next();
+      return;
+    }
+
+    if (this.isHandlingRouteLeave) {
+      next(false);
+      return;
+    }
+
+    this.isHandlingRouteLeave = true;
+
+    try {
+      const choice = await this.resolvePendingLeaveChoice();
+
+      if (choice === "keep") {
+        next();
+        return;
+      }
+
+      if (choice === "cancel") {
+        try {
+          await cancelPendingSubscription(this.subscriptionId);
+          this.resetPaymentState();
+          this.bypassLeaveGuard = true;
+          next();
+        } catch (error) {
+          const message = error?.response?.data?.message || "Unable to cancel this plan change right now.";
+          await Swal.fire({
+            icon: "error",
+            title: "Cancellation failed",
+            text: message,
+            confirmButtonText: "Okay",
+          });
+          next(false);
+        }
+        return;
+      }
+
+      next(false);
+    } finally {
+      this.isHandlingRouteLeave = false;
+    }
   },
   beforeUnmount() {
     clearInterval(this.checkStatusInterval);

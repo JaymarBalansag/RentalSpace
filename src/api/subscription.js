@@ -10,6 +10,11 @@ export async function getSubscriptionStatus(subscriptionId) {
   return response.data || null;
 }
 
+export async function cancelPendingSubscription(subscriptionId) {
+  const response = await api.post(`/subscriptions/${subscriptionId}/cancel-pending`);
+  return response.data || null;
+}
+
 export async function getOwnerSubscriptionHistory() {
   const response = await api.get("/owner/subscription-history");
   return response.data || null;

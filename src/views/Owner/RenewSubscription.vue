@@ -156,9 +156,12 @@
 <script>
 import api from "@/api/api";
 import ConfirmModal from "@/components/confirmModal.vue";
-import { getOwnerSubscriptionStatus, getSubscriptionStatus } from "@/api/subscription";
+import { cancelPendingSubscription, getOwnerSubscriptionStatus, getSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
 import { downloadQrImage } from "@/utils/qrDownload";
+import Swal from "sweetalert2";
+
+const RENEWAL_PAYMENT_SESSION_KEY = "ownerRenewalPaymentSession";
 
 export default {
   name: "RenewSubscription",
@@ -170,6 +173,8 @@ export default {
       qrCodeUrl: null,
       subscriptionId: null,
       checkStatusInterval: null,
+      bypassLeaveGuard: false,
+      isHandlingRouteLeave: false,
       name: "",
       email: "",
       selectedPlan: "monthly",
@@ -209,6 +214,7 @@ export default {
   },
   async mounted() {
     await this.loadRenewalContext();
+    await this.restorePendingSession();
   },
   methods: {
     async loadRenewalContext() {
@@ -245,6 +251,81 @@ export default {
       this.selectedPlan = cycle === "annual" ? "annual" : "monthly";
       this.planPrice = this.selectedPlan === "annual" ? 1800 : 200;
     },
+    persistPendingSession() {
+      if (!this.subscriptionId || !this.qrCodeUrl) return;
+
+      sessionStorage.setItem(
+        RENEWAL_PAYMENT_SESSION_KEY,
+        JSON.stringify({
+          flow: "renewal",
+          subscriptionId: this.subscriptionId,
+          qrCodeUrl: this.qrCodeUrl,
+          selectedPlan: this.selectedPlan,
+        })
+      );
+    },
+    clearPendingSession() {
+      sessionStorage.removeItem(RENEWAL_PAYMENT_SESSION_KEY);
+    },
+    async restorePendingSession() {
+      const raw = sessionStorage.getItem(RENEWAL_PAYMENT_SESSION_KEY);
+      if (!raw) return;
+
+      let session = null;
+      try {
+        session = JSON.parse(raw);
+      } catch (error) {
+        this.clearPendingSession();
+        return;
+      }
+
+      if (!session?.subscriptionId || session?.flow !== "renewal") {
+        this.clearPendingSession();
+        return;
+      }
+
+      this.subscriptionId = session.subscriptionId;
+      this.selectedPlan = session.selectedPlan || this.selectedPlan;
+      this.planPrice = this.selectedPlan === "annual" ? 1800 : 200;
+      this.qrCodeUrl = session.qrCodeUrl || null;
+      this.isProcessingPayment = true;
+      this.paymentStatusMessage = "Waiting for your payment...";
+
+      try {
+        const [tempSubscription, ownerSnapshot] = await Promise.all([
+          getSubscriptionStatus(this.subscriptionId),
+          getOwnerSubscriptionStatus(),
+        ]);
+
+        const tempStatus = String(tempSubscription?.status || "").toLowerCase();
+        const hasRenewedPeriod = this.hasRenewedPeriod(ownerSnapshot);
+
+        if (tempStatus === "pending") {
+          this.startPolling();
+          return;
+        }
+
+        if ((tempStatus === "active" || tempStatus === "cancelled") && hasRenewedPeriod) {
+          await this.finishRenewal(ownerSnapshot);
+          return;
+        }
+
+        if (tempStatus === "active" || hasRenewedPeriod) {
+          await this.finishRenewal(ownerSnapshot);
+          return;
+        }
+
+        if (["failed", "expired", "cancelled"].includes(tempStatus)) {
+          this.finishTerminalState(tempStatus, this.getTerminalStatusMessage(tempStatus));
+          return;
+        }
+
+        this.resetPaymentState();
+      } catch (error) {
+        console.error("Failed to restore renewal session...", error);
+        this.resetPaymentState(false);
+      }
+    },
     validatedPayment() {
       this.showConfirmModal = true;
     },
@@ -264,6 +345,7 @@ export default {
         this.qrCodeUrl = response.data.qr_code;
         this.subscriptionId = response.data.subscription_id;
         this.paymentStatusMessage = "Waiting for your payment...";
+        this.persistPendingSession();
         this.startPolling();
       } catch (error) {
         this.isProcessingPayment = false;
@@ -271,6 +353,7 @@ export default {
       }
     },
     startPolling() {
+      clearInterval(this.checkStatusInterval);
       this.checkStatusInterval = setInterval(async () => {
         try {
           const [tempSubscription, ownerSnapshot] = await Promise.all([
@@ -282,20 +365,17 @@ export default {
           const hasRenewedPeriod = this.hasRenewedPeriod(ownerSnapshot);
 
           if (tempStatus === "failed") {
-            clearInterval(this.checkStatusInterval);
-            this.isProcessingPayment = false;
-            this.qrCodeUrl = null;
-            this.paymentStatusMessage = "Renewal payment failed.";
-            alert("Renewal payment failed. Please try again.");
+            this.finishTerminalState(tempStatus, "Renewal payment failed. Please try again.");
             return;
           }
 
           if (tempStatus === "expired") {
-            clearInterval(this.checkStatusInterval);
-            this.isProcessingPayment = false;
-            this.qrCodeUrl = null;
-            this.paymentStatusMessage = "Renewal QR expired.";
-            alert("Renewal QR expired. Please generate a new one.");
+            this.finishTerminalState(tempStatus, "Renewal QR expired. Please generate a new one.");
+            return;
+          }
+
+          if (tempStatus === "cancelled" && !hasRenewedPeriod) {
+            this.finishTerminalState(tempStatus, "Renewal payment was cancelled. You can start again anytime.");
             return;
           }
 
@@ -357,7 +437,11 @@ export default {
         useUserInfo().setSubscriptionStatus(latestSubscription);
       }
 
+      clearInterval(this.checkStatusInterval);
+      this.checkStatusInterval = null;
+      this.clearPendingSession();
       this.paymentStatusMessage = "Renewal completed successfully.";
+      this.bypassLeaveGuard = true;
       alert("Subscription renewed successfully.");
       this.$router.push("/subscription");
     },
@@ -371,11 +455,72 @@ export default {
         console.warn("Failed to refresh renewed subscription:", error);
       }
     },
-    cancelPayment() {
+    resetPaymentState(clearSession = true) {
       clearInterval(this.checkStatusInterval);
+      this.checkStatusInterval = null;
       this.isProcessingPayment = false;
       this.qrCodeUrl = null;
+      this.subscriptionId = null;
       this.paymentStatusMessage = "Waiting for your payment...";
+
+      if (clearSession) {
+        this.clearPendingSession();
+      }
+    },
+    getTerminalStatusMessage(status) {
+      if (status === "failed") {
+        return "Renewal payment failed. Please try again.";
+      }
+      if (status === "expired") {
+        return "Renewal QR expired. Please generate a new one.";
+      }
+      if (status === "cancelled") {
+        return "Renewal payment was cancelled. You can start again anytime.";
+      }
+      return `Renewal payment ${status}.`;
+    },
+    finishTerminalState(status, message) {
+      this.resetPaymentState();
+      alert(message || this.getTerminalStatusMessage(status));
+      this.bypassLeaveGuard = true;
+      this.$router.push("/subscription");
+    },
+    shouldGuardPendingLeave() {
+      return this.isProcessingPayment && !!this.subscriptionId;
+    },
+    async resolvePendingLeaveChoice() {
+      const result = await Swal.fire({
+        title: "Leave this payment?",
+        text: "Your QR payment is still pending. You can keep it open and resume later, or cancel it now.",
+        icon: "question",
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonText: "Cancel Payment",
+        denyButtonText: "Keep Payment Open",
+        cancelButtonText: "Stay Here",
+        reverseButtons: true,
+        allowOutsideClick: false,
+      });
+
+      if (result.isDenied) return "keep";
+      if (result.isConfirmed) return "cancel";
+      return "stay";
+    },
+    async cancelPayment() {
+      if (this.subscriptionId) {
+        try {
+          await cancelPendingSubscription(this.subscriptionId);
+        } catch (error) {
+          const message = error?.response?.data?.message || "Unable to cancel this renewal right now.";
+          alert(message);
+          return;
+        }
+      }
+
+      this.resetPaymentState();
+      this.bypassLeaveGuard = true;
+      alert("Renewal payment was cancelled. You can start again anytime.");
+      this.$router.push("/subscription");
     },
     async downloadQr() {
       try {
@@ -384,6 +529,51 @@ export default {
         alert(error?.message || "Unable to download the QR right now.");
       }
     },
+  },
+  async beforeRouteLeave(to, from, next) {
+    if (!this.shouldGuardPendingLeave() || this.bypassLeaveGuard) {
+      next();
+      return;
+    }
+
+    if (this.isHandlingRouteLeave) {
+      next(false);
+      return;
+    }
+
+    this.isHandlingRouteLeave = true;
+
+    try {
+      const choice = await this.resolvePendingLeaveChoice();
+
+      if (choice === "keep") {
+        next();
+        return;
+      }
+
+      if (choice === "cancel") {
+        try {
+          await cancelPendingSubscription(this.subscriptionId);
+          this.resetPaymentState();
+          this.bypassLeaveGuard = true;
+          next();
+        } catch (error) {
+          const message = error?.response?.data?.message || "Unable to cancel this renewal right now.";
+          await Swal.fire({
+            icon: "error",
+            title: "Cancellation failed",
+            text: message,
+            confirmButtonText: "Okay",
+          });
+          next(false);
+        }
+        return;
+      }
+
+      next(false);
+    } finally {
+      this.isHandlingRouteLeave = false;
+    }
   },
   beforeUnmount() {
     clearInterval(this.checkStatusInterval);

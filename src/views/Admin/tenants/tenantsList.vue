@@ -1,16 +1,16 @@
 <template>
   <div class="admin-view-container p-3 p-md-4">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div class="page-top d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
       <div>
         <h3 class="fw-bold text-dark mb-1">User Management</h3>
         <p class="text-muted small mb-0">Monitor tenant profiles and location data.</p>
       </div>
-      <button class="btn btn-outline-secondary shadow-sm px-4" @click="getUsers">
+      <button class="btn btn-outline-secondary shadow-sm px-4 refresh-btn" @click="getUsers">
         <i class="bi bi-arrow-repeat me-2"></i>Refresh
       </button>
     </div>
 
-    <div class="card shadow-sm border-0 mb-4 overflow-hidden">
+    <div class="card shadow-sm border-0 mb-4 overflow-hidden filter-shell">
       <div class="card-body bg-white">
         <div class="row g-3 align-items-center">
           <div class="col-md-6">
@@ -130,27 +130,42 @@
         </table>
       </div>
 
-      <div class="d-lg-none p-3">
+      <div class="d-lg-none p-3 mobile-list-shell">
         <div v-if="filteredUsers.length > 0">
           <div v-for="user in filteredUsers" :key="user.id" class="mobile-user-card mb-3 p-3 border rounded shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-              <div class="d-flex align-items-center">
+            <div class="mobile-user-top">
+              <div class="mobile-user-identity">
                 <img :src="user.user_img_url || 'https://ui-avatars.com/api/?name=' + user.first_name" class="user-img-sm me-2">
-                <h6 class="fw-bold mb-0 text-dark">{{ user.first_name }} {{ user.last_name }}</h6>
+                <div class="mobile-user-copy">
+                  <h6 class="fw-bold mb-1 text-dark">{{ user.first_name }} {{ user.last_name }}</h6>
+                  <small class="text-muted user-email">{{ user.email || 'N/A' }}</small>
+                </div>
               </div>
-              <span class="badge-modern" :class="user.isComplete ? 'complete' : 'incomplete'">
+              <span class="badge-modern mobile-profile-badge" :class="user.isComplete ? 'complete' : 'incomplete'">
                 {{ user.isComplete ? 'Done' : 'Pending' }}
               </span>
             </div>
             
-            <div class="small text-muted mb-2">
-              <div><i class="bi bi-envelope me-2"></i>{{ user.email }}</div>
-              <div><i class="bi bi-geo-alt me-2"></i>{{ user.town_name }}, {{ user.state_name }}</div>
+            <div class="mobile-user-details small text-muted">
+              <div class="mobile-detail-line">
+                <i class="bi bi-geo-alt me-2"></i>
+                <span class="detail-text">{{ user.town_name || 'N/A' }}, {{ user.state_name || 'N/A' }}</span>
+              </div>
+              <div class="mobile-detail-line">
+                <i class="bi bi-patch-check me-2"></i>
+                <span class="badge-modern mobile-verification-badge" :class="verificationBadgeClass(user.user_verification_status)">
+                  {{ verificationLabel(user.user_verification_status) }}
+                </span>
+              </div>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+            <div class="mobile-user-meta">
               <span class="small text-muted">ID: #{{ user.id }}</span>
-              <div class="d-flex gap-2">
+              <span class="small text-muted">Joined: {{ user.created_at }}</span>
+            </div>
+
+            <div class="mobile-user-actions">
+              <div class="d-flex flex-wrap gap-2">
                 <button class="btn-mobile-icon view" @click="openUserModal(user)"><i class="bi bi-eye"></i></button>
                 <button
                   v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
@@ -260,7 +275,7 @@
               </div>
             </div>
             <div class="col-12" v-if="selectedUserDetails.user_verification_status === 'pending'">
-              <div class="d-flex flex-wrap gap-2">
+              <div class="user-modal-actions d-flex flex-wrap gap-2">
                 <button class="btn btn-success btn-sm rounded-pill px-3" @click="openVerifyUserModal(selectedUserDetails)">
                   Approve Verification
                 </button>
@@ -533,8 +548,73 @@ export default {
 .btn-action:hover { transform: translateY(-1px); }
 
 /* Mobile Card Styling */
-.mobile-user-card { background: white; border-color: #eee !important; }
+.mobile-list-shell {
+  padding-inline: 0.25rem;
+}
+
+.mobile-user-card {
+  background: white;
+  border-color: #e8edf5 !important;
+  border-radius: 16px !important;
+}
+
 .user-img-sm { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+.mobile-user-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.mobile-user-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.mobile-user-copy {
+  min-width: 0;
+}
+
+.user-email,
+.detail-text {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.mobile-profile-badge {
+  align-self: flex-start;
+}
+
+.mobile-user-details {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+
+.mobile-detail-line {
+  display: flex;
+  align-items: flex-start;
+}
+
+.mobile-verification-badge {
+  display: inline-flex;
+  align-items: center;
+}
+
+.mobile-user-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eef2f7;
+}
+
+.mobile-user-actions {
+  margin-top: 0.85rem;
+}
 
 .btn-mobile-icon {
   width: 36px;
@@ -567,6 +647,10 @@ export default {
   overflow-y: auto;
 }
 
+.modal-body-custom .border.rounded {
+  overflow-wrap: anywhere;
+}
+
 .user-img-lg {
   width: 64px;
   height: 64px;
@@ -574,5 +658,55 @@ export default {
   object-fit: cover;
   border: 2px solid #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+@media (max-width: 991.98px) {
+  .page-top {
+    margin-bottom: 1rem !important;
+  }
+
+  .refresh-btn {
+    width: 100%;
+  }
+
+  .filter-shell .card-body {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .admin-view-container {
+    padding-inline: 0.75rem !important;
+  }
+
+  .mobile-list-shell {
+    padding: 0.75rem !important;
+  }
+
+  .mobile-user-card {
+    padding: 1rem !important;
+  }
+
+  .btn-mobile-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .modal-body-custom {
+    width: calc(100% - 1rem);
+    max-width: none;
+    max-height: calc(100vh - 1rem);
+    margin: 0.5rem;
+    padding: 1rem !important;
+    border-radius: 18px !important;
+  }
+
+  .user-modal-actions {
+    flex-direction: column;
+  }
+
+  .user-modal-actions .btn {
+    width: 100%;
+  }
 }
 </style>

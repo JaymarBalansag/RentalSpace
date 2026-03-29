@@ -18,7 +18,7 @@
                 <div class="col-md-7 border-end">
                   <div v-if="!isProcessingPayment" class="animate-fade-in">
                     <h5 class="fw-bold mb-3 text-primary">Owner Verification</h5>
-                    <p class="text-muted small mb-4">Please provide your details to verify your account and receive payments.</p>
+                    <p class="text-muted small mb-4">Review your details and generate a QR payment to continue your owner subscription.</p>
 
                     <div class="row g-3">
                       <div class="col-md-6">
@@ -29,26 +29,6 @@
                         <label class="form-label fw-semibold">Email</label>
                         <input v-model="email" type="text" class="form-control bg-light" readonly>
                       </div>
-                      <div class="col-12 d-flex gap-3 border-top pt-2">
-                        <div class="form-check">
-                          <input class="form-check-input" v-model="paymentType" value="gcash" type="radio" name="radioDefault" id="radioDefault1" checked>
-                          <label class="form-check-label" for="radioDefault1">GCash</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" v-model="paymentType" value="paymaya" type="radio" name="radioDefault" id="radioDefault2">
-                          <label class="form-check-label" for="radioDefault2">PayMaya</label>
-                        </div>
-                      </div>
-
-                      <div class="col-12 border-bottom pb-2">
-                        <label class="form-label fw-semibold">Contact Number (GCash/Maya)</label>
-                        <div class="input-group">
-                          <span class="input-group-text bg-white"><i class="bi bi-phone"></i></span>
-                          <input v-model="phoneNumber" type="tel" class="form-control" placeholder="09XXXXXXXXX" inputmode="numeric">
-                        </div>
-                        <small class="text-muted">Required for receiving payments from tenants.</small>
-                      </div>
-
                       <div class="col-12">
                         <div class="alert alert-warning border-warning-subtle mb-0 small">
                           <strong>Compliance reminder:</strong>
@@ -158,10 +138,14 @@
 
 <script>
 import api from '@/api/api';
+import { cancelPendingSubscription, getSubscriptionStatus } from '@/api/subscription';
 import Header from '@/components/Header.vue';
 import ConfirmModal from '@/components/confirmModal.vue';
 import { useUserInfo } from '@/store/userInfo';
 import { downloadQrImage } from '@/utils/qrDownload';
+import Swal from 'sweetalert2';
+
+const OWNER_PAYMENT_SESSION_KEY = "ownerPendingPaymentSession";
 
 export default {
   name: "PaymentCheckout",
@@ -197,10 +181,10 @@ export default {
       qrCodeUrl: null,
       subscriptionId: null,
       checkStatusInterval: null,
+      bypassLeaveGuard: false,
+      isHandlingRouteLeave: false,
       name: "",
       email: "",
-      paymentType: "gcash",
-      phoneNumber: "",
       permitAcknowledged: false,
       isRenewal: this.$route.query.renewal === '1',
       selectedPlan: this.$route.query.plan || 'monthly',
@@ -217,6 +201,7 @@ export default {
       return;
     }
     this.getUserInfo();
+    this.restorePendingSession();
   },
   methods: {
     getUserInfo() {
@@ -226,11 +211,134 @@ export default {
         this.email = userInfo.email;
       }
     },
-    validatedPayment() {
-      const phPhoneRegex = /^09\d{9}$/;
-      if (!phPhoneRegex.test(this.phoneNumber)) {
-        return alert("Please enter a valid 09XXXXXXXXX phone number.");
+    resetPendingOwnerState() {
+      const info = useUserInfo();
+      info.setOwnerVerificationStatus(null, null);
+      info.clearSubscriptionStatus();
+    },
+    clearPendingCheckoutState() {
+      clearInterval(this.checkStatusInterval);
+      this.checkStatusInterval = null;
+      this.isProcessingPayment = false;
+      this.qrCodeUrl = null;
+      this.subscriptionId = null;
+      this.clearPendingSession();
+
+      if (!this.isRenewal) {
+        this.resetPendingOwnerState();
       }
+    },
+    persistPendingSession() {
+      if (this.isRenewal || !this.subscriptionId || !this.qrCodeUrl) return;
+      sessionStorage.setItem(OWNER_PAYMENT_SESSION_KEY, JSON.stringify({
+        flow: "initial_owner_activation",
+        subscriptionId: this.subscriptionId,
+        selectedPlan: this.selectedPlan,
+        qrCodeUrl: this.qrCodeUrl,
+      }));
+    },
+    clearPendingSession() {
+      sessionStorage.removeItem(OWNER_PAYMENT_SESSION_KEY);
+    },
+    async restorePendingSession() {
+      if (this.isRenewal) return;
+
+      const raw = sessionStorage.getItem(OWNER_PAYMENT_SESSION_KEY);
+      if (!raw) return;
+
+      let session = null;
+      try {
+        session = JSON.parse(raw);
+      } catch (error) {
+        this.clearPendingSession();
+        return;
+      }
+
+      if (!session?.subscriptionId || session?.flow !== "initial_owner_activation") {
+        this.clearPendingSession();
+        return;
+      }
+
+      this.subscriptionId = session.subscriptionId;
+      this.selectedPlan = session.selectedPlan || this.selectedPlan;
+      this.planPrice = this.selectedPlan === 'annual' ? 1800 : 200;
+      this.planBilling = this.selectedPlan === 'annual' ? 'per year' : 'per month';
+      this.qrCodeUrl = session.qrCodeUrl || null;
+      this.isProcessingPayment = true;
+
+      try {
+        const res = await getSubscriptionStatus(this.subscriptionId);
+        const status = String(res?.status || '').toLowerCase();
+
+        if (status === 'pending') {
+          this.startPolling();
+          return;
+        }
+
+        if (status === 'active') {
+          this.clearPendingSession();
+          this.bypassLeaveGuard = true;
+          this.$router.push('/payment/success');
+          return;
+        }
+
+        if (['failed', 'expired', 'cancelled'].includes(status)) {
+          this.finishCancelledAttempt(status, this.getTerminalStatusMessage(status));
+          return;
+        }
+
+        this.clearPendingSession();
+        this.isProcessingPayment = false;
+        this.subscriptionId = null;
+        this.qrCodeUrl = null;
+      } catch (error) {
+        console.error("Failed to restore pending payment session...", error);
+        this.isProcessingPayment = false;
+      }
+    },
+    getTerminalStatusMessage(status) {
+      if (status === 'failed') {
+        return "Payment failed. You can try again when you're ready.";
+      }
+      if (status === 'expired') {
+        return "Payment QR expired. Your pending owner application has been cleared.";
+      }
+      if (status === 'cancelled') {
+        return "Payment cancelled. Your pending owner application has been cleared.";
+      }
+      return `Payment ${status}.`;
+    },
+    shouldGuardPendingLeave() {
+      return !this.isRenewal && this.isProcessingPayment && !!this.subscriptionId;
+    },
+    async resolvePendingLeaveChoice() {
+      const result = await Swal.fire({
+        title: 'Leave this payment?',
+        text: 'Your QR payment is still pending. You can keep it open and resume later, or cancel it now.',
+        icon: 'question',
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonText: 'Cancel Payment',
+        denyButtonText: 'Keep Payment Open',
+        cancelButtonText: 'Stay Here',
+        reverseButtons: true,
+        allowOutsideClick: false,
+      });
+
+      if (result.isDenied) return 'keep';
+      if (result.isConfirmed) return 'cancel';
+      return 'stay';
+    },
+    handleCancelledFlow(message) {
+      this.clearPendingCheckoutState();
+      this.bypassLeaveGuard = true;
+      alert(message);
+      this.$router.push(this.isRenewal ? '/subscription' : '/payment/wall');
+    },
+    finishCancelledAttempt(status, message) {
+      this.handleCancelledFlow(message || `Payment ${status}.`);
+    },
+    validatedPayment() {
       if (!this.permitAcknowledged) {
         return alert("Please acknowledge the compliance reminder before continuing.");
       }
@@ -246,8 +354,6 @@ export default {
         const backendPlan = this.selectedPlan === 'annual' ? 'Annual' : 'Monthly';
         fd.append('plan', backendPlan);
         fd.append('amount', this.planPrice);
-        fd.append('paymentType', this.paymentType);
-        fd.append('phone', this.phoneNumber);
         fd.append('permit_acknowledged', this.permitAcknowledged ? '1' : '0');
 
         const endpoint = this.isRenewal ? "/paymongo/renew-payment" : "/paymongo/create-payment";
@@ -255,6 +361,7 @@ export default {
 
         this.qrCodeUrl = response.data.qr_code;
         this.subscriptionId = response.data.subscription_id;
+        this.persistPendingSession();
 
         const info = useUserInfo();
         info.setOwnerVerificationStatus("pending", null);
@@ -268,20 +375,44 @@ export default {
     startPolling() {
       this.checkStatusInterval = setInterval(async () => {
         try {
-          const res = await api.get(`/subscription-status/${this.subscriptionId}`);
-          if (res.data.status === 'active') {
+          const res = await getSubscriptionStatus(this.subscriptionId);
+          const status = String(res?.status || '').toLowerCase();
+
+          if (status === 'active') {
             clearInterval(this.checkStatusInterval);
+            this.checkStatusInterval = null;
+            this.clearPendingSession();
+            this.bypassLeaveGuard = true;
             this.$router.push('/payment/success');
+            return;
+          }
+
+          if (['failed', 'expired', 'cancelled'].includes(status)) {
+            this.finishCancelledAttempt(status, this.getTerminalStatusMessage(status));
+            return;
           }
         } catch (e) {
           console.error("Polling status failed...");
         }
       }, 3000);
     },
-    cancelPayment() {
+    async cancelPayment() {
+      if (this.subscriptionId) {
+        try {
+          await cancelPendingSubscription(this.subscriptionId);
+        } catch (error) {
+          const message = error?.response?.data?.message || "Unable to cancel this payment right now.";
+          alert(message);
+          return;
+        }
+      }
+
       clearInterval(this.checkStatusInterval);
-      this.isProcessingPayment = false;
-      this.qrCodeUrl = null;
+      this.handleCancelledFlow(
+        this.isRenewal
+          ? "Payment cancelled. Your renewal attempt was closed."
+          : "Payment cancelled. Your pending owner application has been cleared."
+      );
     },
     async downloadQr() {
       try {
@@ -291,14 +422,49 @@ export default {
       }
     }
   },
-  watch: {
-    phoneNumber(val) {
-      if (!val) return;
-      let cleaned = val.replace(/\D/g, '');
-      if (cleaned.length > 0 && !cleaned.startsWith('09')) {
-        cleaned = cleaned.startsWith('9') ? '0' + cleaned : '09';
+  async beforeRouteLeave(to, from, next) {
+    if (!this.shouldGuardPendingLeave() || this.bypassLeaveGuard) {
+      next();
+      return;
+    }
+
+    if (this.isHandlingRouteLeave) {
+      next(false);
+      return;
+    }
+
+    this.isHandlingRouteLeave = true;
+
+    try {
+      const choice = await this.resolvePendingLeaveChoice();
+
+      if (choice === 'keep') {
+        next();
+        return;
       }
-      this.phoneNumber = cleaned.substring(0, 11);
+
+      if (choice === 'cancel') {
+        try {
+          await cancelPendingSubscription(this.subscriptionId);
+          this.clearPendingCheckoutState();
+          this.bypassLeaveGuard = true;
+          next();
+        } catch (error) {
+          const message = error?.response?.data?.message || "Unable to cancel this payment right now.";
+          await Swal.fire({
+            icon: 'error',
+            title: 'Cancellation failed',
+            text: message,
+            confirmButtonText: 'Okay',
+          });
+          next(false);
+        }
+        return;
+      }
+
+      next(false);
+    } finally {
+      this.isHandlingRouteLeave = false;
     }
   },
   beforeUnmount() {

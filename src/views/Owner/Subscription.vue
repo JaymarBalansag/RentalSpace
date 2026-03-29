@@ -132,12 +132,17 @@
           <div class="card-body p-4">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
               <div>
-                <h6 class="fw-bold mb-1">Upgrade Options</h6>
-                <p class="text-muted small mb-0">Compare plans tailored for growing portfolios.</p>
+                <h6 class="fw-bold mb-1">Plan Options</h6>
+                <p class="text-muted small mb-0">Switch plans near expiry or after your current term ends.</p>
               </div>
-              <button class="btn btn-outline-secondary fw-semibold" disabled>
-                Coming Soon
-              </button>
+              <span class="small fw-semibold" :class="canChangePlan ? 'text-success' : 'text-muted'">
+                {{ canChangePlan ? "Plan change available now" : planChangeMessage }}
+              </span>
+            </div>
+
+            <div class="plan-window-note mb-3" :class="canChangePlan ? 'plan-window-note--ready' : ''">
+              <i class="bi" :class="canChangePlan ? 'bi-unlock-fill' : 'bi-lock-fill'"></i>
+              <span>{{ planChangeMessage }}</span>
             </div>
 
             <div class="row g-3">
@@ -161,7 +166,16 @@
                       <span>{{ feature }}</span>
                     </li>
                   </ul>
-                  <button class="btn w-100 fw-semibold mt-3" :class="planButtonClass(plan)" disabled>
+                  <div v-if="showDowngradeWarning(plan)" class="plan-warning mt-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Changing to Monthly will hide annual-only management pages and stop new bookings on your listings.</span>
+                  </div>
+                  <button
+                    class="btn w-100 fw-semibold mt-3"
+                    :class="planButtonClass(plan)"
+                    :disabled="isPlanButtonDisabled(plan)"
+                    @click="goToPlanChange(plan)"
+                  >
                     {{ planButtonLabel(plan) }}
                   </button>
                 </div>
@@ -349,6 +363,23 @@ export default {
     currentCycle() {
       return String(this.subscription?.billing_cycle || "").toLowerCase();
     },
+    canChangePlan() {
+      if (!this.hasSubscription) return false;
+      if (typeof this.subscription?.can_change_plan === "boolean") {
+        return this.subscription.can_change_plan;
+      }
+      const status = String(this.subscription?.status || "").toLowerCase();
+      const days = Number(this.subscription?.days_left);
+      if (status === "expired") return true;
+      return status === "active" && Number.isFinite(days) && days <= 7;
+    },
+    planChangeMessage() {
+      if (!this.hasSubscription) return "Choose a plan after your first subscription is active.";
+      if (this.subscription?.plan_change_message) return this.subscription.plan_change_message;
+      return this.canChangePlan
+        ? "You can change your plan now."
+        : "Plan changes become available in the last 7 days of your subscription or after expiry.";
+    },
     addonUnitPrice() {
       return this.currentCycle === "annual" ? 450 : 50;
     },
@@ -395,10 +426,20 @@ export default {
       return String(plan.cycle || "").toLowerCase() === this.currentCycle;
     },
     planButtonLabel(plan) {
-      return this.isCurrentPlan(plan) ? "Current Plan" : "Change to this plan";
+      if (this.isCurrentPlan(plan)) return "Current Plan";
+      if (this.currentCycle === "monthly" && plan.cycle === "annual") return "Upgrade to Annual";
+      if (this.currentCycle === "annual" && plan.cycle === "monthly") return "Change to Monthly";
+      return "Change to this plan";
     },
     planButtonClass(plan) {
       return this.isCurrentPlan(plan) ? "btn-primary" : "btn-light border";
+    },
+    isPlanButtonDisabled(plan) {
+      if (this.isCurrentPlan(plan)) return true;
+      return !this.canChangePlan;
+    },
+    showDowngradeWarning(plan) {
+      return this.currentCycle === "annual" && String(plan?.cycle || "").toLowerCase() === "monthly";
     },
     async refreshSubscription() {
       try {
@@ -424,6 +465,10 @@ export default {
     goToRenew() {
       const cycle = this.currentCycle === "annual" ? "annual" : "monthly";
       this.$router.push({ path: "/subscription/renew", query: { plan: cycle } });
+    },
+    goToPlanChange(plan) {
+      if (this.isPlanButtonDisabled(plan)) return;
+      this.$router.push({ path: "/subscription/change", query: { plan: String(plan.cycle || "").toLowerCase() } });
     },
     formatAmount(amount) {
       if (amount === null || amount === undefined || amount === "") return "—";
@@ -665,6 +710,40 @@ export default {
 }
 .plan-features i {
   color: #22c55e;
+}
+.plan-window-note {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(148, 163, 184, 0.09);
+  color: #475569;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.plan-window-note i {
+  color: #64748b;
+}
+.plan-window-note--ready {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.18);
+  color: #166534;
+}
+.plan-window-note--ready i {
+  color: #16a34a;
+}
+.plan-warning {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  padding: 0.85rem 0.95rem;
+  border-radius: 14px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.18);
+  color: #9a3412;
+  font-size: 0.86rem;
 }
 
 @media (max-width: 768px) {

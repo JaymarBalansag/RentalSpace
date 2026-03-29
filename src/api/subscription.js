@@ -10,6 +10,11 @@ export async function getSubscriptionStatus(subscriptionId) {
   return response.data || null;
 }
 
+export async function cancelPendingSubscription(subscriptionId) {
+  const response = await api.post(`/subscriptions/${subscriptionId}/cancel-pending`);
+  return response.data || null;
+}
+
 export async function getOwnerSubscriptionHistory() {
   const response = await api.get("/owner/subscription-history");
   return response.data || null;
@@ -22,5 +27,10 @@ export async function createListingAddonIntent(qty) {
 
 export async function getListingAddonStatus(addonId) {
   const response = await api.get(`/owner/listing-addon/status/${addonId}`);
+  return response.data || null;
+}
+
+export async function createPlanChangeIntent(payload) {
+  const response = await api.post("/paymongo/plan-change-payment", payload);
   return response.data || null;
 }

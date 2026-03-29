@@ -145,23 +145,23 @@
         </table>
       </div>
 
-      <div v-if="!isListLoading" class="d-lg-none p-3">
+      <div v-if="!isListLoading" class="d-lg-none p-3 mobile-list-shell">
         <div v-if="bookings.length === 0" class="text-center py-5 text-muted">
           No bookings matched your filters.
         </div>
         <article v-for="booking in bookings" :key="booking.id" class="mobile-card mb-3">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <div>
-              <h6 class="fw-bold mb-0">{{ booking.property_title }}</h6>
-              <small class="text-muted">#{{ booking.id }} • {{ booking.tenant_name }}</small>
+          <div class="mobile-card-top">
+            <div class="mobile-card-heading">
+              <h6 class="fw-bold mb-1">{{ booking.property_title }}</h6>
+              <small class="text-muted d-block booking-meta-line">#{{ booking.id }} - {{ booking.tenant_name }}</small>
             </div>
-            <span class="status-pill" :class="booking.status">{{ booking.status }}</span>
+            <span class="status-pill mobile-status-pill" :class="booking.status">{{ booking.status }}</span>
           </div>
-          <div class="small text-muted">
-            <div><i class="bi bi-person me-2"></i>{{ booking.owner_name }}</div>
-            <div><i class="bi bi-calendar-event me-2"></i>{{ booking.move_in_date || "-" }}</div>
+          <div class="small text-muted mobile-card-details">
+            <div class="mobile-detail-line"><i class="bi bi-person me-2"></i><span>{{ booking.owner_name }}</span></div>
+            <div class="mobile-detail-line"><i class="bi bi-calendar-event me-2"></i><span>{{ booking.move_in_date || "-" }}</span></div>
           </div>
-          <div class="d-flex gap-2 mt-3 pt-2 border-top">
+          <div class="mobile-card-actions">
             <button class="mobile-action info" @click="openDetails(booking.id)">
               <i class="bi bi-eye"></i>
             </button>
@@ -269,6 +269,7 @@ import {
   getAdminBookingDetails,
   getAdminBookings,
 } from "@/api/Admin/AdminBooking/AdminBooking";
+import Swal from "sweetalert2";
 
 export default {
   name: "AdminBookings",
@@ -309,6 +310,12 @@ export default {
     },
   },
   methods: {
+    showAlert(options) {
+      return Swal.fire({
+        confirmButtonText: "Okay",
+        ...options,
+      });
+    },
     async loadBookings() {
       this.isListLoading = true;
       this.listError = "";
@@ -383,7 +390,11 @@ export default {
       this.isActionLoading = false;
 
       if (!res || res.status < 200 || res.status >= 300) {
-        alert(res?.data?.message || "Failed to force-cancel booking.");
+        await this.showAlert({
+          icon: "error",
+          title: "Force Cancel Failed",
+          text: res?.data?.message || "Failed to force-cancel booking.",
+        });
         return;
       }
 
@@ -537,9 +548,54 @@ export default {
 
 .mobile-card {
   border: 1px solid #e9eef6;
-  border-radius: 12px;
-  padding: 0.8rem;
+  border-radius: 16px;
+  padding: 1rem;
   background: #fff;
+}
+
+.mobile-list-shell {
+  padding-inline: 0.35rem;
+}
+
+.mobile-card-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.mobile-card-heading {
+  min-width: 0;
+}
+
+.booking-meta-line {
+  overflow-wrap: anywhere;
+}
+
+.mobile-status-pill {
+  align-self: flex-start;
+}
+
+.mobile-card-details {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+}
+
+.mobile-detail-line {
+  display: flex;
+  align-items: flex-start;
+}
+
+.mobile-detail-line span {
+  overflow-wrap: anywhere;
+}
+
+.mobile-card-actions {
+  display: flex;
+  gap: 0.65rem;
+  margin-top: 0.95rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #eef2f8;
 }
 
 .mobile-action {
@@ -569,6 +625,10 @@ export default {
   overflow-y: auto;
 }
 
+.modal-body-custom .detail-card {
+  overflow-wrap: anywhere;
+}
+
 .detail-card {
   border: 1px solid #e8edf5;
   border-radius: 12px;
@@ -595,8 +655,58 @@ export default {
 }
 
 @media (max-width: 991px) {
+  .hero-panel {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.95rem 1rem;
+  }
+
+  .btn-refresh {
+    width: 100%;
+  }
+
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters-panel .row > div:last-child {
+    margin-top: 0.25rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .admin-bookings-page {
+    padding-inline: 0.75rem !important;
+  }
+
+  .summary-grid {
+    gap: 0.6rem;
+  }
+
+  .summary-card {
+    padding: 0.75rem 0.85rem;
+  }
+
+  .filters-panel {
+    padding: 0.9rem;
+  }
+
+  .mobile-list-shell {
+    padding: 0.75rem !important;
+  }
+
+  .mobile-action {
+    width: 42px;
+    height: 42px;
+  }
+
+  .modal-body-custom {
+    width: calc(100% - 1rem);
+    max-width: none;
+    max-height: calc(100vh - 1rem);
+    margin: 0.5rem;
+    padding: 1rem !important;
+    border-radius: 18px !important;
   }
 }
 </style>

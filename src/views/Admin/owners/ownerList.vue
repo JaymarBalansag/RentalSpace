@@ -1,16 +1,16 @@
 <template>
   <div class="admin-view-container p-3 p-md-4">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div class="page-top d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
       <div>
         <h3 class="fw-bold text-dark mb-1">Owner Verification</h3>
         <p class="text-muted small mb-0">Review owner documents and approve or reject verification.</p>
       </div>
-      <button class="btn btn-outline-secondary px-4 shadow-sm" @click="fetchOwners">
+      <button class="btn btn-outline-secondary px-4 shadow-sm refresh-btn" @click="fetchOwners">
         <i class="bi bi-arrow-repeat me-2"></i>Refresh
       </button>
     </div>
 
-    <div class="card shadow-sm border-0 mb-4 p-2">
+    <div class="card shadow-sm border-0 mb-4 p-2 filter-shell">
       <div class="card-body">
         <div class="row g-3">
           <div class="col-md-6 col-lg-7">
@@ -122,23 +122,26 @@
         </table>
       </div>
 
-      <div class="d-lg-none p-3">
+      <div class="d-lg-none p-3 mobile-list-shell">
         <div v-if="filteredOwners.length > 0">
           <div v-for="owner in filteredOwners" :key="owner.id" class="mobile-owner-card mb-3 p-3 border rounded shadow-sm">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <div class="d-flex align-items-center">
+            <div class="mobile-owner-top">
+              <div class="mobile-owner-identity">
                 <div class="avatar-circle me-2">{{ initials(owner) }}</div>
-                <div>
-                  <h6 class="fw-bold mb-0">{{ owner.first_name }} {{ owner.last_name }}</h6>
-                  <small class="text-muted">{{ owner.email }}</small>
+                <div class="mobile-owner-copy">
+                  <h6 class="fw-bold mb-1">{{ owner.first_name }} {{ owner.last_name }}</h6>
+                  <small class="text-muted owner-email">{{ owner.email }}</small>
                 </div>
               </div>
-              <span class="badge-modern" :class="normalizeVerificationStatus(owner)">{{ verificationLabel(owner) }}</span>
+              <span class="badge-modern mobile-status-badge" :class="normalizeVerificationStatus(owner)">{{ verificationLabel(owner) }}</span>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+            <div class="mobile-owner-meta">
               <small class="text-muted">Joined: {{ owner.created_at }}</small>
-              <div class="d-flex gap-2">
+            </div>
+
+            <div class="mobile-owner-actions">
+              <div class="d-flex flex-wrap gap-2">
                 <button class="btn-mobile-icon view" @click="openOwnerModal(owner)"><i class="bi bi-eye"></i></button>
                 <button
                   class="btn-mobile-icon notify"
@@ -230,7 +233,7 @@
           </div>
         </div>
 
-        <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
+        <div class="owner-modal-actions d-flex flex-wrap justify-content-end gap-2 mt-4">
           <button
             class="btn btn-outline-primary"
             :disabled="isActionLoading"
@@ -588,7 +591,52 @@ export default {
 .btn-action.reject { background: #fff5f5; color: #fa5252; }
 .btn-action:hover { transform: translateY(-2px); filter: brightness(0.95); }
 
-.mobile-owner-card { background: white; }
+.mobile-list-shell {
+  padding-inline: 0.25rem;
+}
+
+.mobile-owner-card {
+  background: white;
+  border-color: #e8edf5 !important;
+  border-radius: 16px !important;
+}
+
+.mobile-owner-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.mobile-owner-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.mobile-owner-copy {
+  min-width: 0;
+}
+
+.owner-email {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.mobile-status-badge {
+  align-self: flex-start;
+}
+
+.mobile-owner-meta {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eef2f7;
+}
+
+.mobile-owner-actions {
+  margin-top: 0.85rem;
+}
+
 .btn-mobile-icon {
   width: 38px;
   height: 38px;
@@ -648,5 +696,60 @@ export default {
 
 .id-preview-frame {
   height: min(70vh, 680px);
+}
+
+.info-card {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 991.98px) {
+  .page-top {
+    margin-bottom: 1rem !important;
+  }
+
+  .refresh-btn {
+    width: 100%;
+  }
+
+  .filter-shell {
+    padding: 0.35rem !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .admin-view-container {
+    padding-inline: 0.75rem !important;
+  }
+
+  .mobile-list-shell {
+    padding: 0.75rem !important;
+  }
+
+  .mobile-owner-card {
+    padding: 1rem !important;
+  }
+
+  .btn-mobile-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .modal-body-custom {
+    width: calc(100% - 1rem);
+    max-width: none;
+    max-height: calc(100vh - 1rem);
+    margin: 0.5rem;
+    padding: 1rem !important;
+    border-radius: 18px !important;
+  }
+
+  .owner-modal-actions {
+    flex-direction: column;
+  }
+
+  .owner-modal-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>

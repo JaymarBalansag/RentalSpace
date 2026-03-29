@@ -221,3 +221,12 @@ export async function submitPropertyReview(propertyId, payload) {
     throw error;
   }
 }
+
+export async function submitPropertyReport(propertyId, payload) {
+  try {
+    const response = await api.post(`/properties/${propertyId}/reports`, payload);
+    return response;
+  } catch (error) {
+    throw error;
+  }
+}

@@ -183,6 +183,14 @@
             >
               <i class="bi bi-chat-dots-fill me-2"></i> Message Owner
             </button>
+            <button
+              v-if="canShowReportAction"
+              class="btn btn-outline-danger rounded-pill fw-semibold py-2"
+              :disabled="reportSubmitting"
+              @click="openReportModal"
+            >
+              <i class="bi bi-flag-fill me-2"></i> Report Property
+            </button>
           </div>
         </div>
 
@@ -452,6 +460,61 @@
       </div>
     </div>
 
+    <div v-if="showReportModal" class="modal-overlay-custom" @click.self="closeReportModal">
+      <div class="modal-body-custom rounded-4 shadow-lg p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h5 class="fw-bold mb-1">Report Property</h5>
+            <p class="text-muted small mb-0">
+              Let the admin team know what looks wrong with this listing.
+            </p>
+          </div>
+          <button class="btn-close" @click="closeReportModal"></button>
+        </div>
+
+        <form @submit.prevent="submitReport">
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Reason</label>
+            <select v-model="reportForm.reason" class="form-select rounded-3" required>
+              <option value="" disabled>Select a reason</option>
+              <option v-for="option in reportReasons" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Details <span class="text-muted fw-normal">(Optional)</span></label>
+            <textarea
+              v-model="reportForm.details"
+              rows="4"
+              maxlength="1000"
+              class="form-control rounded-3"
+              placeholder="Share details the admin should review."
+            ></textarea>
+            <div class="d-flex justify-content-end mt-1">
+              <small class="text-muted">{{ reportForm.details.length }}/1000</small>
+            </div>
+          </div>
+
+          <div class="report-note mb-4">
+            <i class="bi bi-shield-check"></i>
+            <span>This report is reviewed by admin first. It does not automatically remove the listing.</span>
+          </div>
+
+          <div class="d-flex flex-column flex-sm-row gap-2">
+            <button type="button" class="btn btn-light border rounded-pill flex-fill" :disabled="reportSubmitting" @click="closeReportModal">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-danger rounded-pill flex-fill" :disabled="reportSubmitting || !reportForm.reason">
+              <span v-if="reportSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+              Submit Report
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <confirmModal
       :show="showConfirmModal"
       title="Confirm Booking"
@@ -471,7 +534,7 @@
 
 <script>
 // Logic remains identical to your script but integrated into the cleaned template
-import { getPropertyById, getPropertyByType, recordView, getPropertyReviews, submitPropertyReview } from "@/api/property";
+import { getPropertyById, getPropertyByType, recordView, getPropertyReviews, submitPropertyReview, submitPropertyReport } from "@/api/property";
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
 import { submitAgreement } from "@/api/Owner/bookings.js";
 import { initiateConversation } from "@/api/messages";
@@ -509,6 +572,7 @@ export default {
         total_reviews: 0,
       },
       showReviewsModal: false,
+      showReportModal: false,
       modalReviews: [],
       modalReviewsLoading: false,
       modalReviewsError: "",
@@ -525,6 +589,20 @@ export default {
         rating: 0,
         comment: "",
       },
+      reportSubmitting: false,
+      reportForm: {
+        reason: "",
+        details: "",
+      },
+      reportReasons: [
+        { value: "misleading_information", label: "Misleading information" },
+        { value: "fake_or_scam_listing", label: "Fake or scam listing" },
+        { value: "incorrect_price_or_details", label: "Incorrect price or details" },
+        { value: "inappropriate_photos_or_content", label: "Inappropriate photos or content" },
+        { value: "unavailable_but_still_advertised", label: "Unavailable but still advertised" },
+        { value: "safety_concern", label: "Safety concern" },
+        { value: "other", label: "Other" },
+      ],
       userCoords: {
         lat: null,
         lng: null,
@@ -1075,6 +1153,71 @@ export default {
         });
       } catch (error) { console.error(error); }
     },
+    openReportModal() {
+      const info = useUserInfo();
+      if (!info.isLoggedIn) {
+        this.$router.push("/login");
+        return;
+      }
+
+      if (this.isOwner === "owner" || this.isOwner === "admin") {
+        Swal.fire({
+          icon: "info",
+          title: "Reporting unavailable",
+          text: "Only renter-side users can report properties from this page.",
+        });
+        return;
+      }
+
+      if (this.isViewingOwnProperty) {
+        Swal.fire({
+          icon: "info",
+          title: "This is your property",
+          text: "You cannot submit a report for your own listing.",
+        });
+        return;
+      }
+
+      this.showReportModal = true;
+    },
+    closeReportModal() {
+      this.showReportModal = false;
+      this.reportForm = {
+        reason: "",
+        details: "",
+      };
+    },
+    async submitReport() {
+      if (!this.property?.id || !this.reportForm.reason || this.reportSubmitting) return;
+
+      this.reportSubmitting = true;
+      try {
+        const response = await submitPropertyReport(this.property.id, {
+          reason: this.reportForm.reason,
+          details: this.reportForm.details?.trim() || "",
+        });
+
+        this.reportSubmitting = false;
+        this.closeReportModal();
+
+        await Swal.fire({
+          icon: "success",
+          title: "Report submitted",
+          text: response?.data?.message || "Thanks. Our admin team will review this report.",
+        });
+      } catch (error) {
+        this.reportSubmitting = false;
+        this.closeReportModal();
+
+        await Swal.fire({
+          icon: "error",
+          title: "Unable to submit report",
+          text: error?.response?.data?.message || "Something went wrong while sending your report.",
+        });
+      } finally {
+        this.reportSubmitting = false;
+      }
+    },
     async getAuthId() {
       try {
         const response = await getAuthUserId();
@@ -1246,6 +1389,15 @@ export default {
     canViewAllReviews() {
       return Number(this.reviewSummary?.total_reviews || 0) > 3;
     },
+    isViewingOwnProperty() {
+      return Boolean(this.authId && this.property?.owner_id && Number(this.authId) === Number(this.property.owner_id));
+    },
+    canShowReportAction() {
+      if (!this.property) return false;
+      if (this.isOwner === "owner" || this.isOwner === "admin") return false;
+      if (this.isViewingOwnProperty) return false;
+      return true;
+    },
     modalStarPills() {
       const counts = this.modalCounts || {};
       return [5, 4, 3, 2, 1].map((stars) => ({
@@ -1342,6 +1494,23 @@ export default {
   border-color: #2563eb;
   color: #fff;
   box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+}
+
+.report-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 0.92rem;
+}
+
+.report-note i {
+  font-size: 1rem;
+  margin-top: 0.1rem;
 }
 
 .booking-overlay {

@@ -49,11 +49,9 @@
         <div class="col-sm-6 col-lg-2">
           <label class="form-label small fw-semibold">Status</label>
           <select v-model="filters.status" class="form-select">
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="under_review">Under Review</option>
-            <option value="resolved">Resolved</option>
-            <option value="dismissed">Dismissed</option>
+            <option v-for="statusOption in statusOptions" :key="statusOption.value" :value="statusOption.value">
+              {{ statusOption.label }}
+            </option>
           </select>
         </div>
         <div class="col-sm-6 col-lg-2">
@@ -285,6 +283,15 @@ export default {
         { value: "safety_concern", label: "Safety concern" },
         { value: "other", label: "Other" },
       ],
+      statusOptions: [
+        { value: "all", label: "All" },
+        { value: "pending", label: "Pending" },
+        { value: "under_review", label: "Under Review" },
+        { value: "resolved", label: "Resolved" },
+        { value: "dismissed", label: "Dismissed" },
+      ],
+      suppressStatusAutoApply: false,
+      suppressReasonAutoApply: false,
     };
   },
   computed: {
@@ -317,14 +324,36 @@ export default {
       if (!value) return "-";
       return String(value).replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
     },
+    normalizeStatusFilter(value) {
+      const normalized = String(value || "all").trim().toLowerCase();
+      const allowed = this.statusOptions.map((option) => option.value);
+      return allowed.includes(normalized) ? normalized : "all";
+    },
+    normalizeReasonFilter(value) {
+      const normalized = String(value || "all").trim().toLowerCase();
+      const allowed = ["all", ...this.reasonOptions.map((option) => option.value)];
+      return allowed.includes(normalized) ? normalized : "all";
+    },
     async loadReports() {
       this.isListLoading = true;
       this.listError = "";
+      const normalizedStatus = this.normalizeStatusFilter(this.filters.status);
+      const normalizedReason = this.normalizeReasonFilter(this.filters.reason);
+
+      if (normalizedStatus !== this.filters.status) {
+        this.suppressStatusAutoApply = true;
+        this.filters.status = normalizedStatus;
+      }
+
+      if (normalizedReason !== this.filters.reason) {
+        this.suppressReasonAutoApply = true;
+        this.filters.reason = normalizedReason;
+      }
 
       const res = await getAdminPropertyReports({
         search: this.filters.search,
-        status: this.filters.status,
-        reason: this.filters.reason,
+        status: normalizedStatus,
+        reason: normalizedReason,
       });
 
       if (res && res.status >= 200 && res.status < 300) {
@@ -340,6 +369,8 @@ export default {
       this.loadReports();
     },
     resetFilters() {
+      this.suppressStatusAutoApply = true;
+      this.suppressReasonAutoApply = true;
       this.filters = {
         search: "",
         status: "all",
@@ -407,6 +438,40 @@ export default {
   },
   mounted() {
     this.loadReports();
+  },
+  watch: {
+    "filters.status"(value) {
+      const normalizedStatus = this.normalizeStatusFilter(value);
+
+      if (normalizedStatus !== value) {
+        this.suppressStatusAutoApply = true;
+        this.filters.status = normalizedStatus;
+        return;
+      }
+
+      if (this.suppressStatusAutoApply) {
+        this.suppressStatusAutoApply = false;
+        return;
+      }
+
+      this.loadReports();
+    },
+    "filters.reason"(value) {
+      const normalizedReason = this.normalizeReasonFilter(value);
+
+      if (normalizedReason !== value) {
+        this.suppressReasonAutoApply = true;
+        this.filters.reason = normalizedReason;
+        return;
+      }
+
+      if (this.suppressReasonAutoApply) {
+        this.suppressReasonAutoApply = false;
+        return;
+      }
+
+      this.loadReports();
+    },
   },
 };
 </script>

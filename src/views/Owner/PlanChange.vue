@@ -47,41 +47,19 @@
             </div>
           </div>
 
-          <div class="payment-card-simple">
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Payment Method</label>
-              <div class="d-flex flex-wrap gap-3">
-                <div class="form-check">
-                  <input class="form-check-input" v-model="paymentType" value="gcash" type="radio" name="changePaymentType" id="changePaymentType1">
-                  <label class="form-check-label" for="changePaymentType1">GCash</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" v-model="paymentType" value="paymaya" type="radio" name="changePaymentType" id="changePaymentType2">
-                  <label class="form-check-label" for="changePaymentType2">PayMaya</label>
-                </div>
-              </div>
-            </div>
-
-            <div class="row g-3 mb-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Full Name</label>
+            <div class="payment-card-simple">
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Full Name</label>
                 <input v-model="name" type="text" class="form-control bg-light" readonly>
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Email</label>
-                <input v-model="email" type="text" class="form-control bg-light" readonly>
+                  <input v-model="email" type="text" class="form-control bg-light" readonly>
+                </div>
               </div>
+              <p class="small text-muted mb-0">This checkout uses a secure QR Ph payment request generated through PayMongo.</p>
             </div>
-
-            <div>
-              <label class="form-label fw-semibold">Contact Number (GCash/Maya)</label>
-              <div class="input-group">
-                <span class="input-group-text bg-white"><i class="bi bi-phone"></i></span>
-                <input v-model="phoneNumber" type="tel" class="form-control" placeholder="09XXXXXXXXX" inputmode="numeric">
-              </div>
-              <small class="text-muted">We will use this payment channel to generate your QR payment request.</small>
-            </div>
-          </div>
 
           <div class="ack-card-simple" :class="{ 'ack-card-simple--danger': isDowngrade }">
             <h6 class="fw-bold mb-2">{{ acknowledgmentTitle }}</h6>
@@ -159,8 +137,6 @@ export default {
       checkStatusInterval: null,
       name: "",
       email: "",
-      paymentType: "gcash",
-      phoneNumber: "",
       selectedPlan: "annual",
       planPrice: 1800,
       currentSubscription: null,
@@ -258,12 +234,6 @@ export default {
       return status === "active" && Number.isFinite(days) && days <= 7;
     },
     validatedPayment() {
-      const phPhoneRegex = /^09\d{9}$/;
-      if (!phPhoneRegex.test(this.phoneNumber)) {
-        alert("Please enter a valid 09XXXXXXXXX phone number.");
-        return;
-      }
-
       if (!this.changeAcknowledged) {
         alert(`Please acknowledge the ${this.isDowngrade ? "downgrade" : "upgrade"} notice before continuing.`);
         return;
@@ -278,8 +248,6 @@ export default {
       try {
         const payload = new FormData();
         payload.append("plan", this.selectedPlan === "annual" ? "Annual" : "Monthly");
-        payload.append("paymentType", this.paymentType);
-        payload.append("phone", this.phoneNumber);
         payload.append("permit_acknowledged", "1");
         payload.append("change_acknowledged", this.changeAcknowledged ? "1" : "0");
 
@@ -369,16 +337,6 @@ export default {
       } catch (error) {
         alert(error?.message || "Unable to download the QR right now.");
       }
-    },
-  },
-  watch: {
-    phoneNumber(val) {
-      if (!val) return;
-      let cleaned = val.replace(/\D/g, "");
-      if (cleaned.length > 0 && !cleaned.startsWith("09")) {
-        cleaned = cleaned.startsWith("9") ? "0" + cleaned : "09";
-      }
-      this.phoneNumber = cleaned.substring(0, 11);
     },
   },
   beforeUnmount() {

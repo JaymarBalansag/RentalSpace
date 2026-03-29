@@ -206,8 +206,8 @@
             <div class="info-card border rounded p-3">
               <p class="fw-semibold small mb-2 text-uppercase text-muted">Owner Info</p>
               <p class="mb-1"><strong>Verification:</strong> {{ verificationLabel(selectedOwner) }}</p>
-              <p class="mb-1"><strong>Owner Phone:</strong> {{ selectedOwner.owner_phone_number || selectedOwner.phone_number || "-" }}</p>
-              <p class="mb-1"><strong>Payment Type:</strong> {{ selectedOwner.owner_payment_type || selectedOwner.paymentType || "-" }}</p>
+              <p v-if="selectedOwner.owner_phone_number || selectedOwner.phone_number" class="mb-1"><strong>Owner Phone:</strong> {{ selectedOwner.owner_phone_number || selectedOwner.phone_number }}</p>
+              <p v-if="selectedOwner.owner_payment_type || selectedOwner.paymentType" class="mb-1"><strong>Payment Type:</strong> {{ selectedOwner.owner_payment_type || selectedOwner.paymentType }}</p>
               <p class="mb-1"><strong>Owner Status:</strong> {{ selectedOwner.owner_status || selectedOwner.status || "-" }}</p>
               <p class="mb-0"><strong>Rejected Reason:</strong> {{ selectedOwner.owner_verification_rejected_reason || "-" }}</p>
             </div>

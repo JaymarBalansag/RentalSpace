@@ -29,7 +29,7 @@
           <div class="col-md-7 border-end">
             <div v-if="!isProcessingPayment" class="animate-fade-in">
               <h5 class="fw-bold mb-3 text-primary">Renewal Details</h5>
-              <p class="text-muted small mb-4">Confirm your payment channel and contact number to continue renewal.</p>
+              <p class="text-muted small mb-4">Review your renewal summary and generate a QR payment to continue.</p>
 
               <div class="row g-3">
                 <div class="col-md-6">
@@ -53,26 +53,6 @@
                       <p class="fw-bold text-primary mb-0">PHP {{ planPrice.toLocaleString() }}</p>
                     </div>
                   </div>
-                </div>
-
-                <div class="col-12 d-flex gap-3 border-top pt-2">
-                  <div class="form-check">
-                    <input class="form-check-input" v-model="paymentType" value="gcash" type="radio" name="renewalPaymentType" id="renewalPaymentType1" checked>
-                    <label class="form-check-label" for="renewalPaymentType1">GCash</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input" v-model="paymentType" value="paymaya" type="radio" name="renewalPaymentType" id="renewalPaymentType2">
-                    <label class="form-check-label" for="renewalPaymentType2">PayMaya</label>
-                  </div>
-                </div>
-
-                <div class="col-12">
-                  <label class="form-label fw-semibold">Contact Number (GCash/Maya)</label>
-                  <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="bi bi-phone"></i></span>
-                    <input v-model="phoneNumber" type="tel" class="form-control" placeholder="09XXXXXXXXX" inputmode="numeric">
-                  </div>
-                  <small class="text-muted">We will use this payment channel to generate your QR payment request.</small>
                 </div>
 
                 <div class="col-12">
@@ -192,8 +172,6 @@ export default {
       checkStatusInterval: null,
       name: "",
       email: "",
-      paymentType: "gcash",
-      phoneNumber: "",
       selectedPlan: "monthly",
       planPrice: 200,
       currentSubscription: null,
@@ -268,12 +246,6 @@ export default {
       this.planPrice = this.selectedPlan === "annual" ? 1800 : 200;
     },
     validatedPayment() {
-      const phPhoneRegex = /^09\d{9}$/;
-      if (!phPhoneRegex.test(this.phoneNumber)) {
-        alert("Please enter a valid 09XXXXXXXXX phone number.");
-        return;
-      }
-
       this.showConfirmModal = true;
     },
     async confirmPayment() {
@@ -285,8 +257,6 @@ export default {
         const backendPlan = this.selectedPlan === "annual" ? "Annual" : "Monthly";
         fd.append("plan", backendPlan);
         fd.append("amount", this.planPrice);
-        fd.append("paymentType", this.paymentType);
-        fd.append("phone", this.phoneNumber);
         fd.append("permit_acknowledged", "1");
 
         const response = await api.post("/paymongo/renew-payment", fd);
@@ -413,16 +383,6 @@ export default {
       } catch (error) {
         alert(error?.message || "Unable to download the QR right now.");
       }
-    },
-  },
-  watch: {
-    phoneNumber(val) {
-      if (!val) return;
-      let cleaned = val.replace(/\D/g, "");
-      if (cleaned.length > 0 && !cleaned.startsWith("09")) {
-        cleaned = cleaned.startsWith("9") ? "0" + cleaned : "09";
-      }
-      this.phoneNumber = cleaned.substring(0, 11);
     },
   },
   beforeUnmount() {

@@ -18,7 +18,7 @@
                 <div class="col-md-7 border-end">
                   <div v-if="!isProcessingPayment" class="animate-fade-in">
                     <h5 class="fw-bold mb-3 text-primary">Owner Verification</h5>
-                    <p class="text-muted small mb-4">Please provide your details to verify your account and receive payments.</p>
+                    <p class="text-muted small mb-4">Review your details and generate a QR payment to continue your owner subscription.</p>
 
                     <div class="row g-3">
                       <div class="col-md-6">
@@ -29,26 +29,6 @@
                         <label class="form-label fw-semibold">Email</label>
                         <input v-model="email" type="text" class="form-control bg-light" readonly>
                       </div>
-                      <div class="col-12 d-flex gap-3 border-top pt-2">
-                        <div class="form-check">
-                          <input class="form-check-input" v-model="paymentType" value="gcash" type="radio" name="radioDefault" id="radioDefault1" checked>
-                          <label class="form-check-label" for="radioDefault1">GCash</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" v-model="paymentType" value="paymaya" type="radio" name="radioDefault" id="radioDefault2">
-                          <label class="form-check-label" for="radioDefault2">PayMaya</label>
-                        </div>
-                      </div>
-
-                      <div class="col-12 border-bottom pb-2">
-                        <label class="form-label fw-semibold">Contact Number (GCash/Maya)</label>
-                        <div class="input-group">
-                          <span class="input-group-text bg-white"><i class="bi bi-phone"></i></span>
-                          <input v-model="phoneNumber" type="tel" class="form-control" placeholder="09XXXXXXXXX" inputmode="numeric">
-                        </div>
-                        <small class="text-muted">Required for receiving payments from tenants.</small>
-                      </div>
-
                       <div class="col-12">
                         <div class="alert alert-warning border-warning-subtle mb-0 small">
                           <strong>Compliance reminder:</strong>
@@ -199,8 +179,6 @@ export default {
       checkStatusInterval: null,
       name: "",
       email: "",
-      paymentType: "gcash",
-      phoneNumber: "",
       permitAcknowledged: false,
       isRenewal: this.$route.query.renewal === '1',
       selectedPlan: this.$route.query.plan || 'monthly',
@@ -227,10 +205,6 @@ export default {
       }
     },
     validatedPayment() {
-      const phPhoneRegex = /^09\d{9}$/;
-      if (!phPhoneRegex.test(this.phoneNumber)) {
-        return alert("Please enter a valid 09XXXXXXXXX phone number.");
-      }
       if (!this.permitAcknowledged) {
         return alert("Please acknowledge the compliance reminder before continuing.");
       }
@@ -246,8 +220,6 @@ export default {
         const backendPlan = this.selectedPlan === 'annual' ? 'Annual' : 'Monthly';
         fd.append('plan', backendPlan);
         fd.append('amount', this.planPrice);
-        fd.append('paymentType', this.paymentType);
-        fd.append('phone', this.phoneNumber);
         fd.append('permit_acknowledged', this.permitAcknowledged ? '1' : '0');
 
         const endpoint = this.isRenewal ? "/paymongo/renew-payment" : "/paymongo/create-payment";
@@ -289,16 +261,6 @@ export default {
       } catch (error) {
         alert(error?.message || "Unable to download the QR right now.");
       }
-    }
-  },
-  watch: {
-    phoneNumber(val) {
-      if (!val) return;
-      let cleaned = val.replace(/\D/g, '');
-      if (cleaned.length > 0 && !cleaned.startsWith('09')) {
-        cleaned = cleaned.startsWith('9') ? '0' + cleaned : '09';
-      }
-      this.phoneNumber = cleaned.substring(0, 11);
     }
   },
   beforeUnmount() {

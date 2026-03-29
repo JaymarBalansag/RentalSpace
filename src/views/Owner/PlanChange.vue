@@ -193,6 +193,12 @@ export default {
     await this.restorePendingSession();
   },
   methods: {
+    showAlert(options) {
+      return Swal.fire({
+        confirmButtonText: "Okay",
+        ...options,
+      });
+    },
     async loadPlanChangeContext() {
       const info = useUserInfo();
       const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
@@ -316,7 +322,11 @@ export default {
     },
     validatedPayment() {
       if (!this.changeAcknowledged) {
-        alert(`Please acknowledge the ${this.isDowngrade ? "downgrade" : "upgrade"} notice before continuing.`);
+        this.showAlert({
+          icon: "warning",
+          title: "Acknowledgment Required",
+          text: `Please acknowledge the ${this.isDowngrade ? "downgrade" : "upgrade"} notice before continuing.`,
+        });
         return;
       }
 
@@ -340,7 +350,11 @@ export default {
         this.startPolling();
       } catch (error) {
         this.isProcessingPayment = false;
-        alert(error?.response?.data?.message || "Error connecting to payment gateway. Please check your connection.");
+        await this.showAlert({
+          icon: "error",
+          title: "Payment Gateway Error",
+          text: error?.response?.data?.message || "Error connecting to payment gateway. Please check your connection.",
+        });
       }
     },
     startPolling() {
@@ -406,7 +420,11 @@ export default {
       this.clearPendingSession();
       this.paymentStatusMessage = "Plan change completed successfully.";
       this.bypassLeaveGuard = true;
-      alert(`Plan changed successfully to ${this.targetPlanName}.`);
+      await this.showAlert({
+        icon: "success",
+        title: "Plan Change Complete",
+        text: `Plan changed successfully to ${this.targetPlanName}.`,
+      });
       this.$router.push("/subscription");
     },
     resetPaymentState(clearSession = true) {
@@ -435,9 +453,15 @@ export default {
     },
     finishTerminalState(status, message) {
       this.resetPaymentState();
-      alert(message || this.getTerminalStatusMessage(status));
-      this.bypassLeaveGuard = true;
-      this.$router.push("/subscription");
+      const icon = status === "failed" ? "error" : "info";
+      this.showAlert({
+        icon,
+        title: icon === "error" ? "Plan Change Failed" : "Plan Change Updated",
+        text: message || this.getTerminalStatusMessage(status),
+      }).then(() => {
+        this.bypassLeaveGuard = true;
+        this.$router.push("/subscription");
+      });
     },
     shouldGuardPendingLeave() {
       return this.isProcessingPayment && !!this.subscriptionId;
@@ -466,21 +490,33 @@ export default {
           await cancelPendingSubscription(this.subscriptionId);
         } catch (error) {
           const message = error?.response?.data?.message || "Unable to cancel this plan change right now.";
-          alert(message);
+          await this.showAlert({
+            icon: "error",
+            title: "Cancellation Failed",
+            text: message,
+          });
           return;
         }
       }
 
       this.resetPaymentState();
       this.bypassLeaveGuard = true;
-      alert("Plan change payment was cancelled. You can start again anytime.");
+      await this.showAlert({
+        icon: "info",
+        title: "Plan Change Cancelled",
+        text: "Plan change payment was cancelled. You can start again anytime.",
+      });
       this.$router.push("/subscription");
     },
     async downloadQr() {
       try {
         await downloadQrImage(this.qrCodeUrl, "renta-hub-plan-change-qr.png");
       } catch (error) {
-        alert(error?.message || "Unable to download the QR right now.");
+        await this.showAlert({
+          icon: "error",
+          title: "Download Failed",
+          text: error?.message || "Unable to download the QR right now.",
+        });
       }
     },
   },

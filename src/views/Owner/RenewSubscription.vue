@@ -217,6 +217,12 @@ export default {
     await this.restorePendingSession();
   },
   methods: {
+    showAlert(options) {
+      return Swal.fire({
+        confirmButtonText: "Okay",
+        ...options,
+      });
+    },
     async loadRenewalContext() {
       const info = useUserInfo();
       const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
@@ -349,7 +355,11 @@ export default {
         this.startPolling();
       } catch (error) {
         this.isProcessingPayment = false;
-        alert("Error connecting to payment gateway. Please check your connection.");
+        await this.showAlert({
+          icon: "error",
+          title: "Payment Gateway Error",
+          text: "Error connecting to payment gateway. Please check your connection.",
+        });
       }
     },
     startPolling() {
@@ -442,7 +452,11 @@ export default {
       this.clearPendingSession();
       this.paymentStatusMessage = "Renewal completed successfully.";
       this.bypassLeaveGuard = true;
-      alert("Subscription renewed successfully.");
+      await this.showAlert({
+        icon: "success",
+        title: "Renewal Complete",
+        text: "Subscription renewed successfully.",
+      });
       this.$router.push("/subscription");
     },
     async refreshSubscription() {
@@ -481,9 +495,15 @@ export default {
     },
     finishTerminalState(status, message) {
       this.resetPaymentState();
-      alert(message || this.getTerminalStatusMessage(status));
-      this.bypassLeaveGuard = true;
-      this.$router.push("/subscription");
+      const icon = status === "failed" ? "error" : "info";
+      this.showAlert({
+        icon,
+        title: icon === "error" ? "Renewal Failed" : "Renewal Updated",
+        text: message || this.getTerminalStatusMessage(status),
+      }).then(() => {
+        this.bypassLeaveGuard = true;
+        this.$router.push("/subscription");
+      });
     },
     shouldGuardPendingLeave() {
       return this.isProcessingPayment && !!this.subscriptionId;
@@ -512,21 +532,33 @@ export default {
           await cancelPendingSubscription(this.subscriptionId);
         } catch (error) {
           const message = error?.response?.data?.message || "Unable to cancel this renewal right now.";
-          alert(message);
+          await this.showAlert({
+            icon: "error",
+            title: "Cancellation Failed",
+            text: message,
+          });
           return;
         }
       }
 
       this.resetPaymentState();
       this.bypassLeaveGuard = true;
-      alert("Renewal payment was cancelled. You can start again anytime.");
+      await this.showAlert({
+        icon: "info",
+        title: "Renewal Cancelled",
+        text: "Renewal payment was cancelled. You can start again anytime.",
+      });
       this.$router.push("/subscription");
     },
     async downloadQr() {
       try {
         await downloadQrImage(this.qrCodeUrl, "renta-hub-renewal-qr.png");
       } catch (error) {
-        alert(error?.message || "Unable to download the QR right now.");
+        await this.showAlert({
+          icon: "error",
+          title: "Download Failed",
+          text: error?.message || "Unable to download the QR right now.",
+        });
       }
     },
   },

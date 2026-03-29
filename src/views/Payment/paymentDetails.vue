@@ -196,14 +196,26 @@ export default {
     const user = JSON.parse(localStorage.getItem("userInfo") || "{}");
     const status = String(user?.user_verification_status || "unverified").toLowerCase().trim();
     if (status !== "verified") {
-      alert("Account verification is required before owner application.");
-      this.$router.push("/profile");
+      Swal.fire({
+        icon: "warning",
+        title: "Verification Required",
+        text: "Account verification is required before owner application.",
+        confirmButtonText: "Okay",
+      }).then(() => {
+        this.$router.push("/profile");
+      });
       return;
     }
     this.getUserInfo();
     this.restorePendingSession();
   },
   methods: {
+    showAlert(options) {
+      return Swal.fire({
+        confirmButtonText: "Okay",
+        ...options,
+      });
+    },
     getUserInfo() {
       const userInfo = JSON.parse(localStorage.getItem("userInfo"));
       if (userInfo) {
@@ -332,15 +344,24 @@ export default {
     handleCancelledFlow(message) {
       this.clearPendingCheckoutState();
       this.bypassLeaveGuard = true;
-      alert(message);
-      this.$router.push(this.isRenewal ? '/subscription' : '/payment/wall');
+      this.showAlert({
+        icon: "info",
+        title: "Payment Updated",
+        text: message,
+      }).then(() => {
+        this.$router.push(this.isRenewal ? '/subscription' : '/payment/wall');
+      });
     },
     finishCancelledAttempt(status, message) {
       this.handleCancelledFlow(message || `Payment ${status}.`);
     },
     validatedPayment() {
       if (!this.permitAcknowledged) {
-        return alert("Please acknowledge the compliance reminder before continuing.");
+        return this.showAlert({
+          icon: "warning",
+          title: "Acknowledgment Required",
+          text: "Please acknowledge the compliance reminder before continuing.",
+        });
       }
 
       this.showConfirmModal = true;
@@ -369,7 +390,11 @@ export default {
         this.startPolling();
       } catch (error) {
         this.isProcessingPayment = false;
-        alert("Error connecting to payment gateway. Please check your connection.");
+        this.showAlert({
+          icon: "error",
+          title: "Payment Gateway Error",
+          text: "Error connecting to payment gateway. Please check your connection.",
+        });
       }
     },
     startPolling() {
@@ -402,7 +427,11 @@ export default {
           await cancelPendingSubscription(this.subscriptionId);
         } catch (error) {
           const message = error?.response?.data?.message || "Unable to cancel this payment right now.";
-          alert(message);
+          await this.showAlert({
+            icon: "error",
+            title: "Cancellation Failed",
+            text: message,
+          });
           return;
         }
       }
@@ -418,7 +447,11 @@ export default {
       try {
         await downloadQrImage(this.qrCodeUrl, "renta-hub-subscription-qr.png");
       } catch (error) {
-        alert(error?.message || "Unable to download the QR right now.");
+        await this.showAlert({
+          icon: "error",
+          title: "Download Failed",
+          text: error?.message || "Unable to download the QR right now.",
+        });
       }
     }
   },

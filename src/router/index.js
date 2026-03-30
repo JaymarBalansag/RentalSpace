@@ -58,6 +58,11 @@ const routes = [
     component: () => import('@/views/Main/PropertyDetails.vue'),
   },
   {
+    path: '/property/:id/map',
+    name: 'PropertyRouteMap',
+    component: () => import('@/views/Main/PropertyRouteMap.vue'),
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: () => import('@/views/User/profile.vue'),

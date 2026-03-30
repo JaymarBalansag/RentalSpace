@@ -184,6 +184,16 @@
               <i class="bi bi-chat-dots-fill me-2"></i> Message Owner
             </button>
             <button
+              v-if="canShowBookmarkAction"
+              class="btn rounded-pill fw-semibold py-2"
+              :class="isBookmarked ? 'btn-danger' : 'btn-outline-danger'"
+              :disabled="bookmarkSubmitting"
+              @click="toggleBookmark"
+            >
+              <i class="bi me-2" :class="isBookmarked ? 'bi-heart-fill' : 'bi-heart'"></i>
+              {{ bookmarkSubmitting ? "Saving..." : isBookmarked ? "Bookmarked" : "Save Property" }}
+            </button>
+            <button
               v-if="canShowReportAction"
               class="btn btn-outline-danger rounded-pill fw-semibold py-2"
               :disabled="reportSubmitting"
@@ -563,6 +573,7 @@ import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
 import { submitAgreement } from "@/api/Owner/bookings.js";
 import { initiateConversation } from "@/api/messages";
 import { getAuthUserId, getUserProfile } from "@/api/user";
+import { bookmarkProperty, getBookmarkedPropertyIds, removeBookmarkedProperty } from "@/api/bookmarks";
 import { useUserInfo } from '@/store/userInfo';
 import confirmModal from "@/components/confirmModal.vue";
 import Header from "@/components/Header.vue";
@@ -614,6 +625,8 @@ export default {
         comment: "",
       },
       reportSubmitting: false,
+      bookmarkSubmitting: false,
+      isBookmarked: false,
       reportForm: {
         reason: "",
         details: "",
@@ -715,6 +728,20 @@ export default {
 
       this.savedProfileCoords = { lat: null, lng: null };
       return null;
+    },
+    async syncBookmarkState() {
+      if (!this.canShowBookmarkAction || !this.property?.id) {
+        this.isBookmarked = false;
+        return;
+      }
+
+      try {
+        const response = await getBookmarkedPropertyIds();
+        const ids = Array.isArray(response?.data?.data) ? response.data.data : [];
+        this.isBookmarked = ids.map((id) => Number(id)).includes(Number(this.property.id));
+      } catch (error) {
+        console.error("Unable to load bookmark state:", error);
+      }
     },
     applyRouteSource(coords, source, message) {
       if (this.routeGuardTimer) {
@@ -876,6 +903,46 @@ export default {
 
       const url = `https://www.google.com/maps/dir/?${params.toString()}`;
       window.open(url, "_blank", "noopener,noreferrer");
+    },
+    async toggleBookmark() {
+      if (!this.canShowBookmarkAction || !this.property?.id || this.bookmarkSubmitting) return;
+
+      this.bookmarkSubmitting = true;
+      try {
+        let response;
+        if (this.isBookmarked) {
+          response = await removeBookmarkedProperty(this.property.id);
+          this.isBookmarked = false;
+        } else {
+          response = await bookmarkProperty(this.property.id);
+          this.isBookmarked = true;
+        }
+
+        await Swal.fire({
+          icon: "success",
+          title: this.isBookmarked ? "Property saved" : "Bookmark removed",
+          text: response?.data?.message || (this.isBookmarked ? "Property saved to your bookmarks." : "Property removed from your bookmarks."),
+          timer: 1800,
+          showConfirmButton: false,
+        });
+      } catch (error) {
+        if (error?.response?.status === 401) {
+          await Swal.fire({
+            icon: "info",
+            title: "Login required",
+            text: "Please sign in first to save properties.",
+          });
+          this.$router.push("/login");
+        } else {
+          await Swal.fire({
+            icon: "error",
+            title: "Bookmark failed",
+            text: error?.response?.data?.message || "Unable to update this bookmark right now.",
+          });
+        }
+      } finally {
+        this.bookmarkSubmitting = false;
+      }
     },
     normalizeReviews(payload) {
       const reviewList = Array.isArray(payload?.reviews)
@@ -1105,6 +1172,7 @@ export default {
         this.property_type = response.data.property.type_name;
         this.property_type_id = response.data.property.type_id;
         this.propertyImages = response.data.property.images;
+        await this.syncBookmarkState();
         await this.resolveUserLocationForRoute();
         
         const related = await getPropertyByType(this.property_type_id, id);
@@ -1314,6 +1382,13 @@ export default {
     },
     canResetToSavedLocation() {
       return this.routeSource === "live" && this.isValidLatLng(this.savedProfileCoords.lat, this.savedProfileCoords.lng);
+    },
+    canShowBookmarkAction() {
+      const info = useUserInfo();
+      const role = String(info.role || "").toLowerCase();
+      if (!info.isLoggedIn) return false;
+      if (["owner", "admin"].includes(role)) return false;
+      return Number(this.property?.owner_id) !== Number(this.authId);
     },
     propertyMapCoords() {
       return {

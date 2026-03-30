@@ -105,6 +105,12 @@ const routes = [
     meta: { requiresAuth: true, isVerified: true },
   },
   {
+    path: '/saved-properties',
+    name: 'saved_properties',
+    component: () => import('@/views/User/SavedProperties.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/User/setting.vue'),

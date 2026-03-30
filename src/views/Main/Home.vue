@@ -167,7 +167,7 @@
                     <i class="bi" :class="isBookmarked(property.id) ? 'bi-heart-fill' : 'bi-heart'"></i>
                   </button>
                   <div class="property-image-wrapper"> <img 
-                      :src="property.image_url || placeholderImg" 
+                      :src="getPropertyCardImage(property)" 
                       @error="$event.target.src = placeholderImg" 
                       class="img-fluid property-image" 
                       alt="Property"
@@ -500,6 +500,13 @@ export default {
     getPropertyTotalReviews(property) {
       const value = Number(property?.total_reviews ?? property?.review_count ?? 0);
       return Number.isFinite(value) ? value : 0;
+    },
+    getPropertyCardImage(property) {
+      const raw = String(property?.image_url || "").trim();
+      if (!raw || ["null", "undefined"].includes(raw.toLowerCase())) {
+        return this.placeholderImg;
+      }
+      return raw;
     },
     async checkDetails(id) {
       await recordView(id);

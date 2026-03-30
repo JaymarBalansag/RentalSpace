@@ -53,6 +53,11 @@ const routes = [
     meta: { requiresAuth: true, isVerified: true }
   },
   {
+    path: '/faq',
+    name: 'faq',
+    component: () => import('@/views/User/faq.vue'),
+  },
+  {
     path: '/property/:id',
     name: 'PropertyDetails',
     component: () => import('@/views/Main/PropertyDetails.vue'),
@@ -103,6 +108,12 @@ const routes = [
     name: 'notifications',
     component: () => import('@/views/User/notification.vue'),
     meta: { requiresAuth: true, isVerified: true },
+  },
+  {
+    path: '/saved-properties',
+    name: 'saved_properties',
+    component: () => import('@/views/User/SavedProperties.vue'),
+    meta: { requiresAuth: true },
   },
   {
     path: '/settings',

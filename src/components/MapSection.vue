@@ -7,6 +7,7 @@
 <script>
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import placeholderImg from '@/assets/Placeholder/thumbnail_placeholder.jpg';
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -42,7 +43,8 @@ export default {
   data() {
     return {
       map: null,
-      markers: []
+      markers: [],
+      placeholderImg
     };
   },
   mounted() {
@@ -94,7 +96,7 @@ export default {
       }
     },
     popupContent(property) {
-      const imgSrc = property.image_url;
+      const imgSrc = this.getPropertyImage(property);
       const placeholder = this.placeholderImg;
       return `
         <div class="card shadow-sm border-0" style="width: 220px;">
@@ -119,6 +121,22 @@ export default {
           </div>
         </div>
       `;
+    },
+    getPropertyImage(property) {
+      const imageUrl = property?.image_url;
+
+      if (!imageUrl) {
+        return this.placeholderImg;
+      }
+
+      if (typeof imageUrl === 'string') {
+        const normalized = imageUrl.trim().toLowerCase();
+        if (!normalized || normalized === 'null' || normalized === 'undefined') {
+          return this.placeholderImg;
+        }
+      }
+
+      return imageUrl;
     }
   }
 };

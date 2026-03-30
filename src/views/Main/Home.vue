@@ -156,8 +156,18 @@
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden property-horizontal-card h-100" @click="checkDetails(property.id)">
               <div class="row g-0 h-100">
                 <div class="col-md-4 position-relative">
+                  <button
+                    v-if="canShowBookmarkAction"
+                    class="bookmark-btn"
+                    :class="{ active: isBookmarked(property.id) }"
+                    type="button"
+                    :disabled="bookmarkBusyId === property.id"
+                    @click.stop="toggleBookmark(property.id)"
+                  >
+                    <i class="bi" :class="isBookmarked(property.id) ? 'bi-heart-fill' : 'bi-heart'"></i>
+                  </button>
                   <div class="property-image-wrapper"> <img 
-                      :src="property.image_url || placeholderImg" 
+                      :src="getPropertyCardImage(property)" 
                       @error="$event.target.src = placeholderImg" 
                       class="img-fluid property-image" 
                       alt="Property"
@@ -341,11 +351,14 @@ import {
   searchProperties,
   recordView
 } from '@/api/property';
+import { bookmarkProperty, getBookmarkedPropertyIds, removeBookmarkedProperty } from '@/api/bookmarks';
 import successToast from '@/components/successToast.vue';
 import Header from '@/components/Header.vue';
 import MapSection from '@/components/MapSection.vue';
 import SubscriptionWarningBanner from '@/components/SubscriptionWarningBanner.vue';
 import OwnerSubscriptionExpiredBanner from '@/components/OwnerSubscriptionExpiredBanner.vue';
+import { useUserInfo } from '@/store/userInfo';
+import Swal from 'sweetalert2';
 
 export default {
   name: 'Home',
@@ -369,6 +382,8 @@ export default {
       loading: true,
       loadingAmenities: true,
       loadingFacilities: true,
+      bookmarkBusyId: null,
+      bookmarkedPropertyIds: [],
       currentPage: 1,
       lastPage: 1,
       total: 0,
@@ -399,6 +414,64 @@ export default {
       if (status === "rejected") return "bg-danger-subtle text-danger";
       return "bg-secondary-subtle text-secondary";
     },
+    async loadBookmarks() {
+      if (!this.canShowBookmarkAction) {
+        this.bookmarkedPropertyIds = [];
+        return;
+      }
+
+      try {
+        const response = await getBookmarkedPropertyIds();
+        this.bookmarkedPropertyIds = Array.isArray(response?.data?.data)
+          ? response.data.data.map((id) => Number(id))
+          : [];
+      } catch (error) {
+        console.error("Unable to load bookmarks:", error);
+      }
+    },
+    isBookmarked(propertyId) {
+      return this.bookmarkedPropertyIds.includes(Number(propertyId));
+    },
+    async toggleBookmark(propertyId) {
+      if (!this.canShowBookmarkAction || this.bookmarkBusyId === propertyId) return;
+
+      this.bookmarkBusyId = propertyId;
+      try {
+        let response;
+        if (this.isBookmarked(propertyId)) {
+          response = await removeBookmarkedProperty(propertyId);
+          this.bookmarkedPropertyIds = this.bookmarkedPropertyIds.filter((id) => id !== Number(propertyId));
+        } else {
+          response = await bookmarkProperty(propertyId);
+          this.bookmarkedPropertyIds = [...new Set([...this.bookmarkedPropertyIds, Number(propertyId)])];
+        }
+
+        await Swal.fire({
+          icon: "success",
+          title: this.isBookmarked(propertyId) ? "Property saved" : "Bookmark removed",
+          text: response?.data?.message || "Bookmark updated successfully.",
+          timer: 1600,
+          showConfirmButton: false,
+        });
+      } catch (error) {
+        if (error?.response?.status === 401) {
+          await Swal.fire({
+            icon: "info",
+            title: "Login required",
+            text: "Please sign in first to save properties.",
+          });
+          this.$router.push("/login");
+        } else {
+          await Swal.fire({
+            icon: "error",
+            title: "Bookmark failed",
+            text: error?.response?.data?.message || "Unable to update this bookmark right now.",
+          });
+        }
+      } finally {
+        this.bookmarkBusyId = null;
+      }
+    },
     applyPriceFilter() {
       if (this.min_price > 0 && this.max_price > 0 && this.min_price > this.max_price) {
         [this.min_price, this.max_price] = [this.max_price, this.min_price];
@@ -427,6 +500,13 @@ export default {
     getPropertyTotalReviews(property) {
       const value = Number(property?.total_reviews ?? property?.review_count ?? 0);
       return Number.isFinite(value) ? value : 0;
+    },
+    getPropertyCardImage(property) {
+      const raw = String(property?.image_url || "").trim();
+      if (!raw || ["null", "undefined"].includes(raw.toLowerCase())) {
+        return this.placeholderImg;
+      }
+      return raw;
     },
     async checkDetails(id) {
       await recordView(id);
@@ -531,12 +611,20 @@ export default {
 
     if (success) { this.showSuccess = true; sessionStorage.removeItem('loginSuccess'); }
     if (subSuccess) { this.subSuccess = true; sessionStorage.removeItem('subscriptionSuccess'); }
+    this.loadBookmarks();
   },
   watch: {
     selectedType() { this.currentPage = 1; this.getFilteredProperties(1); },
     selectedAgreement() { this.currentPage = 1; this.getFilteredProperties(1); },
     selectedAmenities: { handler() { this.currentPage = 1; this.getFilteredProperties(1); }, deep: true },
     selectedFacilities: { handler() { this.currentPage = 1; this.getFilteredProperties(1); }, deep: true },
+  },
+  computed: {
+    canShowBookmarkAction() {
+      const info = useUserInfo();
+      const role = String(info.role || "").toLowerCase();
+      return info.isLoggedIn && !["owner", "admin"].includes(role);
+    },
   }
 };
 </script>
@@ -699,6 +787,34 @@ input.form-control:focus {
   transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.55s ease, border-color 0.55s ease;
   border: 1px solid #e4ecf8 !important;
   background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.bookmark-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #d14b68;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+}
+
+.bookmark-btn.active {
+  background: #d14b68;
+  color: #fff;
+}
+
+.bookmark-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .property-horizontal-card:hover {

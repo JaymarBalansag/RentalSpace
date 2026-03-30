@@ -79,6 +79,11 @@
           <span v-if="hasUnreadNotifications" class="notification-pill">New</span>
         </RouterLink>
       </li>
+      <li v-if="canAccessBookmarks">
+        <RouterLink class="dropdown-item" to="/saved-properties">
+          <i class="bi bi-heart"></i> Saved Properties
+        </RouterLink>
+      </li>
       <li><hr class="dropdown-divider"></li>
       <li><RouterLink class="dropdown-item" to="/settings"><i class="bi bi-gear"></i> Settings</RouterLink></li>
       <li><hr class="dropdown-divider"></li>
@@ -127,6 +132,9 @@ export default {
     },
     isUserVerified() {
       return this.userVerificationStatus === "verified";
+    },
+    canAccessBookmarks() {
+      return ["user", "tenants"].includes(String(this.roleIs || "").toLowerCase());
     },
     verificationStatusLabel() {
       if (this.userVerificationStatus === "verified") return "Verified";

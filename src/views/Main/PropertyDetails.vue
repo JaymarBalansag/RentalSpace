@@ -235,6 +235,22 @@
               >
                 Full View Map
               </button>
+              <button
+                v-if="hasPropertyMap"
+                type="button"
+                class="btn btn-sm btn-outline-dark rounded-pill route-action-btn"
+                @click="openGoogleMapsLocation"
+              >
+                View on Google Maps
+              </button>
+              <button
+                v-if="hasPropertyMap"
+                type="button"
+                class="btn btn-sm btn-outline-success rounded-pill route-action-btn"
+                @click="openGoogleMapsDirections"
+              >
+                Get Directions
+              </button>
             </div>
           </div>
           <PropertyMap
@@ -831,6 +847,35 @@ export default {
           lng: this.propertyMapCoords.lng,
         },
       });
+    },
+    openGoogleMapsLocation() {
+      if (!this.hasPropertyMap) return;
+
+      const destination = `${this.propertyMapCoords.lat},${this.propertyMapCoords.lng}`;
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    },
+    openGoogleMapsDirections() {
+      if (!this.hasPropertyMap) return;
+
+      const destination = `${this.propertyMapCoords.lat},${this.propertyMapCoords.lng}`;
+      const sourceCoords = this.isValidLatLng(this.userCoords.lat, this.userCoords.lng)
+        ? this.userCoords
+        : this.isValidLatLng(this.savedProfileCoords.lat, this.savedProfileCoords.lng)
+          ? this.savedProfileCoords
+          : null;
+
+      const params = new URLSearchParams({
+        api: "1",
+        destination,
+      });
+
+      if (sourceCoords) {
+        params.set("origin", `${sourceCoords.lat},${sourceCoords.lng}`);
+      }
+
+      const url = `https://www.google.com/maps/dir/?${params.toString()}`;
+      window.open(url, "_blank", "noopener,noreferrer");
     },
     normalizeReviews(payload) {
       const reviewList = Array.isArray(payload?.reviews)

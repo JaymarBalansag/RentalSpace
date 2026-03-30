@@ -27,6 +27,11 @@
               </RouterLink>
             </li>
             <li class="nav-item">
+              <RouterLink class="nav-link text-white-50 px-3 hover-link" active-class="text-white active fw-bold" to="/faq">
+                FAQ
+              </RouterLink>
+            </li>
+            <li class="nav-item">
               <RouterLink class="nav-link text-white-50 px-3 hover-link" active-class="text-white active fw-bold" to="/contactus">
                 Contact
               </RouterLink>
@@ -64,6 +69,9 @@
             </RouterLink>
             <RouterLink class="mobile-link" to="/about" @click="closeMenu">
               <i class="bi bi-info-circle me-3"></i>About Us
+            </RouterLink>
+            <RouterLink class="mobile-link" to="/faq" @click="closeMenu">
+              <i class="bi bi-patch-question me-3"></i>FAQ
             </RouterLink>
             <RouterLink class="mobile-link" to="/contactus" @click="closeMenu">
               <i class="bi bi-envelope me-3"></i>Contact

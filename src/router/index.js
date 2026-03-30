@@ -53,6 +53,11 @@ const routes = [
     meta: { requiresAuth: true, isVerified: true }
   },
   {
+    path: '/faq',
+    name: 'faq',
+    component: () => import('@/views/User/faq.vue'),
+  },
+  {
     path: '/property/:id',
     name: 'PropertyDetails',
     component: () => import('@/views/Main/PropertyDetails.vue'),

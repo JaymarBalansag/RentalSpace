@@ -1,6 +1,6 @@
 <template>
   <div class="map-wrapper">
-    <div ref="mapEl" class="property-map"></div>
+    <div ref="mapEl" class="property-map" :style="mapStyle"></div>
   </div>
 </template>
 
@@ -44,6 +44,10 @@ export default {
       type: Boolean,
       default: true,
     },
+    height: {
+      type: String,
+      default: "",
+    },
   },
   data() {
     return {
@@ -68,6 +72,11 @@ export default {
       this.userMarker = null;
       this.routeLine = null;
     }
+  },
+  computed: {
+    mapStyle() {
+      return this.height ? { height: this.height } : {};
+    },
   },
   methods: {
     isValidCoords(lat, lng) {

@@ -227,12 +227,36 @@
               >
                 Use Saved Location
               </button>
+              <button
+                v-if="hasPropertyMap"
+                type="button"
+                class="btn btn-sm btn-dark rounded-pill route-action-btn"
+                @click="openFullViewMap"
+              >
+                Full View Map
+              </button>
+              <button
+                v-if="hasPropertyMap"
+                type="button"
+                class="btn btn-sm btn-outline-dark rounded-pill route-action-btn"
+                @click="openGoogleMapsLocation"
+              >
+                View on Google Maps
+              </button>
+              <button
+                v-if="hasPropertyMap"
+                type="button"
+                class="btn btn-sm btn-outline-success rounded-pill route-action-btn"
+                @click="openGoogleMapsDirections"
+              >
+                Get Directions
+              </button>
             </div>
           </div>
           <PropertyMap
-            v-if="property.latitude && property.longitude"
-            :lat="parseFloat(property.latitude)"
-            :lng="parseFloat(property.longitude)"
+            v-if="hasPropertyMap"
+            :lat="propertyMapCoords.lat"
+            :lng="propertyMapCoords.lng"
             :title="property.title"
             :user-lat="userCoords.lat"
             :user-lng="userCoords.lng"
@@ -811,6 +835,48 @@ export default {
       const minutes = totalMinutes % 60;
       return minutes === 0 ? `${hours} hr` : `${hours} hr ${minutes} min`;
     },
+    openFullViewMap() {
+      if (!this.hasPropertyMap || !this.property?.id) return;
+
+      this.$router.push({
+        name: "PropertyRouteMap",
+        params: { id: this.property.id },
+        query: {
+          title: this.property.title || "",
+          lat: this.propertyMapCoords.lat,
+          lng: this.propertyMapCoords.lng,
+        },
+      });
+    },
+    openGoogleMapsLocation() {
+      if (!this.hasPropertyMap) return;
+
+      const destination = `${this.propertyMapCoords.lat},${this.propertyMapCoords.lng}`;
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    },
+    openGoogleMapsDirections() {
+      if (!this.hasPropertyMap) return;
+
+      const destination = `${this.propertyMapCoords.lat},${this.propertyMapCoords.lng}`;
+      const sourceCoords = this.isValidLatLng(this.userCoords.lat, this.userCoords.lng)
+        ? this.userCoords
+        : this.isValidLatLng(this.savedProfileCoords.lat, this.savedProfileCoords.lng)
+          ? this.savedProfileCoords
+          : null;
+
+      const params = new URLSearchParams({
+        api: "1",
+        destination,
+      });
+
+      if (sourceCoords) {
+        params.set("origin", `${sourceCoords.lat},${sourceCoords.lng}`);
+      }
+
+      const url = `https://www.google.com/maps/dir/?${params.toString()}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    },
     normalizeReviews(payload) {
       const reviewList = Array.isArray(payload?.reviews)
         ? payload.reviews
@@ -1244,10 +1310,19 @@ export default {
     routeSourceLabel() {
       if (this.routeSource === "saved") return "Saved location";
       if (this.routeSource === "live") return "Current location";
-      return "No source";
+      return "Property only";
     },
     canResetToSavedLocation() {
       return this.routeSource === "live" && this.isValidLatLng(this.savedProfileCoords.lat, this.savedProfileCoords.lng);
+    },
+    propertyMapCoords() {
+      return {
+        lat: this.normalizeCoordinate(this.property?.latitude),
+        lng: this.normalizeCoordinate(this.property?.longitude),
+      };
+    },
+    hasPropertyMap() {
+      return this.isValidLatLng(this.propertyMapCoords.lat, this.propertyMapCoords.lng);
     },
     allAmenities() {
       const base = this.normalizeList(this.property?.amenities);

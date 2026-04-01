@@ -76,7 +76,7 @@
                   @click="gotoProperty(property.id)"
                 >
                   <div class="position-relative overflow-hidden rounded-4 shadow-sm">
-                    <img :src="property.image_url || placeholderImage" class="card-img-top property-img" alt="Property">
+                    <img :src="getPropertyImage(property)" class="card-img-top property-img" alt="Property" @error="$event.target.src = placeholderImage">
                     <div class="property-badge-overlay">
                       <span class="badge glass-badge rounded-pill">
                         PHP {{ formatPrice(property.price) }}
@@ -130,7 +130,7 @@
               <div class="card border-0 shadow-sm rounded-4 hover-lift overflow-hidden panel-card" @click="gotoProperty(property.id)" style="cursor: pointer;">
                 <div class="row g-0 align-items-center">
                   <div class="col-5">
-                    <img :src="property.image_url || placeholderImage" class="img-fluid h-100" style="object-fit: cover; min-height: 120px;" alt="Trending property image">
+                    <img :src="getPropertyImage(property)" class="img-fluid h-100" style="object-fit: cover; min-height: 120px;" alt="Trending property image" @error="$event.target.src = placeholderImage">
                   </div>
                   <div class="col-7">
                     <div class="card-body p-3">
@@ -174,7 +174,7 @@
               <div v-else class="recent-list">
                 <div v-for="property in recentProperties" :key="property.id" class="d-flex align-items-center mb-4 transition-row">
                   <div class="recent-img-wrapper me-3">
-                    <img :src="property.image_url || placeholderImage" class="rounded-3 shadow-sm border" style="width:70px; height:70px; object-fit:cover;">
+                    <img :src="getPropertyImage(property)" class="rounded-3 shadow-sm border" style="width:70px; height:70px; object-fit:cover;" @error="$event.target.src = placeholderImage">
                   </div>
                   <div class="overflow-hidden">
                     <h6 class="mb-1 text-dark text-truncate fw-semibold">{{ property.title }}</h6>
@@ -271,6 +271,22 @@ export default {
 
     formatPrice(value) {
       return new Intl.NumberFormat("en-PH").format(Number(value) || 0);
+    },
+    getPropertyImage(property) {
+      const imageUrl = property?.image_url;
+
+      if (!imageUrl) {
+        return this.placeholderImage;
+      }
+
+      if (typeof imageUrl === "string") {
+        const normalized = imageUrl.trim().toLowerCase();
+        if (!normalized || normalized === "null" || normalized === "undefined") {
+          return this.placeholderImage;
+        }
+      }
+
+      return imageUrl;
     },
     getPropertyAverageRating(property) {
       const value = Number(property?.average_rating ?? property?.avg_rating ?? 0);

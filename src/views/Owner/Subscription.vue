@@ -168,7 +168,7 @@
                   </ul>
                   <div v-if="showDowngradeWarning(plan)" class="plan-warning mt-3">
                     <i class="bi bi-exclamation-triangle-fill"></i>
-                    <span>Changing to Monthly will hide annual-only management pages and stop new bookings on your listings.</span>
+                    <span>Changing to a Standard plan will keep your listings active, but advanced Pro tools like bookings, tenants, billing, ledger, and reports will be hidden until you upgrade again.</span>
                   </div>
                   <button
                     class="btn w-100 fw-semibold mt-3"
@@ -268,6 +268,13 @@ import { getOwnerSubscriptionHistory, getOwnerSubscriptionStatus } from "@/api/s
 import { useUserInfo } from "@/store/userInfo";
 import SubscriptionWarningBanner from "@/components/SubscriptionWarningBanner.vue";
 import OwnerSubscriptionExpiredBanner from "@/components/OwnerSubscriptionExpiredBanner.vue";
+import {
+  getOwnerPlanCodeFromSubscription,
+  getOwnerPlanDisplayName,
+  getOwnerPlanList,
+  ownerPlanDowngradesFromPro,
+  ownerPlanHasProFeatures,
+} from "@/utils/ownerPlans";
 
 export default {
   name: "OwnerSubscription",
@@ -280,26 +287,13 @@ export default {
       addonMax: 10,
       history: [],
       historyLoading: false,
-      upgradePlans: [
-        {
-          tag: "Standard",
-          name: "Monthly Standard",
-          desc: "Best for new property owners.",
-          price: "PHP 200",
-          cycle: "monthly",
-          icon: "bi bi-stars",
-          features: ["Up to 2 listings", "Property management", "Reviews management"],
-        },
-        {
-          tag: "Popular",
-          name: "Annual Pro",
-          desc: "For steady rental growth.",
-          price: "PHP 1800",
-          cycle: "annual",
-          icon: "bi bi-graph-up-arrow",
-          features: ["Up to 5 listings", "Property management", "Reviews management", "Booking management", "Tenant management", "Billings management", "Payment ledger Management", "Reports & Analyticss"],
-        },
-      ],
+      upgradePlans: getOwnerPlanList().map((plan) => ({
+        ...plan,
+        tag: plan.tier === "pro" ? (plan.cycle === "annual" ? "Popular" : "Pro") : "Standard",
+        desc: plan.description,
+        price: `PHP ${plan.displayPrice.toLocaleString()}`,
+        icon: plan.tier === "pro" ? "bi bi-graph-up-arrow" : "bi bi-stars",
+      })),
     };
   },
   async mounted() {
@@ -314,12 +308,15 @@ export default {
     hasSubscription() {
       return !!(this.subscription && this.subscription.plan_name);
     },
+    currentPlanCode() {
+      return getOwnerPlanCodeFromSubscription(this.subscription || {});
+    },
+    hasProFeatures() {
+      return ownerPlanHasProFeatures(this.currentPlanCode, this.subscription?.billing_cycle);
+    },
     planName() {
-      const raw = String(this.subscription?.plan_name || "");
-      if (!raw) return "No active plan";
-      if (raw.toLowerCase().includes("monthly")) return "Monthly Standard";
-      if (raw.toLowerCase().includes("annual")) return "Annual Pro";
-      return raw;
+      if (!this.subscription?.plan_name) return "No active plan";
+      return getOwnerPlanDisplayName(this.currentPlanCode, this.subscription?.billing_cycle);
     },
     subscriptionMessage() {
       return this.subscription?.message || "Review your plan status and limits.";
@@ -422,13 +419,13 @@ export default {
       this.$router.push({ path: "/owner/addon-payment", query });
     },
     isCurrentPlan(plan) {
-      if (!this.currentCycle) return false;
-      return String(plan.cycle || "").toLowerCase() === this.currentCycle;
+      return plan.code === this.currentPlanCode;
     },
     planButtonLabel(plan) {
       if (this.isCurrentPlan(plan)) return "Current Plan";
-      if (this.currentCycle === "monthly" && plan.cycle === "annual") return "Upgrade to Annual";
-      if (this.currentCycle === "annual" && plan.cycle === "monthly") return "Change to Monthly";
+      if (ownerPlanDowngradesFromPro(this.currentPlanCode, plan.code)) return "Switch to Standard";
+      if (!this.hasProFeatures && plan.tier === "pro") return "Upgrade to Pro";
+      if (plan.cycle !== this.currentCycle) return plan.cycle === "annual" ? "Switch to Annual Billing" : "Switch to Monthly Billing";
       return "Change to this plan";
     },
     planButtonClass(plan) {
@@ -439,7 +436,7 @@ export default {
       return !this.canChangePlan;
     },
     showDowngradeWarning(plan) {
-      return this.currentCycle === "annual" && String(plan?.cycle || "").toLowerCase() === "monthly";
+      return ownerPlanDowngradesFromPro(this.currentPlanCode, plan?.code);
     },
     async refreshSubscription() {
       try {
@@ -463,12 +460,11 @@ export default {
       }
     },
     goToRenew() {
-      const cycle = this.currentCycle === "annual" ? "annual" : "monthly";
-      this.$router.push({ path: "/subscription/renew", query: { plan: cycle } });
+      this.$router.push({ path: "/subscription/renew", query: { plan: this.currentPlanCode } });
     },
     goToPlanChange(plan) {
       if (this.isPlanButtonDisabled(plan)) return;
-      this.$router.push({ path: "/subscription/change", query: { plan: String(plan.cycle || "").toLowerCase() } });
+      this.$router.push({ path: "/subscription/change", query: { plan: plan.code } });
     },
     formatAmount(amount) {
       if (amount === null || amount === undefined || amount === "") return "—";
@@ -488,10 +484,7 @@ export default {
     },
     formatPlanLabel(value) {
       if (!value) return "—";
-      const raw = String(value).toLowerCase();
-      if (raw.includes("monthly")) return "Monthly Standard";
-      if (raw.includes("annual")) return "Annual Pro";
-      return value;
+      return getOwnerPlanDisplayName(value);
     },
   },
 };

@@ -4,12 +4,8 @@
       <p class="eyebrow mb-2">Plan Change</p>
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
-          <h4 class="fw-bold mb-1">{{ isDowngrade ? "Change to Monthly Plan" : "Upgrade to Annual Plan" }}</h4>
-          <p class="text-muted small mb-0">
-            {{ isDowngrade
-              ? "Review the downgrade warning carefully before confirming your new plan."
-              : "Switch to Annual and unlock the full owner dashboard right after payment succeeds." }}
-          </p>
+          <h4 class="fw-bold mb-1">{{ pageTitle }}</h4>
+          <p class="text-muted small mb-0">{{ pageSubtitle }}</p>
         </div>
         <RouterLink to="/subscription" class="btn btn-light border fw-semibold">
           <i class="bi bi-arrow-left me-2"></i>Back to Subscription
@@ -38,6 +34,10 @@
               <strong>{{ targetPlanName }}</strong>
             </div>
             <div class="summary-row">
+              <span class="label">Billing Update</span>
+              <strong>{{ targetBillingLabel }}</strong>
+            </div>
+            <div class="summary-row">
               <span class="label">Total Amount</span>
               <strong class="text-primary">PHP {{ planPrice.toLocaleString() }}</strong>
             </div>
@@ -47,19 +47,19 @@
             </div>
           </div>
 
-            <div class="payment-card-simple">
-              <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                  <label class="form-label fw-semibold">Full Name</label>
+          <div class="payment-card-simple">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Full Name</label>
                 <input v-model="name" type="text" class="form-control bg-light" readonly>
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Email</label>
-                  <input v-model="email" type="text" class="form-control bg-light" readonly>
-                </div>
+                <input v-model="email" type="text" class="form-control bg-light" readonly>
               </div>
-              <p class="small text-muted mb-0">This checkout uses a secure QR Ph payment request generated through PayMongo.</p>
             </div>
+            <p class="small text-muted mb-0">This checkout uses a secure QR Ph payment request generated through PayMongo.</p>
+          </div>
 
           <div class="ack-card-simple" :class="{ 'ack-card-simple--danger': isDowngrade }">
             <h6 class="fw-bold mb-2">{{ acknowledgmentTitle }}</h6>
@@ -71,7 +71,7 @@
           </div>
 
           <button @click="validatedPayment" class="btn btn-primary w-100 mt-4 fw-bold py-3 shadow-sm">
-            <i class="bi bi-arrow-left-right me-2"></i>{{ isDowngrade ? "Confirm Monthly Plan Change" : "Confirm Annual Upgrade" }}
+            <i class="bi bi-arrow-left-right me-2"></i>{{ confirmButtonText }}
           </button>
         </div>
 
@@ -124,6 +124,16 @@ import ConfirmModal from "@/components/confirmModal.vue";
 import { cancelPendingSubscription, createPlanChangeIntent, getOwnerSubscriptionStatus, getSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
 import { downloadQrImage } from "@/utils/qrDownload";
+import {
+  getOwnerPlan,
+  getOwnerPlanBillingSummary,
+  getOwnerPlanCodeFromSubscription,
+  getOwnerPlanDisplayName,
+  getOwnerPlanPrice,
+  normalizeOwnerPlanCode,
+  ownerPlanDowngradesFromPro,
+  ownerPlanUpgradesToPro,
+} from "@/utils/ownerPlans";
 import Swal from "sweetalert2";
 
 const PLAN_CHANGE_PAYMENT_SESSION_KEY = "ownerPlanChangePaymentSession";
@@ -142,7 +152,7 @@ export default {
       isHandlingRouteLeave: false,
       name: "",
       email: "",
-      selectedPlan: "annual",
+      selectedPlan: "annual_standard",
       planPrice: 1800,
       currentSubscription: null,
       baselineSubscription: null,
@@ -151,41 +161,82 @@ export default {
     };
   },
   computed: {
-    currentCycle() {
-      return String(this.currentSubscription?.billing_cycle || "").toLowerCase();
+    currentPlanCode() {
+      return getOwnerPlanCodeFromSubscription(this.currentSubscription || {});
     },
     currentPlanName() {
-      return this.currentCycle === "monthly" ? "Monthly Standard" : "Annual Pro";
+      return getOwnerPlanDisplayName(this.currentPlanCode, this.currentSubscription?.billing_cycle);
     },
     targetPlanName() {
-      return this.selectedPlan === "monthly" ? "Monthly Standard" : "Annual Pro";
+      return getOwnerPlanDisplayName(this.selectedPlan);
+    },
+    targetBillingLabel() {
+      return getOwnerPlanBillingSummary(this.selectedPlan);
     },
     isDowngrade() {
-      return this.currentCycle === "annual" && this.selectedPlan === "monthly";
+      return ownerPlanDowngradesFromPro(this.currentPlanCode, this.selectedPlan);
+    },
+    isUpgrade() {
+      return ownerPlanUpgradesToPro(this.currentPlanCode, this.selectedPlan);
+    },
+    isCycleSwitch() {
+      return getOwnerPlan(this.currentPlanCode).tier === getOwnerPlan(this.selectedPlan).tier;
+    },
+    pageTitle() {
+      if (this.isDowngrade) return "Switch to a Standard Plan";
+      if (this.isUpgrade) return "Upgrade to a Pro Plan";
+      return "Change Your Billing Cycle";
+    },
+    pageSubtitle() {
+      if (this.isDowngrade) {
+        return "Review the Standard-plan limits carefully before confirming the change.";
+      }
+      if (this.isUpgrade) {
+        return "Move to Pro to unlock advanced owner tools right after payment succeeds.";
+      }
+      return "Switch between monthly and annual billing while keeping your current tier.";
     },
     acknowledgmentTitle() {
-      return this.isDowngrade ? "Downgrade acknowledgment" : "Upgrade acknowledgment";
+      if (this.isDowngrade) return "Standard plan acknowledgment";
+      if (this.isUpgrade) return "Pro upgrade acknowledgment";
+      return "Billing cycle acknowledgment";
     },
     acknowledgmentBody() {
-      return this.isDowngrade
-        ? "Your plan will switch to Monthly immediately after successful payment. Existing records will remain stored, but annual-only tools such as tenants, bookings, billing, ledger, and reports will no longer be accessible until you upgrade again."
-        : "Your plan will switch to Annual immediately after successful payment. This unlocks the full owner management experience, including bookings, tenants, billing, ledger, and reports.";
+      if (this.isDowngrade) {
+        return "Your plan will switch to a Standard tier immediately after successful payment. Existing records will remain stored, but advanced Pro tools such as bookings, tenants, billing, ledger, and reports will no longer be accessible until you upgrade again.";
+      }
+      if (this.isUpgrade) {
+        return "Your plan will switch to Pro immediately after successful payment. This unlocks advanced owner tools, including bookings, tenants, billing, ledger, and reports.";
+      }
+      return "Your billing cycle will update immediately after successful payment, while your current tier features stay the same.";
     },
     acknowledgmentLabel() {
-      return this.isDowngrade
-        ? "I understand that changing to Monthly will take effect immediately after payment, stop new bookings on my listings, and remove access to annual-only management tools while keeping my records stored."
-        : "I understand that changing to Annual will take effect immediately after payment and unlock bookings, tenants, billing, ledger, and reports access.";
+      if (this.isDowngrade) {
+        return "I understand that switching to a Standard plan will take effect immediately after payment, pause access to Pro-only management tools, and keep my existing records stored.";
+      }
+      if (this.isUpgrade) {
+        return "I understand that switching to Pro will take effect immediately after payment and unlock advanced management tools.";
+      }
+      return "I understand that switching billing cycles takes effect immediately after payment while keeping my current tier benefits.";
     },
     confirmTitle() {
-      return this.isDowngrade ? "Confirm Monthly Downgrade" : "Confirm Annual Upgrade";
+      if (this.isDowngrade) return "Confirm Standard Plan Change";
+      if (this.isUpgrade) return "Confirm Pro Upgrade";
+      return "Confirm Billing Cycle Change";
     },
     confirmMessage() {
-      return this.isDowngrade
-        ? "Proceed with changing to Monthly and apply the downgrade immediately after payment?"
-        : "Proceed with changing to Annual and unlock the annual features immediately after payment?";
+      if (this.isDowngrade) {
+        return `Proceed with changing to ${this.targetPlanName} and apply the Standard-tier access immediately after payment?`;
+      }
+      if (this.isUpgrade) {
+        return `Proceed with changing to ${this.targetPlanName} and unlock Pro tools immediately after payment?`;
+      }
+      return `Proceed with switching your billing cycle to ${this.targetPlanName}?`;
     },
     confirmButtonText() {
-      return this.isDowngrade ? "Proceed to Monthly" : "Proceed to Annual";
+      if (this.isDowngrade) return "Confirm Standard Plan";
+      if (this.isUpgrade) return "Confirm Pro Upgrade";
+      return "Confirm Billing Change";
     },
   },
   async mounted() {
@@ -198,6 +249,11 @@ export default {
         confirmButtonText: "Okay",
         ...options,
       });
+    },
+    applyTargetPlan(planCode) {
+      const normalized = normalizeOwnerPlanCode(planCode);
+      this.selectedPlan = normalized;
+      this.planPrice = getOwnerPlanPrice(normalized);
     },
     async loadPlanChangeContext() {
       const info = useUserInfo();
@@ -219,22 +275,22 @@ export default {
       }
 
       this.currentSubscription = subscription;
+      const currentPlanCode = getOwnerPlanCodeFromSubscription(subscription);
       this.baselineSubscription = {
         status: String(subscription.status || "").toLowerCase(),
         end_date: subscription.end_date || null,
         plan_name: subscription.plan_name || null,
         billing_cycle: String(subscription.billing_cycle || "").toLowerCase(),
+        plan_code: currentPlanCode,
       };
 
-      const requested = String(this.$route.query.plan || "").toLowerCase();
-      const target = requested === "monthly" ? "monthly" : requested === "annual" ? "annual" : "";
-      if (!target || target === this.currentCycle || !this.canChangePlan(subscription)) {
+      const requestedPlan = normalizeOwnerPlanCode(this.$route.query.plan || currentPlanCode, subscription.billing_cycle);
+      if (!requestedPlan || requestedPlan === currentPlanCode || !this.canChangePlan(subscription)) {
         this.$router.replace("/subscription");
         return;
       }
 
-      this.selectedPlan = target;
-      this.planPrice = target === "annual" ? 1800 : 200;
+      this.applyTargetPlan(requestedPlan);
     },
     persistPendingSession() {
       if (!this.subscriptionId || !this.qrCodeUrl) return;
@@ -270,8 +326,7 @@ export default {
       }
 
       this.subscriptionId = session.subscriptionId;
-      this.selectedPlan = session.selectedPlan || this.selectedPlan;
-      this.planPrice = this.selectedPlan === "annual" ? 1800 : 200;
+      this.applyTargetPlan(session.selectedPlan || this.selectedPlan);
       this.qrCodeUrl = session.qrCodeUrl || null;
       this.isProcessingPayment = true;
       this.paymentStatusMessage = "Waiting for your payment...";
@@ -325,7 +380,7 @@ export default {
         this.showAlert({
           icon: "warning",
           title: "Acknowledgment Required",
-          text: `Please acknowledge the ${this.isDowngrade ? "downgrade" : "upgrade"} notice before continuing.`,
+          text: "Please acknowledge the plan change notice before continuing.",
         });
         return;
       }
@@ -338,7 +393,7 @@ export default {
 
       try {
         const payload = new FormData();
-        payload.append("plan", this.selectedPlan === "annual" ? "Annual" : "Monthly");
+        payload.append("plan", this.selectedPlan);
         payload.append("permit_acknowledged", "1");
         payload.append("change_acknowledged", this.changeAcknowledged ? "1" : "0");
 
@@ -404,9 +459,9 @@ export default {
     hasChangedPlan(snapshot) {
       if (!snapshot) return false;
       const latestStatus = String(snapshot.status || "").toLowerCase();
-      const latestCycle = String(snapshot.billing_cycle || "").toLowerCase();
+      const latestPlanCode = normalizeOwnerPlanCode(snapshot.plan_code || snapshot.plan_name, snapshot.billing_cycle);
       const latestEndDate = snapshot.end_date ? new Date(snapshot.end_date) : null;
-      if (latestStatus !== "active" || latestCycle !== this.selectedPlan) return false;
+      if (latestStatus !== "active" || latestPlanCode !== this.selectedPlan) return false;
       return latestEndDate && !Number.isNaN(latestEndDate.getTime()) && latestEndDate.getTime() > Date.now();
     },
     async finishPlanChange(snapshot = null) {

@@ -145,7 +145,7 @@
     <ConfirmModal
       :show="showConfirmModal"
       title="Confirm Renewal"
-      message="Proceed with your current plan renewal and generate the payment QR code?"
+      :message="`Proceed with renewing ${displayPlanName} and generate the payment QR code?`"
       confirm-text="Proceed to Renewal"
       @confirm="confirmPayment"
       @cancel="showConfirmModal = false"
@@ -159,6 +159,14 @@ import ConfirmModal from "@/components/confirmModal.vue";
 import { cancelPendingSubscription, getOwnerSubscriptionStatus, getSubscriptionStatus } from "@/api/subscription";
 import { useUserInfo } from "@/store/userInfo";
 import { downloadQrImage } from "@/utils/qrDownload";
+import {
+  getOwnerPlan,
+  getOwnerPlanBillingSummary,
+  getOwnerPlanCodeFromSubscription,
+  getOwnerPlanDisplayName,
+  getOwnerPlanPrice,
+  normalizeOwnerPlanCode,
+} from "@/utils/ownerPlans";
 import Swal from "sweetalert2";
 
 const RENEWAL_PAYMENT_SESSION_KEY = "ownerRenewalPaymentSession";
@@ -177,7 +185,7 @@ export default {
       isHandlingRouteLeave: false,
       name: "",
       email: "",
-      selectedPlan: "monthly",
+      selectedPlan: "monthly_standard",
       planPrice: 200,
       currentSubscription: null,
       baselineSubscription: null,
@@ -186,30 +194,13 @@ export default {
   },
   computed: {
     displayPlanName() {
-      return this.selectedPlan === "annual" ? "Annual Pro" : "Monthly Standard";
+      return getOwnerPlanDisplayName(this.selectedPlan);
     },
     billingCycleLabel() {
-      return this.selectedPlan === "annual" ? "per year" : "per month";
+      return getOwnerPlanBillingSummary(this.selectedPlan);
     },
     planBenefits() {
-      if (this.selectedPlan === "annual") {
-        return [
-          "Up to 5 property listings",
-          "Property management",
-          "Reviews management",
-          "Tenant management",
-          "Booking management",
-          "Billings management",
-          "Payment ledger management",
-          "Reports & Analytics",
-        ];
-      }
-
-      return [
-        "2 property listing limit",
-        "Property management",
-        "Reviews management",
-      ];
+      return getOwnerPlan(this.selectedPlan).features;
     },
   },
   async mounted() {
@@ -222,6 +213,11 @@ export default {
         confirmButtonText: "Okay",
         ...options,
       });
+    },
+    applyPlanState(planCode) {
+      const normalized = normalizeOwnerPlanCode(planCode);
+      this.selectedPlan = normalized;
+      this.planPrice = getOwnerPlanPrice(normalized);
     },
     async loadRenewalContext() {
       const info = useUserInfo();
@@ -246,16 +242,17 @@ export default {
         return;
       }
 
+      const selectedPlan = normalizeOwnerPlanCode(this.$route.query.plan || getOwnerPlanCodeFromSubscription(subscription), subscription.billing_cycle);
+
       this.currentSubscription = subscription;
       this.baselineSubscription = {
         status: String(subscription.status || "").toLowerCase(),
         end_date: subscription.end_date || null,
         plan_name: subscription.plan_name || null,
         billing_cycle: subscription.billing_cycle || null,
+        plan_code: getOwnerPlanCodeFromSubscription(subscription),
       };
-      const cycle = String(subscription.billing_cycle || this.$route.query.plan || "monthly").toLowerCase();
-      this.selectedPlan = cycle === "annual" ? "annual" : "monthly";
-      this.planPrice = this.selectedPlan === "annual" ? 1800 : 200;
+      this.applyPlanState(selectedPlan);
     },
     persistPendingSession() {
       if (!this.subscriptionId || !this.qrCodeUrl) return;
@@ -291,8 +288,7 @@ export default {
       }
 
       this.subscriptionId = session.subscriptionId;
-      this.selectedPlan = session.selectedPlan || this.selectedPlan;
-      this.planPrice = this.selectedPlan === "annual" ? 1800 : 200;
+      this.applyPlanState(session.selectedPlan || this.selectedPlan);
       this.qrCodeUrl = session.qrCodeUrl || null;
       this.isProcessingPayment = true;
       this.paymentStatusMessage = "Waiting for your payment...";
@@ -341,8 +337,7 @@ export default {
 
       try {
         const fd = new FormData();
-        const backendPlan = this.selectedPlan === "annual" ? "Annual" : "Monthly";
-        fd.append("plan", backendPlan);
+        fd.append("plan", this.selectedPlan);
         fd.append("amount", this.planPrice);
         fd.append("permit_acknowledged", "1");
 
@@ -358,7 +353,7 @@ export default {
         await this.showAlert({
           icon: "error",
           title: "Payment Gateway Error",
-          text: "Error connecting to payment gateway. Please check your connection.",
+          text: error?.response?.data?.message || "Error connecting to payment gateway. Please check your connection.",
         });
       }
     },
@@ -423,10 +418,15 @@ export default {
 
       const baselineStatus = String(this.baselineSubscription?.status || "").toLowerCase();
       const latestStatus = String(snapshot.status || "").toLowerCase();
+      const latestPlanCode = normalizeOwnerPlanCode(snapshot.plan_code || snapshot.plan_name, snapshot.billing_cycle);
       const latestEndDate = snapshot.end_date ? new Date(snapshot.end_date) : null;
       const baselineEndDate = this.baselineSubscription?.end_date
         ? new Date(this.baselineSubscription.end_date)
         : null;
+
+      if (latestPlanCode !== this.selectedPlan) {
+        return false;
+      }
 
       if (!latestEndDate || Number.isNaN(latestEndDate.getTime())) {
         return false;
@@ -436,7 +436,7 @@ export default {
         if (!baselineEndDate || Number.isNaN(baselineEndDate.getTime())) {
           return latestStatus === "active";
         }
-        return latestEndDate.getTime() > baselineEndDate.getTime();
+        return latestStatus === "active" && latestEndDate.getTime() > baselineEndDate.getTime();
       }
 
       return latestStatus === "active" && latestEndDate.getTime() > Date.now();
@@ -455,19 +455,9 @@ export default {
       await this.showAlert({
         icon: "success",
         title: "Renewal Complete",
-        text: "Subscription renewed successfully.",
+        text: `Subscription renewed successfully for ${this.displayPlanName}.`,
       });
       this.$router.push("/subscription");
-    },
-    async refreshSubscription() {
-      try {
-        const subscription = await getOwnerSubscriptionStatus();
-        if (subscription) {
-          useUserInfo().setSubscriptionStatus(subscription);
-        }
-      } catch (error) {
-        console.warn("Failed to refresh renewed subscription:", error);
-      }
     },
     resetPaymentState(clearSession = true) {
       clearInterval(this.checkStatusInterval);

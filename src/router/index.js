@@ -7,6 +7,7 @@ import Login from '@/views/Authentication/login.vue'
 import Register from '@/views/Authentication/register.vue'
 import { getOwnerSubscriptionStatus } from '@/api/subscription'
 import { getOwnerProperties, updateOwnerPropertyState } from '@/api/property'
+import { ownerPlanHasProFeatures } from '@/utils/ownerPlans'
 
 const routes = [
   {
@@ -307,7 +308,7 @@ router.beforeEach(async (to, from, next) => {
 
       await applyExpiredOwnerAvailability(subscription, user);
 
-      const isMonthlyPlan = String(subscription?.billing_cycle || "").toLowerCase() === "monthly";
+      const hasProFeatures = ownerPlanHasProFeatures(subscription?.plan_code || subscription?.plan_name, subscription?.billing_cycle);
       const isOwnerDashboardRoute = [
         "/overview",
         "/subscription",
@@ -322,8 +323,8 @@ router.beforeEach(async (to, from, next) => {
         "/dashboard/properties/add",
       ].includes(to.path) || /^\/dashboard\/properties\/\d+\/edit$/.test(to.path);
 
-      if (isMonthlyPlan) {
-        const allowedMonthly = [
+      if (!hasProFeatures) {
+        const allowedStandard = [
           "/overview",
           "/properties",
           "/dashboard/properties/add",
@@ -332,7 +333,7 @@ router.beforeEach(async (to, from, next) => {
           "/subscription/change",
         ];
         const isAllowed =
-          allowedMonthly.includes(to.path) ||
+          allowedStandard.includes(to.path) ||
           /^\/dashboard\/properties\/\d+\/edit$/.test(to.path);
         if (isOwnerDashboardRoute && !isAllowed) {
           return next("/subscription");

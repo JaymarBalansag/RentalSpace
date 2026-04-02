@@ -143,6 +143,12 @@ import Header from '@/components/Header.vue';
 import ConfirmModal from '@/components/confirmModal.vue';
 import { useUserInfo } from '@/store/userInfo';
 import { downloadQrImage } from '@/utils/qrDownload';
+import {
+  getOwnerPlan,
+  getOwnerPlanCycleLabel,
+  getOwnerPlanDisplayName,
+  getOwnerPlanPrice,
+} from '@/utils/ownerPlans';
 import Swal from 'sweetalert2';
 
 const OWNER_PAYMENT_SESSION_KEY = "ownerPendingPaymentSession";
@@ -152,29 +158,14 @@ export default {
   components: { Header, ConfirmModal },
   computed: {
     displayPlanName() {
-      return this.selectedPlan === "annual" ? "Annual Pro" : "Monthly Standard";
+      return getOwnerPlanDisplayName(this.selectedPlan);
     },
     planBenefits() {
-      if (this.selectedPlan === "annual") {
-        return [
-          "Up to 5 property listings",
-          "Property management",
-          "Reviews management",
-          "Tenant management",
-          "Booking management",
-          "Billings management",
-          "Payment ledger management",
-          "Reports & Analytics",
-        ];
-      }
-      return [
-        "2 property listing limit",
-        "Property management",
-        "Reviews management",
-      ];
+      return getOwnerPlan(this.selectedPlan).features;
     },
   },
   data() {
+    const initialPlan = this.$route.query.plan || 'monthly_standard';
     return {
       isProcessingPayment: false,
       showConfirmModal: false,
@@ -187,9 +178,9 @@ export default {
       email: "",
       permitAcknowledged: false,
       isRenewal: this.$route.query.renewal === '1',
-      selectedPlan: this.$route.query.plan || 'monthly',
-      planPrice: this.$route.query.plan === 'annual' ? 1800 : 200,
-      planBilling: this.$route.query.plan === 'annual' ? 'per year' : 'per month'
+      selectedPlan: initialPlan,
+      planPrice: getOwnerPlanPrice(initialPlan),
+      planBilling: getOwnerPlanCycleLabel(initialPlan),
     };
   },
   mounted() {
@@ -273,8 +264,8 @@ export default {
 
       this.subscriptionId = session.subscriptionId;
       this.selectedPlan = session.selectedPlan || this.selectedPlan;
-      this.planPrice = this.selectedPlan === 'annual' ? 1800 : 200;
-      this.planBilling = this.selectedPlan === 'annual' ? 'per year' : 'per month';
+      this.planPrice = getOwnerPlanPrice(this.selectedPlan);
+      this.planBilling = getOwnerPlanCycleLabel(this.selectedPlan);
       this.qrCodeUrl = session.qrCodeUrl || null;
       this.isProcessingPayment = true;
 
@@ -372,8 +363,7 @@ export default {
 
       try {
         const fd = new FormData();
-        const backendPlan = this.selectedPlan === 'annual' ? 'Annual' : 'Monthly';
-        fd.append('plan', backendPlan);
+        fd.append('plan', this.selectedPlan);
         fd.append('amount', this.planPrice);
         fd.append('permit_acknowledged', this.permitAcknowledged ? '1' : '0');
 
@@ -452,6 +442,17 @@ export default {
           title: "Download Failed",
           text: error?.message || "Unable to download the QR right now.",
         });
+      }
+    },
+  },
+  watch: {
+    '$route.query.plan': {
+      immediate: true,
+      handler(plan) {
+        if (!plan) return;
+        this.selectedPlan = plan;
+        this.planPrice = getOwnerPlanPrice(this.selectedPlan);
+        this.planBilling = getOwnerPlanCycleLabel(this.selectedPlan);
       }
     }
   },

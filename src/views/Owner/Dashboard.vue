@@ -73,6 +73,7 @@ import { logout } from "@/api/auth";
 import { useUserInfo } from "@/store/userInfo";
 import { getOwnerSubscriptionStatus } from "@/api/subscription";
 import { nextTick } from "vue";
+import { ownerPlanHasProFeatures } from "@/utils/ownerPlans";
 
 export default {
   name: "OwnerDashboard",
@@ -89,9 +90,8 @@ export default {
     subscription() {
       return useUserInfo().subscription || null;
     },
-    isMonthlyPlan() {
-      const cycle = String(this.subscription?.billing_cycle || "").toLowerCase();
-      return cycle === "monthly";
+    hasProFeatures() {
+      return ownerPlanHasProFeatures(this.subscription?.plan_code || this.subscription?.plan_name, this.subscription?.billing_cycle);
     },
     navItems() {
       const base = [
@@ -106,7 +106,7 @@ export default {
       ];
 
       if (!this.subscription) return base;
-      if (!this.isMonthlyPlan) return base;
+      if (this.hasProFeatures) return base;
 
       return base.filter((item) =>
         ["/subscription", "/overview", "/properties"].includes(item.route)

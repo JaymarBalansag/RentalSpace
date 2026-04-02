@@ -17,78 +17,48 @@
       </div>
 
       <div class="row justify-content-center g-4">
-      <!-- Monthly Plan -->
-      <div class="col-md-5">
-        <div class="plan-card plan-starter">
-          <div class="plan-header">
-            <div>
-              <span class="plan-tag">Standard</span>
-              <h4 class="plan-title">Monthly Standard</h4>
-              <p class="plan-subtext">Core tools for new owners and smaller portfolios.</p>
+        <div v-for="plan in plans" :key="plan.code" class="col-md-6 col-xl-5">
+          <div class="plan-card" :class="plan.tier === 'pro' ? 'plan-pro' : 'plan-starter'">
+            <div v-if="plan.code === 'annual_pro'" class="plan-ribbon">Best Value</div>
+            <div class="plan-header">
+              <div>
+                <span class="plan-tag">{{ plan.shortName }}</span>
+                <h4 class="plan-title">{{ plan.name }}</h4>
+                <p class="plan-subtext">{{ plan.description }}</p>
+              </div>
+              <div class="plan-price">
+                <span class="amount">PHP {{ plan.displayPrice.toLocaleString() }}</span>
+                <span class="cycle">{{ plan.cycle === 'annual' ? 'per year' : 'per month' }}</span>
+              </div>
             </div>
-            <div class="plan-price">
-              <span class="amount">₱200</span>
-              <span class="cycle">per month</span>
-            </div>
+            <ul class="plan-features">
+              <li v-for="feature in plan.features" :key="feature"><i class="bi bi-check-circle-fill"></i> {{ feature }}</li>
+            </ul>
+            <button @click="selectPlan(plan.code)" class="btn w-100 mt-auto" :class="plan.tier === 'pro' ? 'btn-dark' : 'btn-primary'">
+              Choose {{ plan.name }}
+            </button>
           </div>
-          <ul class="plan-features">
-            <li><i class="bi bi-check-circle-fill"></i> 2 property listing limit</li>
-            <li><i class="bi bi-check-circle-fill"></i> Property management</li>
-            <li><i class="bi bi-check-circle-fill"></i> Reviews management</li>
-          </ul>
-          <button @click="selectPlan('monthly')" class="btn btn-primary w-100 mt-auto">
-            Choose Monthly Standard
-          </button>
         </div>
-      </div>
-
-      <!-- Annual Plan -->
-      <div class="col-md-5">
-        <div class="plan-card plan-pro">
-          <div class="plan-ribbon">Best Value</div>
-          <div class="plan-header">
-            <div>
-              <span class="plan-tag">Pro</span>
-              <h4 class="plan-title">Annual Pro</h4>
-              <p class="plan-subtext">Full management suite for growing portfolios.</p>
-            </div>
-            <div class="plan-price">
-              <span class="amount">₱1800</span>
-              <span class="cycle">per year</span>
-            </div>
-          </div>
-          <ul class="plan-features">
-            <li><i class="bi bi-check-circle-fill"></i> Up to 5 property listings</li>
-            <li><i class="bi bi-check-circle-fill"></i> Property management</li>
-            <li><i class="bi bi-check-circle-fill"></i> Reviews management</li>
-            <li><i class="bi bi-check-circle-fill"></i> Booking management</li>
-            <li><i class="bi bi-check-circle-fill"></i> Tenant management</li>
-            <li><i class="bi bi-check-circle-fill"></i> Billings management</li>
-            <li><i class="bi bi-check-circle-fill"></i> Payment ledger Management</li>
-            <li><i class="bi bi-check-circle-fill"></i> Reports & Analytics</li>
-          </ul>
-          <button @click="selectPlan('annual')" class="btn btn-dark w-100 mt-auto">
-            Choose Annual Pro
-          </button>
-        </div>
-      </div>
       </div>
     </div>
   </section>
 </template>
 
 <script>
-  import Header from '@/components/Header.vue';
-  import Swal from "sweetalert2";
+import Header from '@/components/Header.vue';
+import Swal from "sweetalert2";
+import { getOwnerPlanList } from "@/utils/ownerPlans";
 
 export default {
   name: "PaymentWall",
   components: { Header },
   data() {
-    return {}
+    return {
+      plans: getOwnerPlanList(),
+    };
   },
   methods: {
-    selectPlan(planType) {
+    selectPlan(planCode) {
       const user = JSON.parse(localStorage.getItem("userInfo") || "{}");
       const status = String(user?.user_verification_status || "unverified").toLowerCase().trim();
       if (status !== "verified") {
@@ -107,15 +77,14 @@ export default {
         });
         return;
       }
-      this.$router.push({ 
+      this.$router.push({
         path: '/payment/details',
-        query: { plan: planType }
-      })
+        query: { plan: planCode }
+      });
     }
   }
 }
 </script>
-
 
 <style scoped>
 .payment-wall {
@@ -238,7 +207,6 @@ export default {
 .plan-price .amount {
   font-size: 2rem;
   font-weight: 700;
-  color: #0b1020;
 }
 
 .plan-price .cycle {

@@ -343,6 +343,7 @@
 <script>
 import { getTenantDashboard, getTenantMoveOutNotices, submitMoveOutNotice, getTenantBillingsById } from '@/api/tenants';
 import Header from '@/components/Header.vue';
+import { useUserInfo } from '@/store/userInfo';
 
 export default {
   components: { Header },
@@ -578,8 +579,8 @@ export default {
         this.dueItems = payload.due_items || [];
         this.dueItemsLoaded = Object.prototype.hasOwnProperty.call(payload, 'due_items');
 
-        const local = JSON.parse(localStorage.getItem("userInfo") || "{}");
-        const fullName = [local.first_name, local.last_name].filter(Boolean).join(" ").trim();
+        const info = useUserInfo();
+        const fullName = [info.first_name, info.last_name].filter(Boolean).join(" ").trim();
         if (fullName) this.tenantName = fullName;
 
         this.propertyTitle = payload.property_title || this.propertyTitle;
@@ -691,9 +692,9 @@ export default {
 
       this.loading = true;
       try {
-        const local = JSON.parse(localStorage.getItem("userInfo") || "{}");
+        const info = useUserInfo();
         const payload = {
-          tenant_id: local?.id || null,
+          tenant_id: info.id || null,
           billing_id: this.paymentForm.billing_id,
           property_id: this.paymentForm.property_id,
           payment_type: this.paymentForm.payment_type,

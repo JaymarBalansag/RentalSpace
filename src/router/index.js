@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { pinia } from '@/store/pinia'
+import { useUserInfo } from '@/store/userInfo'
 
 // STATIC IMPORTS: These load immediately on the first visit
 import LandingPage from '@/views/Main/LandingPage.vue'
-import Home from '@/views/Main/Home.vue'
 import Login from '@/views/Authentication/login.vue'
 import Register from '@/views/Authentication/register.vue'
 import { getOwnerSubscriptionStatus } from '@/api/subscription'
@@ -22,7 +23,7 @@ const routes = [
   {
     path: '/Home',
     name: 'Home',
-    component: Home
+    component: () => import('@/views/Main/Home.vue')
   },
   {
     path: '/login',
@@ -250,20 +251,14 @@ async function applyExpiredOwnerAvailability(subscription, user) {
 
 // Navigation Guard
 router.beforeEach(async (to, from, next) => {
-  const isLoggedIn = !!localStorage.getItem("access_token");
-  let user = null;
-  if (isLoggedIn) {
-    try {
-      user = JSON.parse(localStorage.getItem("userInfo"));
-    } catch (e) {
-      user = null;
-    }
-  }
+  const info = useUserInfo(pinia);
+  await info.bootstrapAuth();
 
-  const role = user?.role || "guest";
-  const email_verified_at = user?.email_verified_at;
-  const isComplete = user?.isComplete;
-  const userVerificationStatus = String(user?.user_verification_status || "unverified").toLowerCase().trim();
+  const isLoggedIn = info.isLoggedIn;
+  const role = info.role || "guest";
+  const email_verified_at = info.email_verified_at;
+  const isComplete = info.isComplete;
+  const userVerificationStatus = String(info.user_verification_status || "unverified").toLowerCase().trim();
 
   // Verification Lock
   if (isLoggedIn && !email_verified_at && to.path !== "/reverify-email" && to.path !== "/logout") {
@@ -283,7 +278,7 @@ router.beforeEach(async (to, from, next) => {
 
   // Auth requirement
   if (to.meta.requiresAuth && !isLoggedIn) {
-    localStorage.removeItem("userInfo");
+    info.clearPersistedUserInfo();
     return next("/login");
   }
 
@@ -295,18 +290,13 @@ router.beforeEach(async (to, from, next) => {
   if (isLoggedIn && role === "owner") {
     try {
       const subscription = await getOwnerSubscriptionStatus();
-      const userInfoRaw = localStorage.getItem("userInfo");
-      if (userInfoRaw) {
-        const cached = JSON.parse(userInfoRaw);
-        cached.subscription = subscription;
-        localStorage.setItem("userInfo", JSON.stringify(cached));
-      }
+      info.setSubscriptionStatus(subscription);
 
       if (subscription?.is_expiring_soon) {
         sessionStorage.setItem("ownerSubscriptionWarning", subscription.message || "Your subscription is about to expire.");
       }
 
-      await applyExpiredOwnerAvailability(subscription, user);
+      await applyExpiredOwnerAvailability(subscription, info);
 
       const hasProFeatures = ownerPlanHasProFeatures(subscription?.plan_code || subscription?.plan_name, subscription?.billing_cycle);
       const isOwnerDashboardRoute = [

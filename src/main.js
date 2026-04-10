@@ -11,8 +11,8 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 
 
 import "leaflet/dist/leaflet.css"
-import { createPinia } from 'pinia'
 import axios from "axios";
+import { pinia } from "@/store/pinia";
 
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
@@ -56,7 +56,6 @@ registerSW({
   },
 });
 
-const pinia = createPinia()
 const app = createApp(App)
 
 app.use(pinia)

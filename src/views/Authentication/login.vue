@@ -98,7 +98,6 @@
 import { login } from '@/api/auth';
 import { useUserInfo } from '@/store/userInfo';
 import successToast from '@/components/successToast.vue';
-import { getUserProfile } from '@/api/user';
 import { getOwnerSubscriptionStatus } from '@/api/subscription';
 import Header from '@/components/Header.vue';
 import Swal from 'sweetalert2';
@@ -127,29 +126,9 @@ export default {
         // console.log(res)
         // Ensure res has data before proceeding
         if (res) {
-          // Fetch profile image right after login for the Header display
-          const profileRes = await getUserProfile();
-          const userData = profileRes.data.user[0];
-          const profile_photo = userData.user_img_url || null;
+          await info.fetchCurrentUser();
 
-          // Update Global State
-          info.setUserInfo(
-            res.first_name, 
-            res.last_name, 
-            res.role, 
-            res.email, 
-            profile_photo,
-            res.email_verified_at,
-            res.isComplete,
-            res.owner_verification_status || userData.owner_verification_status || null,
-            res.owner_verified_at || userData.owner_verified_at || null,
-            res.user_verification_status || userData.user_verification_status || "unverified",
-            res.user_verified_at || userData.user_verified_at || null,
-            res.user_verification_rejected_reason || userData.user_verification_rejected_reason || null,
-            userData.user_valid_govt_id_url || null,
-          );
-
-          if (res.role === "owner") {
+          if (info.role === "owner") {
             try {
               const ownerSubscription = await getOwnerSubscriptionStatus();
               info.setSubscriptionStatus(ownerSubscription);
@@ -168,8 +147,6 @@ export default {
             info.clearSubscriptionStatus();
           }
 
-          console.log(info.first_name, info.last_name, info.role, info.email, info.email_verified_at, "Asdasd");
-
 
           if (this.rememberEmail) {
             localStorage.setItem("remember_email_enabled", "true");
@@ -179,7 +156,7 @@ export default {
             localStorage.setItem("remember_email_enabled", "false");
           }
 
-          if(res.email_verified_at === null){
+          if(info.email_verified_at === null){
             this.$router.push("/reverify-email");
             return;
           }

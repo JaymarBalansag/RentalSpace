@@ -55,7 +55,7 @@
                 </button>
               </div>
 
-              <div v-if="loading" class="d-flex gap-4 overflow-auto pb-3">
+              <div v-if="recommendationsLoading && !recommendedProperties.length" class="d-flex gap-4 overflow-auto pb-3">
                 <div v-for="n in 3" :key="'skel-' + n" class="skeleton-card" style="min-width: 280px;">
                   <div class="placeholder-glow">
                     <div class="placeholder col-12 rounded-4 mb-3" style="height: 180px;"></div>
@@ -67,7 +67,12 @@
                 </div>
               </div>
 
-              <div v-else-if="recommendedProperties.length > 0" class="d-flex gap-4 overflow-auto pb-3 custom-scrollbar">
+              <div v-else-if="recommendedProperties.length > 0" class="position-relative">
+                <div v-if="recommendationsRefreshing" class="recommendation-refresh-indicator">
+                  <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Refreshing recommendations...
+                </div>
+                <div class="d-flex gap-4 overflow-auto pb-3 custom-scrollbar" :class="{ 'is-refreshing': recommendationsRefreshing }">
                 <div
                   v-for="property in recommendedProperties"
                   :key="property.id"
@@ -76,10 +81,10 @@
                   @click="gotoProperty(property.id)"
                 >
                   <div class="position-relative overflow-hidden rounded-4 shadow-sm">
-                    <img :src="getPropertyImage(property)" class="card-img-top property-img" alt="Property" @error="$event.target.src = placeholderImage">
+                    <img :src="property.image_url" class="card-img-top property-img" alt="Property" @error="$event.target.src = placeholderImage">
                     <div class="property-badge-overlay">
                       <span class="badge glass-badge rounded-pill">
-                        PHP {{ formatPrice(property.price) }}
+                        {{ property.display_price }}
                       </span>
                     </div>
                   </div>
@@ -87,17 +92,18 @@
                     <div class="d-flex justify-content-between align-items-start mb-1">
                       <h6 class="fw-bold text-dark mb-0 text-truncate">{{ property.title }}</h6>
                       <div class="text-warning small">
-                        <i class="bi bi-star-fill"></i> {{ getPropertyAverageRating(property).toFixed(1) }}
+                        <i class="bi bi-star-fill"></i> {{ property.average_rating.toFixed(1) }}
                       </div>
                     </div>
                     <p class="small text-muted mb-1">
-                      {{ getPropertyTotalReviews(property) }} review{{ getPropertyTotalReviews(property) === 1 ? '' : 's' }}
+                      {{ property.total_reviews }} review{{ property.total_reviews === 1 ? '' : 's' }}
                     </p>
                     <p class="text-muted small mb-0 d-flex align-items-center gap-1">
                       <i class="bi bi-geo-alt-fill text-danger"></i> {{ property.town_name }}
                     </p>
                   </div>
                 </div>
+              </div>
               </div>
 
               <div v-else class="text-center py-5 border-dashed rounded-4 empty-shell">
@@ -130,23 +136,23 @@
               <div class="card border-0 shadow-sm rounded-4 hover-lift overflow-hidden panel-card" @click="gotoProperty(property.id)" style="cursor: pointer;">
                 <div class="row g-0 align-items-center">
                   <div class="col-5">
-                    <img :src="getPropertyImage(property)" class="img-fluid h-100" style="object-fit: cover; min-height: 120px;" alt="Trending property image" @error="$event.target.src = placeholderImage">
+                    <img :src="property.image_url" class="img-fluid h-100" style="object-fit: cover; min-height: 120px;" alt="Trending property image" @error="$event.target.src = placeholderImage">
                   </div>
                   <div class="col-7">
                     <div class="card-body p-3">
                       <h6 class="fw-bold mb-1 text-truncate">{{ property.title }}</h6>
                       <p class="small text-muted mb-2 text-truncate-2">{{ property.description || 'Popular property based on recent user views.' }}</p>
                       <div class="d-flex align-items-center justify-content-between mt-2">
-                        <span class="text-primary small fw-bold">PHP {{ formatPrice(property.price) }}</span>
+                        <span class="text-primary small fw-bold">{{ property.display_price }}</span>
                         <small class="text-warning fw-semibold">
-                          <i class="bi bi-star-fill"></i> {{ getPropertyAverageRating(property).toFixed(1) }}
+                          <i class="bi bi-star-fill"></i> {{ property.average_rating.toFixed(1) }}
                         </small>
                       </div>
                       <div class="d-flex align-items-center justify-content-between mt-1">
                         <small class="text-muted">
-                          {{ getPropertyTotalReviews(property) }} review{{ getPropertyTotalReviews(property) === 1 ? '' : 's' }}
+                          {{ property.total_reviews }} review{{ property.total_reviews === 1 ? '' : 's' }}
                         </small>
-                        <small class="text-muted"><i class="bi bi-eye"></i> {{ formatCompactNumber(getViewCount(property)) }}</small>
+                        <small class="text-muted"><i class="bi bi-eye"></i> {{ property.compact_view_count }}</small>
                       </div>
                     </div>
                   </div>
@@ -161,7 +167,7 @@
             <div class="card-body p-4">
               <h5 class="fw-bold mb-4">Recent Listings</h5>
 
-              <div v-if="loading" class="placeholder-glow">
+              <div v-if="recentLoading" class="placeholder-glow">
                 <div v-for="n in 3" :key="n" class="d-flex mb-4">
                   <div class="placeholder rounded-3 me-3" style="width:70px; height:70px;"></div>
                   <div class="flex-grow-1">
@@ -174,7 +180,7 @@
               <div v-else class="recent-list">
                 <div v-for="property in recentProperties" :key="property.id" class="d-flex align-items-center mb-4 transition-row">
                   <div class="recent-img-wrapper me-3">
-                    <img :src="getPropertyImage(property)" class="rounded-3 shadow-sm border" style="width:70px; height:70px; object-fit:cover;" @error="$event.target.src = placeholderImage">
+                    <img :src="property.image_url" class="rounded-3 shadow-sm border" style="width:70px; height:70px; object-fit:cover;" @error="$event.target.src = placeholderImage">
                   </div>
                   <div class="overflow-hidden">
                     <h6 class="mb-1 text-dark text-truncate fw-semibold">{{ property.title }}</h6>
@@ -193,7 +199,12 @@
             <div class="card-body p-4 position-relative">
               <div class="z-index-2 position-relative">
                 <h5 class="fw-bold mb-4">Popular Categories</h5>
-                <div class="d-flex flex-wrap gap-2">
+                <div v-if="popularTypesLoading" class="d-flex flex-wrap gap-2">
+                  <span v-for="n in 4" :key="'popular-skel-' + n" class="badge glass-dark-badge p-2 px-3 fw-medium placeholder-glow">
+                    <span class="placeholder col-12" style="width: 72px; display: inline-block;"></span>
+                  </span>
+                </div>
+                <div v-else class="d-flex flex-wrap gap-2">
                   <span v-for="type in popularTypes" :key="type.id" class="badge glass-dark-badge p-2 px-3 fw-medium">
                     {{ type.type_name }} <span class="opacity-50 ms-1">{{ type.total }}</span>
                   </span>
@@ -240,8 +251,12 @@ export default {
       popularTypes: [],
       trendingProperties: [],
       placeholderImage: placeholderImg,
-      loading: false,
+      recommendationsLoading: false,
+      recommendationsRefreshing: false,
+      recentLoading: false,
+      popularTypesLoading: false,
       trendingLoading: false,
+      recommendationRequestToken: 0,
       badgeColors: ['bg-primary-subtle text-primary', 'bg-success-subtle text-success', 'bg-warning-subtle text-warning-emphasis', 'bg-info-subtle text-info']
     }
   },
@@ -250,12 +265,14 @@ export default {
       return dayjs(date).fromNow();
     },
 
-    async gotoProperty(id){
-      await recordView(id);
+    gotoProperty(id){
       this.$router.push(`/property/${id}`);
+      Promise.resolve().then(() => recordView(id)).catch((error) => {
+        console.warn("Failed to record property view:", error);
+      });
     },
 
-    getViewCount(property) {
+    normalizeViewCount(property) {
       return Number(
         property?.view_count ??
         property?.views ??
@@ -288,13 +305,22 @@ export default {
 
       return imageUrl;
     },
-    getPropertyAverageRating(property) {
-      const value = Number(property?.average_rating ?? property?.avg_rating ?? 0);
-      return Number.isFinite(value) ? value : 0;
-    },
-    getPropertyTotalReviews(property) {
-      const value = Number(property?.total_reviews ?? property?.review_count ?? 0);
-      return Number.isFinite(value) ? value : 0;
+    normalizeProperty(property) {
+      const averageRating = Number(property?.average_rating ?? property?.avg_rating ?? 0);
+      const totalReviews = Number(property?.total_reviews ?? property?.review_count ?? 0);
+      const price = Number(property?.price ?? 0);
+      const viewCount = this.normalizeViewCount(property);
+
+      return {
+        ...property,
+        image_url: this.getPropertyImage(property),
+        average_rating: Number.isFinite(averageRating) ? averageRating : 0,
+        total_reviews: Number.isFinite(totalReviews) ? totalReviews : 0,
+        price,
+        display_price: `PHP ${this.formatPrice(price)}`,
+        view_count: viewCount,
+        compact_view_count: this.formatCompactNumber(viewCount),
+      };
     },
     filterAvailableProperties(list) {
       const data = Array.isArray(list) ? list : [];
@@ -303,46 +329,80 @@ export default {
         return property?.is_available !== false && status !== "pending";
       });
     },
+    normalizeProperties(list, { filterAvailable = false } = {}) {
+      const source = filterAvailable ? this.filterAvailableProperties(list) : (Array.isArray(list) ? list : []);
+      return source.map((property) => this.normalizeProperty(property));
+    },
+    async loadRecommendations(apiCall, filterName = 'default') {
+      const token = ++this.recommendationRequestToken;
+      const hasExistingCards = this.recommendedProperties.length > 0;
 
-    async handleLoad(apiCall, targetKey, filterName = '') {
-      this.loading = true;
-      if (filterName) this.activeFilter = filterName;
+      this.recommendationsLoading = !hasExistingCards;
+      this.recommendationsRefreshing = hasExistingCards;
+      this.activeFilter = filterName;
       try {
         const response = await apiCall();
-        const list = response.data.data;
-        const filtered = ["recommendedProperties", "recentProperties", "trendingProperties"].includes(targetKey)
-          ? this.filterAvailableProperties(list)
-          : list;
-        this[targetKey] = filtered;
-        this.message = response.data.message || '';
+        if (token !== this.recommendationRequestToken) return;
+
+        const list = Array.isArray(response?.data?.data) ? response.data.data : [];
+        this.recommendedProperties = this.normalizeProperties(list, { filterAvailable: true });
+        this.message = response?.data?.message || '';
       } catch (error) {
-        console.error(`Error loading ${targetKey}:`, error);
+        if (token !== this.recommendationRequestToken) return;
+        console.error("Error loading recommendations:", error);
+        this.recommendedProperties = [];
+        this.message = "Unable to load recommendations right now.";
       } finally {
-        this.loading = false;
+        if (token !== this.recommendationRequestToken) return;
+        this.recommendationsLoading = false;
+        this.recommendationsRefreshing = false;
       }
     },
-
     fetchProperty() {
-      this.handleLoad(getDefaultRecommendation, 'recommendedProperties', 'default');
+      this.loadRecommendations(getDefaultRecommendation, 'default');
     },
     getNearProperties() {
-      this.handleLoad(getNearProperties, 'recommendedProperties', 'near');
+      this.loadRecommendations(getNearProperties, 'near');
     },
     getPrefferedAmenities() {
-      this.handleLoad(getPrefferedAmenities, 'recommendedProperties', 'amenities');
+      this.loadRecommendations(getPrefferedAmenities, 'amenities');
     },
     getPrefferedTypes() {
-      this.handleLoad(getPrefferedTypes, 'recommendedProperties', 'types');
+      this.loadRecommendations(getPrefferedTypes, 'types');
     },
-
+    async fetchRecentProperties() {
+      this.recentLoading = true;
+      try {
+        const response = await getRecentProperties();
+        const list = Array.isArray(response?.data?.data) ? response.data.data : [];
+        this.recentProperties = this.normalizeProperties(list, { filterAvailable: true });
+      } catch (error) {
+        console.error("Error loading recent properties:", error);
+        this.recentProperties = [];
+      } finally {
+        this.recentLoading = false;
+      }
+    },
+    async fetchPopularTypes() {
+      this.popularTypesLoading = true;
+      try {
+        const response = await getPopularTypes();
+        this.popularTypes = Array.isArray(response?.data?.data) ? response.data.data : [];
+      } catch (error) {
+        console.error("Error loading popular property types:", error);
+        this.popularTypes = [];
+      } finally {
+        this.popularTypesLoading = false;
+      }
+    },
     async fetchTrendingProperties() {
       this.trendingLoading = true;
       try {
         const response = await getTrendingProperties(2);
         const list = Array.isArray(response?.data?.data) ? response.data.data : [];
-        const filtered = this.filterAvailableProperties(list);
-        this.trendingProperties = filtered
-          .sort((a, b) => this.getViewCount(b) - this.getViewCount(a))
+        const normalized = this.normalizeProperties(list, { filterAvailable: true });
+        this.trendingProperties = normalized
+          .sort((a, b) => b.view_count - a.view_count)
           .slice(0, 2);
       } catch (error) {
         console.error("Error loading trending properties:", error);
@@ -353,10 +413,12 @@ export default {
     }
   },
   mounted() {
-    this.fetchProperty();
-    this.handleLoad(getRecentProperties, 'recentProperties');
-    this.handleLoad(getPopularTypes, 'popularTypes');
-    this.fetchTrendingProperties();
+    Promise.allSettled([
+      this.loadRecommendations(getDefaultRecommendation, 'default'),
+      this.fetchRecentProperties(),
+      this.fetchPopularTypes(),
+      this.fetchTrendingProperties(),
+    ]);
   }
 }
 </script>
@@ -453,6 +515,27 @@ export default {
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255,255,255,0.2);
   color: #fff;
+}
+
+.recommendation-refresh-indicator {
+  position: absolute;
+  top: -0.25rem;
+  right: 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d8e4f8;
+  box-shadow: 0 8px 18px rgba(18, 43, 83, 0.1);
+  color: #315f9d;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.is-refreshing {
+  opacity: 0.72;
 }
 
 .hover-lift {

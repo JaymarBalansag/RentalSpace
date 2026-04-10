@@ -20,21 +20,27 @@
               <label class="form-label small fw-bold text-secondary">First Name</label>
               <input 
                 type="text" 
-                class="form-control rounded-3 shadow-none custom-input" 
+                :class="['form-control rounded-3 shadow-none custom-input', { 'is-invalid': errors.first_name }]"
                 placeholder="Juan" 
                 v-model="form.first_name" 
                 required
               >
+              <div v-if="errors.first_name" class="invalid-feedback d-block">
+                {{ errors.first_name }}
+              </div>
             </div>
             <div class="col-sm-6">
               <label class="form-label small fw-bold text-secondary">Last Name</label>
               <input 
                 type="text" 
-                class="form-control rounded-3 shadow-none custom-input" 
+                :class="['form-control rounded-3 shadow-none custom-input', { 'is-invalid': errors.last_name }]"
                 placeholder="Dela Cruz" 
                 v-model="form.last_name" 
                 required
               >
+              <div v-if="errors.last_name" class="invalid-feedback d-block">
+                {{ errors.last_name }}
+              </div>
             </div>
           </div>
 
@@ -46,11 +52,14 @@
               </span>
               <input 
                 type="email" 
-                class="form-control rounded-end-3 shadow-none border-start-0 custom-input" 
+                :class="['form-control rounded-end-3 shadow-none border-start-0 custom-input', { 'is-invalid': errors.email }]"
                 placeholder="name@email.com" 
                 v-model="form.email" 
                 required
               >
+            </div>
+            <div v-if="errors.email" class="invalid-feedback d-block">
+              {{ errors.email }}
             </div>
           </div>
 
@@ -60,7 +69,7 @@
               <input
                 :type="showPassword ? 'text' : 'password'"
                 v-model="form.password"
-                class="form-control rounded-3 shadow-none pe-5 custom-input"
+                :class="['form-control rounded-3 shadow-none pe-5 custom-input', { 'is-invalid': errors.password }]"
                 placeholder="Min. 8 characters"
                 required
               />
@@ -72,6 +81,9 @@
                 <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
               </button>
             </div>
+            <div v-if="errors.password" class="invalid-feedback d-block">
+              {{ errors.password }}
+            </div>
           </div>
 
           <div class="mb-4">
@@ -80,7 +92,7 @@
               <input
                 :type="showConfirmPassword ? 'text' : 'password'"
                 v-model="form.confirmPassword"
-                class="form-control rounded-3 shadow-none pe-5 custom-input"
+                :class="['form-control rounded-3 shadow-none pe-5 custom-input', { 'is-invalid': errors.confirmPassword }]"
                 placeholder="Password Confirmation"
                 required
               />
@@ -91,6 +103,9 @@
               >
                 <i :class="showConfirmPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
               </button>
+            </div>
+            <div v-if="errors.confirmPassword" class="invalid-feedback d-block">
+              {{ errors.confirmPassword }}
             </div>
           </div>
 
@@ -124,6 +139,7 @@
 <script>
 import { register } from '@/api/auth';
 import Header from '@/components/Header.vue';
+import Swal from 'sweetalert2';
 
 export default {
   name: "Register",
@@ -140,45 +156,104 @@ export default {
       showPassword: false,
       showConfirmPassword: false,
       loading: false,
+      errors: {},
     };
   },
   methods: {
-    async handleRegister() {
-      // Basic validation for defense
-      if (this.form.password.length < 8) {
-        alert("Password must be at least 8 characters long.");
-        return;
+    resetErrors() {
+      this.errors = {};
+    },
+    validateForm() {
+      const sanitized = {
+        first_name: this.form.first_name.trim(),
+        last_name: this.form.last_name.trim(),
+        email: this.form.email.trim().toLowerCase(),
+        password: this.form.password,
+        confirmPassword: this.form.confirmPassword,
+      };
+
+      const errors = {};
+
+      if (!sanitized.first_name) {
+        errors.first_name = "First name is required.";
       }
 
-      if(this.form.confirmPassword !== this.form.password){
-        alert("Password and Password Confirmation is not match")
+      if (!sanitized.last_name) {
+        errors.last_name = "Last name is required.";
+      }
+
+      if (!sanitized.email) {
+        errors.email = "Email address is required.";
+      }
+
+      if (!sanitized.password) {
+        errors.password = "Password is required.";
+      } else if (sanitized.password.length < 8) {
+        errors.password = "Password must be at least 8 characters.";
+      }
+
+      if (!sanitized.confirmPassword) {
+        errors.confirmPassword = "Please confirm your password.";
+      } else if (sanitized.confirmPassword !== sanitized.password) {
+        errors.confirmPassword = "Passwords do not match.";
+      }
+
+      this.errors = errors;
+      return {
+        isValid: Object.keys(errors).length === 0,
+        sanitized,
+      };
+    },
+    applyServerErrors(serverErrors = {}) {
+      const nextErrors = { ...this.errors };
+
+      if (serverErrors.first_name?.length) {
+        nextErrors.first_name = serverErrors.first_name[0];
+      }
+
+      if (serverErrors.last_name?.length) {
+        nextErrors.last_name = serverErrors.last_name[0];
+      }
+
+      if (serverErrors.email?.length) {
+        nextErrors.email = serverErrors.email[0];
+      }
+
+      if (serverErrors.password?.length) {
+        nextErrors.password = serverErrors.password[0];
+      }
+
+      this.errors = nextErrors;
+    },
+    async handleRegister() {
+      this.resetErrors();
+      const { isValid, sanitized } = this.validateForm();
+      if (!isValid) {
         return;
       }
 
       this.loading = true;
       try {
-        const res = await register(
-          this.form.first_name, 
-          this.form.last_name, 
-          this.form.email, 
-          this.form.password
+        await register(
+          sanitized.first_name,
+          sanitized.last_name,
+          sanitized.email,
+          sanitized.password,
+          sanitized.confirmPassword
         );
 
-        const userID = res.data.userId;
-
-        // console.log(res);
-
-        this.$router.push(`/verify-email/${userID}`);
+        sessionStorage.setItem("registerSuccess", "true");
+        await this.$router.push("/verify-email");
         
       } catch (error) {
-        // Handle API errors (like Email already exists)
-        alert(error.response?.data?.message || "An error occurred during registration.");
+        this.applyServerErrors(error.response?.data?.errors);
+
+        await Swal.fire({
+          icon: 'error',
+          title: 'Registration Failed',
+          text: error.response?.data?.message || "We couldn't create your account right now. Please try again.",
+        });
       } finally {
-        this.form.first_name = "";
-        this.form.last_name = "";
-        this.form.email = "";
-        this.form.password = "";
-        this.form.confirmPassword = "";
         this.loading = false;
       }
     }

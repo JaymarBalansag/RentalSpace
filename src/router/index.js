@@ -214,7 +214,8 @@ const routes = [
   },
 
   // Auth Extras
-  { path: '/verify-email/:id', name: 'verify-email', component: () => import('@/views/Authentication/VerifyEmail.vue') },
+  { path: '/verify-email/:id', redirect: '/verify-email' },
+  { path: '/verify-email', name: 'verify-email', component: () => import('@/views/Authentication/VerifyEmail.vue') },
   { path: "/reverify-email", name: "reverify-email", component: () => import('@/views/Authentication/ResendVerifyEmail.vue'), meta: { requiresAuth: true } }
 ]
 

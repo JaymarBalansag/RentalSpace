@@ -1,16 +1,21 @@
 <template>
   <Header />
-  
-  <successToast v-if="showSuccess" message="🎉 Registration successful! Please log in."></successToast>
 
-  <div class="auth-container d-flex align-items-center justify-content-center min-vh-100 py-5 px-3">
+  <successToast
+    v-if="showSuccess"
+    message="Registration successful! Please log in."
+  ></successToast>
+
+  <div
+    class="auth-container d-flex align-items-center justify-content-center min-vh-100 py-5 px-3"
+  >
     <div class="card shadow-lg border-0 rounded-4 auth-card overflow-hidden">
       <div class="auth-accent-line"></div>
 
       <div class="card-body p-4 p-md-5">
         <div class="text-center mb-4">
           <div class="logo-wrapper mb-3 mx-auto shadow-sm">
-             <i class="bi bi-house-heart-fill text-primary fs-1"></i>
+            <i class="bi bi-house-heart-fill text-primary fs-1"></i>
           </div>
           <h3 class="fw-bold text-dark mb-1">Welcome</h3>
           <p class="text-muted small">Enter your credentials to access RentaHub</p>
@@ -23,20 +28,20 @@
               <span class="input-group-text bg-light border-end-0 rounded-start-3">
                 <i class="bi bi-person text-muted"></i>
               </span>
-              <input 
-                type="email" 
-                class="form-control rounded-end-3 shadow-none border-start-0 custom-input" 
-                placeholder="name@email.com" 
-                v-model="form.email" 
+              <input
+                type="email"
+                class="form-control rounded-end-3 shadow-none border-start-0 custom-input"
+                placeholder="name@email.com"
+                v-model="form.email"
                 required
-              >
+              />
             </div>
           </div>
 
           <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center">
               <label class="form-label small fw-bold text-secondary">Password</label>
-              </div>
+            </div>
             <div class="position-relative">
               <input
                 :type="showPassword ? 'text' : 'password'"
@@ -72,20 +77,27 @@
             class="btn btn-primary w-100 rounded-3 py-3 fw-bold shadow-sm submit-btn d-flex align-items-center justify-content-center"
             :disabled="loading"
           >
-            <span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <span
+              v-if="loading"
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+            ></span>
             {{ loading ? 'Signing in...' : 'Login' }}
           </button>
         </form>
 
         <div class="d-flex align-items-center my-4">
-          <hr class="flex-grow-1 text-muted opacity-25">
+          <hr class="flex-grow-1 text-muted opacity-25" />
           <span class="px-3 text-muted small fw-bold">OR</span>
-          <hr class="flex-grow-1 text-muted opacity-25">
+          <hr class="flex-grow-1 text-muted opacity-25" />
         </div>
 
         <p class="text-center mb-0 small">
-          Don’t have an account? 
-          <router-link to="/register" class="fw-bold text-primary text-decoration-none hover-underline">
+          Don't have an account?
+          <router-link
+            to="/register"
+            class="fw-bold text-primary text-decoration-none hover-underline"
+          >
             Create an account
           </router-link>
         </p>
@@ -106,7 +118,7 @@ export default {
   name: "Login",
   components: {
     successToast,
-    Header
+    Header,
   },
   data() {
     return {
@@ -118,62 +130,77 @@ export default {
     };
   },
   methods: {
+    async warmOwnerSubscription(info) {
+      try {
+        const ownerSubscription = await getOwnerSubscriptionStatus();
+        info.setSubscriptionStatus(ownerSubscription);
+
+        if (ownerSubscription?.is_expiring_soon) {
+          sessionStorage.setItem(
+            "ownerSubscriptionWarning",
+            ownerSubscription.message ||
+              `Your subscription will expire in ${ownerSubscription.days_left} day(s).`
+          );
+        }
+      } catch (subscriptionError) {
+        console.warn("Subscription status fetch failed during login:", subscriptionError);
+      }
+    },
     async handleLogin() {
       const info = useUserInfo();
+      const email = this.form.email.trim().toLowerCase();
+
+      if (!email) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Login Error',
+          text: 'Please enter your email address.',
+        });
+        return;
+      }
+
       this.loading = true;
+
       try {
-        const res = await login(this.form.email, this.form.password);
-        // console.log(res)
-        // Ensure res has data before proceeding
-        if (res) {
-          await info.fetchCurrentUser();
+        const res = await login(email, this.form.password);
 
-          if (info.role === "owner") {
-            try {
-              const ownerSubscription = await getOwnerSubscriptionStatus();
-              info.setSubscriptionStatus(ownerSubscription);
-
-              if (ownerSubscription?.is_expiring_soon) {
-                await Swal.fire({
-                  icon: 'warning',
-                  title: 'Subscription Notice',
-                  text: ownerSubscription.message || `Your subscription will expire in ${ownerSubscription.days_left} day(s).`,
-                });
-              }
-            } catch (subscriptionError) {
-              console.warn("Subscription status fetch failed during login:", subscriptionError);
-            }
-          } else {
-            info.clearSubscriptionStatus();
-          }
-
-
-          if (this.rememberEmail) {
-            localStorage.setItem("remember_email_enabled", "true");
-            localStorage.setItem("remembered_email", this.form.email);
-          } else {
-            localStorage.removeItem("remembered_email");
-            localStorage.setItem("remember_email_enabled", "false");
-          }
-
-          if(info.email_verified_at === null){
-            this.$router.push("/reverify-email");
-            return;
-          }
-
-          sessionStorage.setItem("loginSuccess", "true");
-
-          this.$router.push("/home");
-          // window.location.href = '/home';
-        } else {
+        if (!res) {
           await Swal.fire({
             icon: 'error',
             title: 'Login Failed',
             text: 'Invalid credentials. Please check your email and password.',
           });
+          return;
         }
+
+        await info.fetchCurrentUser();
+
+        if (info.role === "owner") {
+          void this.warmOwnerSubscription(info);
+        } else {
+          info.clearSubscriptionStatus();
+        }
+
+        if (this.rememberEmail) {
+          localStorage.setItem("remember_email_enabled", "true");
+          localStorage.setItem("remembered_email", email);
+        } else {
+          localStorage.removeItem("remembered_email");
+          localStorage.setItem("remember_email_enabled", "false");
+        }
+
+        if (info.email_verified_at === null) {
+          this.$router.push("/reverify-email");
+          return;
+        }
+
+        sessionStorage.setItem("loginSuccess", "true");
+        this.$router.push("/home");
       } catch (error) {
-        const message = error.response?.data?.message || "Something went wrong during login.";
+        const message =
+          error.response?.data?.message ||
+          "Something went wrong during login.";
+
         await Swal.fire({
           icon: 'error',
           title: 'Login Error',
@@ -182,32 +209,31 @@ export default {
       } finally {
         this.loading = false;
       }
-    }
+    },
   },
   mounted() {
-    const rememberEmailEnabled = localStorage.getItem("remember_email_enabled") === "true";
+    const rememberEmailEnabled =
+      localStorage.getItem("remember_email_enabled") === "true";
     const rememberedEmail = localStorage.getItem("remembered_email") || "";
+
     if (rememberEmailEnabled && rememberedEmail) {
       this.form.email = rememberedEmail;
       this.rememberEmail = true;
     }
 
-    // Check if user just registered
     const registerSuccess = sessionStorage.getItem("registerSuccess");
     if (registerSuccess) {
       this.showSuccess = true;
-      // Auto-hide success message after 5 seconds
       setTimeout(() => {
         this.showSuccess = false;
       }, 5000);
       sessionStorage.removeItem("registerSuccess");
     }
-  }
+  },
 };
 </script>
 
 <style scoped>
-/* Matching Register Page Theme */
 .auth-container {
   background-color: #f4f7fe;
   background-image: radial-gradient(#4780d9 0.5px, transparent 0.5px);
@@ -265,19 +291,19 @@ export default {
 }
 
 .hover-underline:hover {
-    text-decoration: underline !important;
+  text-decoration: underline !important;
 }
 
-/* Mobile full-screen feel */
 @media (max-width: 576px) {
-    .auth-card {
-        max-width: 100%;
-        border-radius: 0;
-        box-shadow: none !important;
-    }
-    .auth-container {
-        padding: 0 !important;
-        background: white;
-    }
+  .auth-card {
+    max-width: 100%;
+    border-radius: 0;
+    box-shadow: none !important;
+  }
+
+  .auth-container {
+    padding: 0 !important;
+    background: white;
+  }
 }
 </style>

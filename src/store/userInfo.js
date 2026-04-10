@@ -228,6 +228,10 @@ export const useUserInfo = defineStore("info", {
       this.subscription = subscription;
       this.persistUserInfo();
     },
+    setEmailVerified(verifiedAt = new Date().toISOString()) {
+      this.email_verified_at = verifiedAt;
+      this.persistUserInfo();
+    },
     clearSubscriptionStatus() {
       this.subscription = null;
       this.persistUserInfo();

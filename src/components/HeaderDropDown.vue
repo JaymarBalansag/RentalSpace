@@ -36,10 +36,10 @@
         <li><button @click="goToPaymentWall" class="dropdown-item text-primary fw-bold"><i class="bi bi-plus-circle"></i> List Property</button></li>
       </template>
       <template v-else-if="roleIs === 'user' && !isComplete">
-        <li><RouterLink class="dropdown-item" to="/completion"><i class="bi bi-person-check"></i> Account</RouterLink></li>
+        <li class=""><RouterLink class="dropdown-item bg-primary-subtle" to="/completion"><i class="bi bi-person-check"></i> Account</RouterLink></li>
       </template>
       <template v-else-if="roleIs === 'user' && isComplete && !isUserVerified">
-        <li><RouterLink class="dropdown-item" to="/profile"><i class="bi bi-shield-check"></i> Verify Account</RouterLink></li>
+        <li><RouterLink class="dropdown-item bg-primary-subtle" to="/profile"><i class="bi bi-shield-check"></i> Verify Account</RouterLink></li>
       </template>
       <template v-else-if="roleIs === 'owner'">
         <li><RouterLink class="dropdown-item" to="/Dashboard"><i class="bi bi-speedometer2"></i> Dashboard</RouterLink></li>

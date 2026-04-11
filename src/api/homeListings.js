@@ -10,6 +10,8 @@ import {
 let cachedPropertyTypes = null;
 let cachedAmenities = null;
 let cachedFacilities = null;
+const HOME_LISTINGS_CACHE_TTL_MS = 60 * 1000;
+const homeListingsCache = new Map();
 
 function normalizeNumber(value) {
   const numeric = Number(value);
@@ -80,6 +82,46 @@ function normalizePaginatedResponse(response) {
   };
 }
 
+function cloneValue(value) {
+  if (typeof structuredClone === "function") {
+    return structuredClone(value);
+  }
+
+  return JSON.parse(JSON.stringify(value));
+}
+
+function buildListingsCacheKey({ page = 1, query = "", filters = {} } = {}) {
+  return JSON.stringify({
+    page: Number(page || 1),
+    query: String(query || "").trim().toLowerCase(),
+    amenities: [...(filters.amenities || [])].map(Number).sort((a, b) => a - b),
+    facilities: [...(filters.facilities || [])].map(Number).sort((a, b) => a - b),
+    selectedType: filters.selectedType ?? null,
+    selectedAgreement: filters.selectedAgreement || "",
+    minPrice: filters.minPrice ?? null,
+    maxPrice: filters.maxPrice ?? null,
+  });
+}
+
+function getCachedListings(key) {
+  const entry = homeListingsCache.get(key);
+  if (!entry) return null;
+
+  if (Date.now() > entry.expiresAt) {
+    homeListingsCache.delete(key);
+    return null;
+  }
+
+  return cloneValue(entry.data);
+}
+
+function setCachedListings(key, data) {
+  homeListingsCache.set(key, {
+    data: cloneValue(data),
+    expiresAt: Date.now() + HOME_LISTINGS_CACHE_TTL_MS,
+  });
+}
+
 export function hasActiveHomeFilters(filters = {}) {
   return Boolean(
     (filters.amenities && filters.amenities.length) ||
@@ -95,12 +137,24 @@ export async function fetchHomeListings({
   page = 1,
   query = "",
   filters = {},
+  force = false,
 } = {}) {
+  const cacheKey = buildListingsCacheKey({ page, query, filters });
+  if (!force) {
+    const cached = getCachedListings(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const trimmedQuery = String(query || "").trim();
+  let result;
 
   if (trimmedQuery) {
     const response = await searchProperties(trimmedQuery, page);
-    return normalizePaginatedResponse(response);
+    result = normalizePaginatedResponse(response);
+    setCachedListings(cacheKey, result);
+    return result;
   }
 
   if (hasActiveHomeFilters(filters)) {
@@ -114,11 +168,15 @@ export async function fetchHomeListings({
       page
     );
 
-    return normalizePaginatedResponse(response);
+    result = normalizePaginatedResponse(response);
+    setCachedListings(cacheKey, result);
+    return result;
   }
 
   const response = await getProperties(page);
-  return normalizePaginatedResponse(response);
+  result = normalizePaginatedResponse(response);
+  setCachedListings(cacheKey, result);
+  return result;
 }
 
 export async function loadHomeFilterOptions({

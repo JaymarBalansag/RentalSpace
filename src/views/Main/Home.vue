@@ -112,8 +112,21 @@
           <div v-if="loading" class="placeholder col-2"></div>
         </div>
 
-        <div class="row g-4">
-          <div v-for="n in 4" v-if="loading" :key="`skel-${n}`" class="col-12">
+        <div v-if="filterOptionsError" class="alert alert-warning border-0 rounded-4 mb-4" role="alert">
+          {{ filterOptionsError }}
+        </div>
+
+        <div v-if="listingsError" class="alert alert-danger border-0 rounded-4 mb-4" role="alert">
+          {{ listingsError }}
+        </div>
+
+        <div class="row g-4 position-relative">
+          <div v-if="listingsRefreshing" class="listing-refresh-indicator">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Refreshing listings...
+          </div>
+
+          <div v-for="n in 4" v-if="loading && !properties.length" :key="`skel-${n}`" class="col-12">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden loading-card">
               <div class="row g-0">
                 <div class="col-md-4 bg-light placeholder-glow">
@@ -342,6 +355,7 @@ export default {
       },
       searchQuery: "",
       loading: true,
+      listingsRefreshing: false,
       loadingAmenities: false,
       loadingFacilities: false,
       bookmarkBusyId: null,
@@ -354,6 +368,8 @@ export default {
       desktopMediaQuery: null,
       hasLoadedExtendedFilters: false,
       isLoadingExtendedFilters: false,
+      listingsError: "",
+      filterOptionsError: "",
     };
   },
   computed: {
@@ -379,10 +395,18 @@ export default {
   async mounted() {
     this.setupFilterOptionLoading();
 
-    await Promise.all([
+    const [filterOptionsResult, listingsResult] = await Promise.allSettled([
       this.loadInitialFilterOptions(),
       this.fetchListings({ page: 1 }),
     ]);
+
+    if (filterOptionsResult.status === "rejected") {
+      console.warn("Failed to load initial filter options:", filterOptionsResult.reason);
+    }
+
+    if (listingsResult.status === "rejected") {
+      console.warn("Failed to load initial listings:", listingsResult.reason);
+    }
 
     const success = sessionStorage.getItem("loginSuccess");
     const subscriptionSuccess = sessionStorage.getItem("subscriptionSuccess");
@@ -440,16 +464,26 @@ export default {
       }
     },
     async loadInitialFilterOptions() {
-      const result = await loadHomeFilterOptions({
-        includeExtended: this.isDesktopViewport(),
-      });
+      this.filterOptionsError = "";
 
-      this.property_types = result.propertyTypes;
+      try {
+        const result = await loadHomeFilterOptions({
+          includeExtended: this.isDesktopViewport(),
+        });
 
-      if (this.isDesktopViewport()) {
-        this.amenities = result.amenities;
-        this.facilities = result.facilities;
-        this.hasLoadedExtendedFilters = true;
+        this.property_types = result.propertyTypes;
+
+        if (this.isDesktopViewport()) {
+          this.amenities = result.amenities;
+          this.facilities = result.facilities;
+          this.hasLoadedExtendedFilters = true;
+        }
+      } catch (error) {
+        this.property_types = DEFAULT_PROPERTY_TYPES;
+        this.amenities = [];
+        this.facilities = [];
+        this.filterOptionsError = "Filters are temporarily unavailable. Listings are still available below.";
+        throw error;
       }
     },
     async ensureExtendedFilterOptions() {
@@ -465,6 +499,10 @@ export default {
         this.amenities = result.amenities;
         this.facilities = result.facilities;
         this.hasLoadedExtendedFilters = true;
+        this.filterOptionsError = "";
+      } catch (error) {
+        this.filterOptionsError = "We could not load the full filter list right now.";
+        console.warn("Failed to load extended filter options:", error);
       } finally {
         this.loadingAmenities = false;
         this.loadingFacilities = false;
@@ -506,15 +544,20 @@ export default {
       page = 1,
       query = this.activeQuery,
       filters = this.activeFilters,
+      force = false,
     } = {}) {
       const requestId = ++this.latestListingsRequestId;
-      this.loading = true;
+      const hasExistingCards = this.properties.length > 0;
+      this.loading = !hasExistingCards;
+      this.listingsRefreshing = hasExistingCards;
+      this.listingsError = "";
 
       try {
         const result = await fetchHomeListings({
           page,
           query,
           filters,
+          force,
         });
 
         if (requestId !== this.latestListingsRequestId) return;
@@ -527,13 +570,18 @@ export default {
         if (requestId !== this.latestListingsRequestId) return;
 
         console.error("Failed to fetch home listings:", error);
-        this.properties = [];
-        this.currentPage = 1;
-        this.lastPage = 1;
-        this.total = 0;
+        this.listingsError = "We could not load listings right now. Please try again in a moment.";
+
+        if (!hasExistingCards) {
+          this.properties = [];
+          this.currentPage = 1;
+          this.lastPage = 1;
+          this.total = 0;
+        }
       } finally {
         if (requestId === this.latestListingsRequestId) {
           this.loading = false;
+          this.listingsRefreshing = false;
         }
       }
     },
@@ -646,8 +694,12 @@ export default {
       }
     },
     async checkDetails(id) {
-      await recordView(id);
       this.$router.push(`/property/${id}`);
+      Promise.resolve()
+        .then(() => recordView(id))
+        .catch((error) => {
+          console.warn("Failed to record property view:", error);
+        });
     },
   },
 };
@@ -833,6 +885,23 @@ input.form-control:focus {
 .loading-card {
   border: 1px solid #e7eef8 !important;
   background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.listing-refresh-indicator {
+  position: absolute;
+  top: -0.5rem;
+  right: 0.75rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d8e4f8;
+  box-shadow: 0 8px 18px rgba(18, 43, 83, 0.1);
+  color: #315f9d;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .text-truncate-custom {

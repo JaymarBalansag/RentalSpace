@@ -92,8 +92,7 @@ import AdminLogin from './AdminLogin.vue';
           },
           async handleLogout() {
             try {
-              const res = await logout();  
-              const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+              await logout();
               const info = useUserInfo();
               info.logout();           
               this.$router.push("/login");

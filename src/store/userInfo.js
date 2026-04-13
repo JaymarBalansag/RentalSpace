@@ -1,26 +1,119 @@
-import { completeProfile } from "@/api/user";
 import { defineStore } from "pinia";
 import api from "@/api/api";
 
+const USER_INFO_STORAGE_KEY = "userInfo";
+
+const createDefaultState = () => ({
+  id: null,
+  first_name: null,
+  last_name: null,
+  email: null,
+  role: "guest",
+  isLoggedIn: false,
+  profile_photo: null,
+  email_verified_at: null,
+  isComplete: null,
+  subscription: null,
+  owner_verification_status: null,
+  owner_verified_at: null,
+  user_verification_status: "unverified",
+  user_verified_at: null,
+  user_verification_rejected_reason: null,
+  user_valid_govt_id_url: null,
+  hasHydratedAuth: false,
+  isHydratingAuth: false,
+});
+
+function readPersistedUserInfo() {
+  const raw = localStorage.getItem(USER_INFO_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn("Failed to parse persisted userInfo:", error);
+    localStorage.removeItem(USER_INFO_STORAGE_KEY);
+    return null;
+  }
+}
+
+function buildPersistedUserInfo(state) {
+  return {
+    id: state.id,
+    first_name: state.first_name,
+    last_name: state.last_name,
+    email: state.email,
+    role: state.role,
+    isLoggedIn: state.isLoggedIn,
+    profile_photo: state.profile_photo,
+    email_verified_at: state.email_verified_at,
+    isComplete: state.isComplete,
+    subscription: state.subscription,
+    owner_verification_status: state.owner_verification_status,
+    owner_verified_at: state.owner_verified_at,
+    user_verification_status: state.user_verification_status,
+    user_verified_at: state.user_verified_at,
+    user_verification_rejected_reason: state.user_verification_rejected_reason,
+    user_valid_govt_id_url: state.user_valid_govt_id_url,
+  };
+}
+
+function normalizeUserPayload(payload = {}) {
+  return {
+    id: payload.id ?? null,
+    first_name: payload.first_name ?? null,
+    last_name: payload.last_name ?? null,
+    email: payload.email ?? null,
+    role: payload.role ?? "guest",
+    isLoggedIn: true,
+    profile_photo: payload.profile_photo ?? payload.user_img_url ?? null,
+    email_verified_at: payload.email_verified_at ?? null,
+    isComplete: payload.isComplete ?? payload.iscomplete ?? null,
+    owner_verification_status:
+      payload.owner_verification_status ??
+      payload.ownerVerificationStatus ??
+      null,
+    owner_verified_at: payload.owner_verified_at ?? null,
+    user_verification_status:
+      payload.user_verification_status ?? "unverified",
+    user_verified_at: payload.user_verified_at ?? null,
+    user_verification_rejected_reason:
+      payload.user_verification_rejected_reason ?? null,
+    user_valid_govt_id_url:
+      payload.user_valid_govt_id_url ?? null,
+  };
+}
+
 export const useUserInfo = defineStore("info", {
-  state: () => ({
-    first_name: null,
-    last_name: null,
-    email: null,
-    role: null,
-    isLoggedIn: false,
-    profile_photo: null,
-    email_verified_at: null,
-    isComplete: null,
-    subscription: null,
-    owner_verification_status: null,
-    owner_verified_at: null,
-    user_verification_status: "unverified",
-    user_verified_at: null,
-    user_verification_rejected_reason: null,
-    user_valid_govt_id_url: null,
-  }),
+  state: createDefaultState,
   actions: {
+    persistUserInfo() {
+      localStorage.setItem(
+        USER_INFO_STORAGE_KEY,
+        JSON.stringify(buildPersistedUserInfo(this.$state))
+      );
+    },
+    resetState() {
+      this.$patch(createDefaultState());
+    },
+    clearPersistedUserInfo() {
+      localStorage.removeItem(USER_INFO_STORAGE_KEY);
+    },
+    hydrateUserInfo() {
+      const cached = readPersistedUserInfo();
+      if (!cached) return null;
+
+      this.$patch({
+        ...cached,
+        isLoggedIn: Boolean(cached.isLoggedIn),
+      });
+
+      return cached;
+    },
+    applyUser(payload) {
+      this.$patch(normalizeUserPayload(payload));
+      this.persistUserInfo();
+    },
     setUserInfo(
       first_name,
       last_name,
@@ -36,139 +129,138 @@ export const useUserInfo = defineStore("info", {
       user_verification_rejected_reason = null,
       user_valid_govt_id_url = null
     ) {
-      this.first_name = first_name;
-      this.last_name = last_name;
-      this.role = role;
-      this.email = email;
-      this.isLoggedIn = true;
-      this.profile_photo = profile_photo;
-      this.email_verified_at = email_verified_at; 
-      this.isComplete = isComplete;
-      this.owner_verification_status = owner_verification_status;
-      this.owner_verified_at = owner_verified_at;
-      this.user_verification_status = user_verification_status || "unverified";
-      this.user_verified_at = user_verified_at;
-      this.user_verification_rejected_reason = user_verification_rejected_reason;
-      this.user_valid_govt_id_url = user_valid_govt_id_url;
-
-      localStorage.setItem("userInfo", JSON.stringify(this.$state));
+      this.applyUser({
+        first_name,
+        last_name,
+        role,
+        email,
+        profile_photo,
+        email_verified_at,
+        isComplete,
+        owner_verification_status,
+        owner_verified_at,
+        user_verification_status,
+        user_verified_at,
+        user_verification_rejected_reason,
+        user_valid_govt_id_url,
+      });
     },
-    updateUserProfile(first_name, last_name, user_img_url){
-      this.first_name = first_name;
-      this.last_name = last_name;
-      this.profile_photo = user_img_url;
+    async fetchCurrentUser() {
+      const response = await api.get("/user");
+      const user = response?.data?.user?.[0];
 
-      localStorage.setItem("userInfo", JSON.stringify(this.$state));
+      if (!user) {
+        throw new Error("Authenticated user payload was missing.");
+      }
+
+      this.applyUser(user);
+      this.hasHydratedAuth = true;
+      this.isHydratingAuth = false;
+      return user;
+    },
+    async bootstrapAuth() {
+      if (this.hasHydratedAuth) {
+        return this.isLoggedIn;
+      }
+
+      if (this.isHydratingAuth) {
+        return this.isLoggedIn;
+      }
+
+      this.isHydratingAuth = true;
+      this.hydrateUserInfo();
+
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        this.resetState();
+        this.hasHydratedAuth = true;
+        this.isHydratingAuth = false;
+        this.clearPersistedUserInfo();
+        return false;
+      }
+
+      try {
+        await this.fetchCurrentUser();
+      } catch (error) {
+        const status = error?.response?.status;
+
+        if ([401, 403, 419].includes(status)) {
+          this.logout();
+        } else {
+          console.warn("Could not bootstrap user profile:", status || error);
+        }
+      } finally {
+        this.hasHydratedAuth = true;
+        this.isHydratingAuth = false;
+      }
+
+      return this.isLoggedIn;
+    },
+    async hydrateUserInfoFromServer(payload) {
+      this.applyUser(payload);
+    },
+    updateUserProfile(first_name, last_name, user_img_url) {
+      this.$patch({
+        first_name,
+        last_name,
+        profile_photo: user_img_url,
+      });
+      this.persistUserInfo();
     },
     completeProfileInPage(first_name, last_name, profile_photo) {
-      this.first_name = first_name;
-      this.last_name = last_name;
-      this.profile_photo = profile_photo;
-      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-      if (userInfo) {
-        userInfo.first_name = first_name;
-        userInfo.last_name = last_name;
-        userInfo.profile_photo = profile_photo;
-        localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      }
+      this.$patch({
+        first_name,
+        last_name,
+        profile_photo,
+      });
+      this.persistUserInfo();
     },
     setRole(role) {
       this.role = role;
-      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-      if (userInfo) {
-        userInfo.role = role;
-        localStorage.setItem("userInfo", JSON.stringify(userInfo));
-      }
-    },
-    hydrateUserInfo() {
-      const raw = localStorage.getItem("userInfo");
-      if (!raw) return;
-
-      try {
-        const data = JSON.parse(raw);
-        Object.assign(this, data);
-      } catch (e) {
-        console.warn("Failed to hydrate userInfo:", e);
-        localStorage.removeItem("userInfo");
-      }
-    },
-    async hydrateUserInfoFromServer(payload) {
-      this.setUserInfo(
-        payload.first_name,
-        payload.last_name,
-        payload.role,
-        payload.email,
-        payload.profile_photo,
-        payload.email_verified_at,
-        payload.isComplete,
-        payload.owner_verification_status,
-        payload.owner_verified_at,
-        payload.user_verification_status || "unverified",
-        payload.user_verified_at || null,
-        payload.user_verification_rejected_reason || null,
-        payload.user_valid_govt_id_url || null
-      )
+      this.isLoggedIn = role !== "guest";
+      this.persistUserInfo();
     },
     setLoggedIn(isLoggedIn) {
       this.isLoggedIn = isLoggedIn;
-      const userInfo = JSON.parse(localStorage.getItem("userInfo")) || {};
-      userInfo.isLoggedIn = isLoggedIn;
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      this.persistUserInfo();
     },
     setSubscriptionStatus(subscription) {
       this.subscription = subscription;
-      const userInfo = JSON.parse(localStorage.getItem("userInfo")) || {};
-      userInfo.subscription = subscription;
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      this.persistUserInfo();
+    },
+    setEmailVerified(verifiedAt = new Date().toISOString()) {
+      this.email_verified_at = verifiedAt;
+      this.persistUserInfo();
     },
     clearSubscriptionStatus() {
       this.subscription = null;
-      const userInfo = JSON.parse(localStorage.getItem("userInfo")) || {};
-      delete userInfo.subscription;
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      this.persistUserInfo();
     },
     setOwnerVerificationStatus(status, verifiedAt = null) {
       this.owner_verification_status = status;
       this.owner_verified_at = verifiedAt;
-      const userInfo = JSON.parse(localStorage.getItem("userInfo")) || {};
-      userInfo.owner_verification_status = status;
-      userInfo.owner_verified_at = verifiedAt;
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      this.persistUserInfo();
     },
-    setUserVerificationStatus(status, verifiedAt = null, rejectedReason = null, validIdUrl = null) {
+    setUserVerificationStatus(
+      status,
+      verifiedAt = null,
+      rejectedReason = null,
+      validIdUrl = null
+    ) {
       this.user_verification_status = status || "unverified";
       this.user_verified_at = verifiedAt;
       this.user_verification_rejected_reason = rejectedReason;
+
       if (typeof validIdUrl !== "undefined") {
         this.user_valid_govt_id_url = validIdUrl;
       }
 
-      const userInfo = JSON.parse(localStorage.getItem("userInfo")) || {};
-      userInfo.user_verification_status = this.user_verification_status;
-      userInfo.user_verified_at = verifiedAt;
-      userInfo.user_verification_rejected_reason = rejectedReason;
-      if (typeof validIdUrl !== "undefined") {
-        userInfo.user_valid_govt_id_url = validIdUrl;
-      }
-      localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      this.persistUserInfo();
     },
     logout() {
-      this.first_name = null;
-      this.last_name = null;
-      this.email = null;
-      this.role = "guest";
-      this.isLoggedIn = false;
-      this.profile_photo = null;
-      this.email_verified_at = null;
-      this.subscription = null;
-      this.owner_verification_status = null;
-      this.owner_verified_at = null;
-      this.user_verification_status = "unverified";
-      this.user_verified_at = null;
-      this.user_verification_rejected_reason = null;
-      this.user_valid_govt_id_url = null;
-      localStorage.removeItem("userInfo");
+      this.resetState();
+      this.clearPersistedUserInfo();
       localStorage.removeItem("access_token");
-    }
-  }
+    },
+  },
 });

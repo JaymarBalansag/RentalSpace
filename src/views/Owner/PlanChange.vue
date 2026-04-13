@@ -257,9 +257,8 @@ export default {
     },
     async loadPlanChangeContext() {
       const info = useUserInfo();
-      const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
-      this.name = `${userInfo.first_name || ""} ${userInfo.last_name || ""}`.trim();
-      this.email = userInfo.email || "";
+      this.name = `${info.first_name || ""} ${info.last_name || ""}`.trim();
+      this.email = info.email || "";
 
       let subscription = info.subscription || null;
       if (!subscription?.plan_name) {

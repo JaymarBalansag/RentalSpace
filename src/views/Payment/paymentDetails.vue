@@ -184,8 +184,8 @@ export default {
     };
   },
   mounted() {
-    const user = JSON.parse(localStorage.getItem("userInfo") || "{}");
-    const status = String(user?.user_verification_status || "unverified").toLowerCase().trim();
+    const info = useUserInfo();
+    const status = String(info.user_verification_status || "unverified").toLowerCase().trim();
     if (status !== "verified") {
       Swal.fire({
         icon: "warning",
@@ -208,11 +208,9 @@ export default {
       });
     },
     getUserInfo() {
-      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-      if (userInfo) {
-        this.name = `${userInfo.first_name} ${userInfo.last_name}`;
-        this.email = userInfo.email;
-      }
+      const info = useUserInfo();
+      this.name = `${info.first_name || ""} ${info.last_name || ""}`.trim();
+      this.email = info.email || "";
     },
     resetPendingOwnerState() {
       const info = useUserInfo();

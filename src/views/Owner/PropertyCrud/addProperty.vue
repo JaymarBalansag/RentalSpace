@@ -1690,18 +1690,7 @@ export default {
     }
   },
   mounted() {
-    const userInfoRaw = localStorage.getItem("userInfo");
-    if (userInfoRaw) {
-      try {
-        const cached = JSON.parse(userInfoRaw);
-        this.subscriptionState = cached?.subscription || null;
-      } catch (error) {
-        this.subscriptionState = null;
-      }
-    }
-    if (!this.subscriptionState) {
-      this.subscriptionState = useUserInfo().subscription || null;
-    }
+    this.subscriptionState = useUserInfo().subscription || null;
 
     this.getAmenities();
     this.getFacilities();

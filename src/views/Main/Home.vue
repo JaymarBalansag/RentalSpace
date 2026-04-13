@@ -1,8 +1,8 @@
 <template>
   <Header />
 
-  <successToast v-if="showSuccess" message="🎉 Login successful, Welcome!" />
-  <successToast v-if="subSuccess" message="🎉 You are an owner now!" />
+  <successToast v-if="showSuccess" message="Login successful, welcome!" />
+  <successToast v-if="subSuccess" message="You are an owner now!" />
 
   <section class="search-hero pt-5 pb-4 mb-4">
     <div class="container">
@@ -17,7 +17,7 @@
         <div class="col-md-3 border-end-md">
           <label class="small text-muted d-block ms-2 fw-bold">Type</label>
           <select class="form-select border-0 shadow-none custom-select" v-model="selectedType">
-            <option v-for="(type, index) in property_types" :key="index" :value="type.id">
+            <option v-for="type in property_types" :key="type.id ?? 'all-types'" :value="type.id">
               {{ type.type_name }}
             </option>
           </select>
@@ -34,23 +34,23 @@
 
         <div class="col-md-4">
           <label class="small text-muted d-block ms-2 fw-bold">Location</label>
-          <input 
-            type="text" 
-            class="form-control border-0 shadow-none" 
-            v-model="searchQuery" 
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="form-control border-0 shadow-none"
             placeholder="Where are you going?"
-            @keyup.enter="searchByQuery(1)"
+            @keyup.enter="applyFilters()"
           >
         </div>
 
         <div class="col-md-2 d-flex gap-2">
-          <button class="btn btn-primary rounded-3 w-100 py-2 fw-bold" @click="searchByQuery(1)">
+          <button class="btn btn-primary rounded-3 w-100 py-2 fw-bold" @click="applyFilters()">
             <i class="bi bi-search"></i>
           </button>
-          <button 
-            class="btn btn-outline-primary rounded-3 w-100 py-2" 
-            @click="showMap = !showMap"
+          <button
             v-if="properties.length"
+            class="btn btn-outline-primary rounded-3 w-100 py-2"
+            @click="toggleMap()"
           >
             <i class="bi" :class="showMap ? 'bi-list-ul' : 'bi-map'"></i>
           </button>
@@ -62,7 +62,7 @@
   <OwnerSubscriptionExpiredBanner />
   <SubscriptionWarningBanner />
 
-  <div v-if="showMap" class="container-md container-sm px-0 mb-4 map-shell">
+  <div v-if="showMap && shouldRenderMap" class="container-md container-sm px-0 mb-4 map-shell">
     <MapSection :properties="properties" />
   </div>
 
@@ -70,72 +70,63 @@
     <div class="row g-4">
       <aside class="col-lg-3 d-none d-lg-block">
         <div class="sticky-top" style="top: 100px; z-index: 10;">
-          <div class="filter-card p-3 border rounded-4 shadow-sm bg-white mb-4">
-            <h6 class="fw-bold mb-3 d-flex align-items-center">
-              <i class="bi bi-tags me-2 text-primary"></i> Price Range
-            </h6>
-            <div class="row g-2 mb-3">
-              <div class="col-6">
-                <input type="number" v-model.number="min_price" class="form-control form-control-sm rounded-3" placeholder="Min">
-              </div>
-              <div class="col-6">
-                <input type="number" v-model.number="max_price" class="form-control form-control-sm rounded-3" placeholder="Max">
-              </div>
-            </div>
-            <button @click="applyPriceFilter" class="btn btn-primary btn-sm w-100 rounded-3 fw-bold mb-2">Apply</button>
-            <button @click="resetPriceFilter" class="btn btn-link btn-sm w-100 text-muted text-decoration-none">Reset Price</button>
-          </div>
-
-          <div class="filter-card p-3 border rounded-4 shadow-sm bg-white mb-4">
-            <h6 class="fw-bold mb-3">Amenities</h6>
-            <div v-if="loadingAmenities" class="placeholder-glow">
-              <div v-for="n in 5" :key="n" class="placeholder col-10 mb-2 rounded"></div>
-            </div>
-            <div v-else class="filter-list scroll-custom">
-              <div class="form-check mb-2" v-for="(amenity, index) in amenities" :key="index">
-                <input class="form-check-input" type="checkbox" :id="'amenity-'+index" :value="amenity.id" v-model="selectedAmenities">
-                <label class="form-check-label small" :for="'amenity-'+index">{{ amenity.amenity_name }}</label>
-              </div>
-            </div>
-          </div>
-
-          <div class="filter-card p-3 border rounded-4 shadow-sm bg-white">
-            <h6 class="fw-bold mb-3">Facilities</h6>
-            <div v-if="loadingFacilities" class="placeholder-glow">
-              <div v-for="n in 5" :key="n" class="placeholder col-10 mb-2 rounded"></div>
-            </div>
-            <div v-else class="filter-list scroll-custom">
-              <div class="form-check mb-2" v-for="(facility, index) in facilities" :key="index">
-                <input class="form-check-input" type="checkbox" :id="'fac-'+index" :value="facility.id" v-model="selectedFacilities">
-                <label class="form-check-label small" :for="'fac-'+index">{{ facility.facility_name }}</label>
-              </div>
-            </div>
-          </div>
+          <HomeFiltersPanel
+            id-prefix="desktop"
+            :amenities="amenities"
+            :facilities="facilities"
+            :loading-amenities="loadingAmenities"
+            :loading-facilities="loadingFacilities"
+            :selected-amenities="selectedAmenities"
+            :selected-facilities="selectedFacilities"
+            :min-price="min_price"
+            :max-price="max_price"
+            @update:selected-amenities="selectedAmenities = $event"
+            @update:selected-facilities="selectedFacilities = $event"
+            @update:min-price="min_price = $event"
+            @update:max-price="max_price = $event"
+            @apply="applyFilters()"
+            @reset="resetAllFilters()"
+          />
         </div>
       </aside>
 
-      <!-- Filter button on Mobile -->
       <div class="col-12 d-lg-none mb-3">
-        <button class="btn btn-mobile-filter w-100 d-flex justify-content-between align-items-center px-4 py-3 rounded-4" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileFilters" aria-controls="mobileFilters">
+        <button
+          class="btn btn-mobile-filter w-100 d-flex justify-content-between align-items-center px-4 py-3 rounded-4"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#mobileFilters"
+          aria-controls="mobileFilters"
+        >
           <span><i class="bi bi-sliders2-vertical me-2"></i> Refine Search</span>
           <i class="bi bi-chevron-right"></i>
         </button>
       </div>
 
-      <!-- Property Listings -->
       <div class="col-lg-9">
-        <!-- Result count -->
         <div class="result-header d-flex justify-content-between align-items-center mb-4">
           <div>
             <p class="result-eyebrow mb-1">Available Now</p>
-            <h5 class="fw-bold mb-0" v-if="!loading">{{ total }} results found</h5>
+            <h5 v-if="!loading" class="fw-bold mb-0">{{ total }} results found</h5>
           </div>
           <div v-if="loading" class="placeholder col-2"></div>
         </div>
 
-        <!-- Loading PlaceHolder -->
-        <div class="row g-4">
-          <div v-if="loading" class="col-12" v-for="n in 4" :key="'skel-'+n">
+        <div v-if="filterOptionsError" class="alert alert-warning border-0 rounded-4 mb-4" role="alert">
+          {{ filterOptionsError }}
+        </div>
+
+        <div v-if="listingsError" class="alert alert-danger border-0 rounded-4 mb-4" role="alert">
+          {{ listingsError }}
+        </div>
+
+        <div class="row g-4 position-relative">
+          <div v-if="listingsRefreshing" class="listing-refresh-indicator">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Refreshing listings...
+          </div>
+
+          <div v-for="n in 4" v-if="loading && !properties.length" :key="`skel-${n}`" class="col-12">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden loading-card">
               <div class="row g-0">
                 <div class="col-md-4 bg-light placeholder-glow">
@@ -151,8 +142,7 @@
             </div>
           </div>
 
-          <!-- Actual Property if found -->
-          <div class="col-12" v-for="(property, index) in properties" :key="index">
+          <div v-for="property in properties" v-else :key="property.id" class="col-12">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden property-horizontal-card h-100" @click="checkDetails(property.id)">
               <div class="row g-0 h-100">
                 <div class="col-md-4 position-relative">
@@ -166,11 +156,14 @@
                   >
                     <i class="bi" :class="isBookmarked(property.id) ? 'bi-heart-fill' : 'bi-heart'"></i>
                   </button>
-                  <div class="property-image-wrapper"> <img 
-                      :src="getPropertyCardImage(property)" 
-                      @error="$event.target.src = placeholderImg" 
-                      class="img-fluid property-image" 
-                      alt="Property"
+                  <div class="property-image-wrapper">
+                    <img
+                      :src="getPropertyCardImage(property)"
+                      :alt="property.title || 'Property'"
+                      class="img-fluid property-image"
+                      loading="lazy"
+                      decoding="async"
+                      @error="$event.target.src = placeholderImg"
                     >
                   </div>
                   <div class="badge-overlay position-absolute top-0 start-0 p-3">
@@ -185,10 +178,10 @@
                       <h5 class="fw-bold text-dark mb-0">{{ property.title }}</h5>
                       <div class="text-end">
                         <span class="badge bg-primary px-3 py-2 rounded-3">
-                          {{ getPropertyAverageRating(property).toFixed(1) }}
+                          {{ property.average_rating_value.toFixed(1) }}
                         </span>
                         <p class="small text-muted mb-0">
-                          {{ getPropertyTotalReviews(property) }} review{{ getPropertyTotalReviews(property) === 1 ? "" : "s" }}
+                          {{ property.total_reviews_value }} review{{ property.total_reviews_value === 1 ? "" : "s" }}
                         </p>
                       </div>
                     </div>
@@ -196,11 +189,8 @@
                       <i class="bi bi-geo-alt text-danger me-1"></i> {{ property.town_name }}, {{ property.state_name }}
                     </p>
                     <div class="mb-2">
-                      <span
-                        class="badge rounded-pill"
-                        :class="ownerVerificationBadgeClass(property)"
-                      >
-                        {{ ownerVerificationLabel(property) }}
+                      <span class="badge rounded-pill" :class="property.owner_verification_badge_class">
+                        {{ property.owner_verification_label }}
                       </span>
                     </div>
                     <p class="text-secondary small flex-grow-1 text-truncate-custom">
@@ -231,16 +221,14 @@
             </div>
           </div>
 
-          <!-- No property Result -->
           <div v-if="!loading && properties.length === 0" class="col-12 text-center py-5">
             <img src="https://cdn-icons-png.flaticon.com/512/6134/6134065.png" alt="No data" style="width: 120px; opacity: 0.5;">
             <h5 class="mt-4 fw-bold text-muted">No Properties Found</h5>
             <p class="text-muted">Try adjusting your filters or search query to find more results.</p>
-            <button @click="resetPriceFilter" class="btn btn-primary rounded-pill px-4 mt-2 fw-bold">Clear All Filters</button>
+            <button class="btn btn-primary rounded-pill px-4 mt-2 fw-bold" @click="resetAllFilters()">Clear All Filters</button>
           </div>
         </div>
 
-        <!-- Navigation for pagination -->
         <nav v-if="lastPage > 1 && !loading" class="mt-5">
           <ul class="pagination justify-content-center custom-pagination">
             <li class="page-item" :class="{ disabled: currentPage === 1 }">
@@ -266,7 +254,7 @@
     <div class="offcanvas-header border-bottom mobile-filters-header">
       <div>
         <p class="result-eyebrow mb-1">Search Controls</p>
-        <h5 class="offcanvas-title fw-bold mb-0" id="mobileFiltersLabel">Filters</h5>
+        <h5 id="mobileFiltersLabel" class="offcanvas-title fw-bold mb-0">Filters</h5>
       </div>
       <button
         type="button"
@@ -280,51 +268,24 @@
     </div>
     <div class="offcanvas-body mobile-filters-body">
       <p class="small text-muted mobile-filters-copy">Refine your search results without losing your place.</p>
-      <aside class="col-lg-3 d-lg-block">
-        <div class="sticky-top" style="top: 100px; z-index: 10;">
-          <div class="filter-card mobile-filter-card p-3 border rounded-4 shadow-sm bg-white mb-3">
-            <h6 class="fw-bold mb-3 d-flex align-items-center">
-              <i class="bi bi-tags me-2 text-primary"></i> Price Range
-            </h6>
-            <div class="row g-2 mb-3">
-              <div class="col-6">
-                <input type="number" v-model.number="min_price" class="form-control form-control-sm rounded-3" placeholder="Min">
-              </div>
-              <div class="col-6">
-                <input type="number" v-model.number="max_price" class="form-control form-control-sm rounded-3" placeholder="Max">
-              </div>
-            </div>
-            <button @click="applyPriceFilter" class="btn btn-primary btn-sm w-100 rounded-3 fw-bold mb-2">Apply</button>
-            <button @click="resetPriceFilter" class="btn btn-link btn-sm w-100 text-muted text-decoration-none">Reset Price</button>
-          </div>
-
-          <div class="filter-card mobile-filter-card p-3 border rounded-4 shadow-sm bg-white mb-3">
-            <h6 class="fw-bold mb-3">Amenities</h6>
-            <div v-if="loadingAmenities" class="placeholder-glow">
-              <div v-for="n in 5" :key="n" class="placeholder col-10 mb-2 rounded"></div>
-            </div>
-            <div v-else class="filter-list scroll-custom">
-              <div class="form-check mb-2" v-for="(amenity, index) in amenities" :key="index">
-                <input class="form-check-input" type="checkbox" :id="'amenity-'+index" :value="amenity.id" v-model="selectedAmenities">
-                <label class="form-check-label small" :for="'amenity-'+index">{{ amenity.amenity_name }}</label>
-              </div>
-            </div>
-          </div>
-
-          <div class="filter-card mobile-filter-card p-3 border rounded-4 shadow-sm bg-white">
-            <h6 class="fw-bold mb-3">Facilities</h6>
-            <div v-if="loadingFacilities" class="placeholder-glow">
-              <div v-for="n in 5" :key="n" class="placeholder col-10 mb-2 rounded"></div>
-            </div>
-            <div v-else class="filter-list scroll-custom">
-              <div class="form-check mb-2" v-for="(facility, index) in facilities" :key="index">
-                <input class="form-check-input" type="checkbox" :id="'fac-'+index" :value="facility.id" v-model="selectedFacilities">
-                <label class="form-check-label small" :for="'fac-'+index">{{ facility.facility_name }}</label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
+      <HomeFiltersPanel
+        id-prefix="mobile"
+        panel-class="mobile-filter-panel"
+        :amenities="amenities"
+        :facilities="facilities"
+        :loading-amenities="loadingAmenities"
+        :loading-facilities="loadingFacilities"
+        :selected-amenities="selectedAmenities"
+        :selected-facilities="selectedFacilities"
+        :min-price="min_price"
+        :max-price="max_price"
+        @update:selected-amenities="selectedAmenities = $event"
+        @update:selected-facilities="selectedFacilities = $event"
+        @update:min-price="min_price = $event"
+        @update:max-price="max_price = $event"
+        @apply="applyFilters()"
+        @reset="resetAllFilters()"
+      />
       <div class="mobile-filters-footer">
         <button
           type="button"
@@ -339,80 +300,337 @@
 </template>
 
 <script>
-import { RouterLink } from 'vue-router';
-import placeholderImg from '@/assets/Placeholder/thumbnail_placeholder.jpg';
-import {
-  getProperties,
-  getPropertyTypes,
-  getAmenities,
-  getFacilities,
-  getFilteredProperties,
-  getFilterPropertyByType,
-  searchProperties,
-  recordView
-} from '@/api/property';
-import { bookmarkProperty, getBookmarkedPropertyIds, removeBookmarkedProperty } from '@/api/bookmarks';
-import successToast from '@/components/successToast.vue';
-import Header from '@/components/Header.vue';
-import MapSection from '@/components/MapSection.vue';
-import SubscriptionWarningBanner from '@/components/SubscriptionWarningBanner.vue';
-import OwnerSubscriptionExpiredBanner from '@/components/OwnerSubscriptionExpiredBanner.vue';
-import { useUserInfo } from '@/store/userInfo';
-import Swal from 'sweetalert2';
+import { defineAsyncComponent } from "vue";
+import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
+import { recordView } from "@/api/property";
+import { bookmarkProperty, getBookmarkedPropertyIds, removeBookmarkedProperty } from "@/api/bookmarks";
+import { fetchHomeListings, loadHomeFilterOptions } from "@/api/homeListings";
+import HomeFiltersPanel from "@/components/HomeFiltersPanel.vue";
+import successToast from "@/components/successToast.vue";
+import Header from "@/components/Header.vue";
+import SubscriptionWarningBanner from "@/components/SubscriptionWarningBanner.vue";
+import OwnerSubscriptionExpiredBanner from "@/components/OwnerSubscriptionExpiredBanner.vue";
+import { useUserInfo } from "@/store/userInfo";
+import Swal from "sweetalert2";
+
+const MapSection = defineAsyncComponent(() => import("@/components/MapSection.vue"));
+
+const DEFAULT_PROPERTY_TYPES = [{ id: null, type_name: "Property Types" }];
 
 export default {
-  name: 'Home',
-  components: { RouterLink, successToast, Header, MapSection, SubscriptionWarningBanner, OwnerSubscriptionExpiredBanner },
+  name: "Home",
+  components: {
+    successToast,
+    Header,
+    HomeFiltersPanel,
+    MapSection,
+    SubscriptionWarningBanner,
+    OwnerSubscriptionExpiredBanner,
+  },
   data() {
     return {
       showMap: false,
+      shouldRenderMap: false,
       showSuccess: false,
       subSuccess: false,
       amenities: [],
       facilities: [],
-      property_types: [{ "id": null, "type_name": "Property Types" }],
+      property_types: DEFAULT_PROPERTY_TYPES,
       properties: [],
-      placeholderImg: placeholderImg,
+      placeholderImg,
       selectedAmenities: [],
       selectedFacilities: [],
       selectedType: null,
       selectedAgreement: "",
       min_price: null,
       max_price: null,
+      activeQuery: "",
+      activeFilters: {
+        amenities: [],
+        facilities: [],
+        selectedType: null,
+        selectedAgreement: "",
+        minPrice: null,
+        maxPrice: null,
+      },
+      searchQuery: "",
       loading: true,
-      loadingAmenities: true,
-      loadingFacilities: true,
+      listingsRefreshing: false,
+      loadingAmenities: false,
+      loadingFacilities: false,
       bookmarkBusyId: null,
       bookmarkedPropertyIds: [],
       currentPage: 1,
       lastPage: 1,
       total: 0,
-      searchQuery: '',
+      latestListingsRequestId: 0,
+      mobileFiltersElement: null,
+      desktopMediaQuery: null,
+      hasLoadedExtendedFilters: false,
+      isLoadingExtendedFilters: false,
+      listingsError: "",
+      filterOptionsError: "",
     };
   },
+  computed: {
+    canShowBookmarkAction() {
+      const info = useUserInfo();
+      const role = String(info.role || "").toLowerCase();
+      return info.isLoggedIn && !["owner", "admin"].includes(role);
+    },
+  },
+  watch: {
+    canShowBookmarkAction: {
+      immediate: true,
+      async handler(canShowBookmarks) {
+        if (canShowBookmarks) {
+          await this.loadBookmarks();
+          return;
+        }
+
+        this.bookmarkedPropertyIds = [];
+      },
+    },
+  },
+  async mounted() {
+    this.setupFilterOptionLoading();
+
+    const [filterOptionsResult, listingsResult] = await Promise.allSettled([
+      this.loadInitialFilterOptions(),
+      this.fetchListings({ page: 1 }),
+    ]);
+
+    if (filterOptionsResult.status === "rejected") {
+      console.warn("Failed to load initial filter options:", filterOptionsResult.reason);
+    }
+
+    if (listingsResult.status === "rejected") {
+      console.warn("Failed to load initial listings:", listingsResult.reason);
+    }
+
+    const success = sessionStorage.getItem("loginSuccess");
+    const subscriptionSuccess = sessionStorage.getItem("subscriptionSuccess");
+
+    if (success) {
+      this.showSuccess = true;
+      sessionStorage.removeItem("loginSuccess");
+    }
+
+    if (subscriptionSuccess) {
+      this.subSuccess = true;
+      sessionStorage.removeItem("subscriptionSuccess");
+    }
+  },
+  beforeUnmount() {
+    if (this.mobileFiltersElement) {
+      this.mobileFiltersElement.removeEventListener("show.bs.offcanvas", this.handleMobileFiltersShow);
+    }
+
+    if (this.desktopMediaQuery) {
+      if (typeof this.desktopMediaQuery.removeEventListener === "function") {
+        this.desktopMediaQuery.removeEventListener("change", this.handleViewportChange);
+      } else if (typeof this.desktopMediaQuery.removeListener === "function") {
+        this.desktopMediaQuery.removeListener(this.handleViewportChange);
+      }
+    }
+  },
   methods: {
-    normalizeOwnerVerificationStatus(property) {
-      const raw =
-        property?.owner_verification_status ??
-        property?.verification_status ??
-        property?.owner_status ??
-        null;
-      const status = String(raw || "unverified").toLowerCase().trim();
-      return ["verified", "pending", "rejected", "unverified"].includes(status) ? status : "unverified";
+    isDesktopViewport() {
+      return window.matchMedia("(min-width: 992px)").matches;
     },
-    ownerVerificationLabel(property) {
-      const status = this.normalizeOwnerVerificationStatus(property);
-      if (status === "verified") return "Verified Owner";
-      if (status === "pending") return "Verification Pending";
-      if (status === "rejected") return "Verification Rejected";
-      return "Unverified Owner";
+    toTitle(text) {
+      return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
     },
-    ownerVerificationBadgeClass(property) {
-      const status = this.normalizeOwnerVerificationStatus(property);
-      if (status === "verified") return "bg-success-subtle text-success";
-      if (status === "pending") return "bg-warning-subtle text-warning-emphasis";
-      if (status === "rejected") return "bg-danger-subtle text-danger";
-      return "bg-secondary-subtle text-secondary";
+    getPropertyCardImage(property) {
+      const raw = String(property?.image_url || "").trim();
+      if (!raw || ["null", "undefined"].includes(raw.toLowerCase())) {
+        return this.placeholderImg;
+      }
+      return raw;
+    },
+    createFilterSnapshot() {
+      return {
+        amenities: [...this.selectedAmenities],
+        facilities: [...this.selectedFacilities],
+        selectedType: this.selectedType || null,
+        selectedAgreement: this.selectedAgreement || "",
+        minPrice: this.min_price || null,
+        maxPrice: this.max_price || null,
+      };
+    },
+    normalizePriceRange() {
+      if (this.min_price > 0 && this.max_price > 0 && this.min_price > this.max_price) {
+        [this.min_price, this.max_price] = [this.max_price, this.min_price];
+      }
+    },
+    async loadInitialFilterOptions() {
+      this.filterOptionsError = "";
+
+      try {
+        const result = await loadHomeFilterOptions({
+          includeExtended: this.isDesktopViewport(),
+        });
+
+        this.property_types = result.propertyTypes;
+
+        if (this.isDesktopViewport()) {
+          this.amenities = result.amenities;
+          this.facilities = result.facilities;
+          this.hasLoadedExtendedFilters = true;
+        }
+      } catch (error) {
+        this.property_types = DEFAULT_PROPERTY_TYPES;
+        this.amenities = [];
+        this.facilities = [];
+        this.filterOptionsError = "Filters are temporarily unavailable. Listings are still available below.";
+        throw error;
+      }
+    },
+    async ensureExtendedFilterOptions() {
+      if (this.hasLoadedExtendedFilters || this.isLoadingExtendedFilters) return;
+
+      this.loadingAmenities = true;
+      this.loadingFacilities = true;
+      this.isLoadingExtendedFilters = true;
+
+      try {
+        const result = await loadHomeFilterOptions({ includeExtended: true });
+        this.property_types = result.propertyTypes;
+        this.amenities = result.amenities;
+        this.facilities = result.facilities;
+        this.hasLoadedExtendedFilters = true;
+        this.filterOptionsError = "";
+      } catch (error) {
+        this.filterOptionsError = "We could not load the full filter list right now.";
+        console.warn("Failed to load extended filter options:", error);
+      } finally {
+        this.loadingAmenities = false;
+        this.loadingFacilities = false;
+        this.isLoadingExtendedFilters = false;
+      }
+    },
+    setupFilterOptionLoading() {
+      this.mobileFiltersElement = document.getElementById("mobileFilters");
+      if (this.mobileFiltersElement) {
+        this.mobileFiltersElement.addEventListener("show.bs.offcanvas", this.handleMobileFiltersShow);
+      }
+
+      this.desktopMediaQuery = window.matchMedia("(min-width: 992px)");
+      if (typeof this.desktopMediaQuery.addEventListener === "function") {
+        this.desktopMediaQuery.addEventListener("change", this.handleViewportChange);
+      } else if (typeof this.desktopMediaQuery.addListener === "function") {
+        this.desktopMediaQuery.addListener(this.handleViewportChange);
+      }
+    },
+    handleMobileFiltersShow() {
+      this.ensureExtendedFilterOptions();
+    },
+    handleViewportChange(event) {
+      if (event.matches) {
+        this.ensureExtendedFilterOptions();
+      }
+    },
+    async ensureMapLoaded() {
+      this.shouldRenderMap = true;
+    },
+    async toggleMap() {
+      if (!this.showMap) {
+        await this.ensureMapLoaded();
+      }
+
+      this.showMap = !this.showMap;
+    },
+    async fetchListings({
+      page = 1,
+      query = this.activeQuery,
+      filters = this.activeFilters,
+      force = false,
+    } = {}) {
+      const requestId = ++this.latestListingsRequestId;
+      const hasExistingCards = this.properties.length > 0;
+      this.loading = !hasExistingCards;
+      this.listingsRefreshing = hasExistingCards;
+      this.listingsError = "";
+
+      try {
+        const result = await fetchHomeListings({
+          page,
+          query,
+          filters,
+          force,
+        });
+
+        if (requestId !== this.latestListingsRequestId) return;
+
+        this.properties = result.properties;
+        this.currentPage = result.currentPage;
+        this.lastPage = result.lastPage;
+        this.total = result.total;
+      } catch (error) {
+        if (requestId !== this.latestListingsRequestId) return;
+
+        console.error("Failed to fetch home listings:", error);
+        this.listingsError = "We could not load listings right now. Please try again in a moment.";
+
+        if (!hasExistingCards) {
+          this.properties = [];
+          this.currentPage = 1;
+          this.lastPage = 1;
+          this.total = 0;
+        }
+      } finally {
+        if (requestId === this.latestListingsRequestId) {
+          this.loading = false;
+          this.listingsRefreshing = false;
+        }
+      }
+    },
+    async applyFilters(page = 1) {
+      this.normalizePriceRange();
+      this.activeFilters = this.createFilterSnapshot();
+      this.activeQuery = String(this.searchQuery || "").trim();
+      this.currentPage = page;
+      await this.fetchListings({
+        page,
+        query: this.activeQuery,
+        filters: this.activeFilters,
+      });
+    },
+    async resetAllFilters() {
+      this.selectedAmenities = [];
+      this.selectedFacilities = [];
+      this.selectedType = null;
+      this.selectedAgreement = "";
+      this.min_price = null;
+      this.max_price = null;
+      this.searchQuery = "";
+      this.activeQuery = "";
+      this.activeFilters = {
+        amenities: [],
+        facilities: [],
+        selectedType: null,
+        selectedAgreement: "",
+        minPrice: null,
+        maxPrice: null,
+      };
+
+      await this.fetchListings({
+        page: 1,
+        query: "",
+        filters: this.activeFilters,
+      });
+    },
+    async changePage(page) {
+      if (page < 1 || page > this.lastPage) return;
+
+      this.currentPage = page;
+      await this.fetchListings({
+        page,
+        query: this.activeQuery,
+        filters: this.activeFilters,
+      });
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
     },
     async loadBookmarks() {
       if (!this.canShowBookmarkAction) {
@@ -435,10 +653,13 @@ export default {
     async toggleBookmark(propertyId) {
       if (!this.canShowBookmarkAction || this.bookmarkBusyId === propertyId) return;
 
+      const wasBookmarked = this.isBookmarked(propertyId);
       this.bookmarkBusyId = propertyId;
+
       try {
         let response;
-        if (this.isBookmarked(propertyId)) {
+
+        if (wasBookmarked) {
           response = await removeBookmarkedProperty(propertyId);
           this.bookmarkedPropertyIds = this.bookmarkedPropertyIds.filter((id) => id !== Number(propertyId));
         } else {
@@ -448,7 +669,7 @@ export default {
 
         await Swal.fire({
           icon: "success",
-          title: this.isBookmarked(propertyId) ? "Property saved" : "Bookmark removed",
+          title: wasBookmarked ? "Bookmark removed" : "Property saved",
           text: response?.data?.message || "Bookmark updated successfully.",
           timer: 1600,
           showConfirmButton: false,
@@ -472,160 +693,15 @@ export default {
         this.bookmarkBusyId = null;
       }
     },
-    applyPriceFilter() {
-      if (this.min_price > 0 && this.max_price > 0 && this.min_price > this.max_price) {
-        [this.min_price, this.max_price] = [this.max_price, this.min_price];
-      }
-      this.currentPage = 1;
-      this.getFilteredProperties(1);
-    },
-    resetPriceFilter() {
-      this.min_price = null;
-      this.max_price = null;
-      this.selectedAmenities = [];
-      this.selectedFacilities = [];
-      this.selectedType = null;
-      this.selectedAgreement = "";
-      this.searchQuery = "";
-      this.currentPage = 1;
-      this.getProperties(1);
-    },
-    toTitle(text) {
-      return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
-    },
-    getPropertyAverageRating(property) {
-      const value = Number(property?.average_rating ?? property?.avg_rating ?? 0);
-      return Number.isFinite(value) ? value : 0;
-    },
-    getPropertyTotalReviews(property) {
-      const value = Number(property?.total_reviews ?? property?.review_count ?? 0);
-      return Number.isFinite(value) ? value : 0;
-    },
-    getPropertyCardImage(property) {
-      const raw = String(property?.image_url || "").trim();
-      if (!raw || ["null", "undefined"].includes(raw.toLowerCase())) {
-        return this.placeholderImg;
-      }
-      return raw;
-    },
     async checkDetails(id) {
-      await recordView(id);
-      this.$router.push(`/property/${id}`)
-    },
-    changePage(page) {
-      if (page < 1 || page > this.lastPage) return;
-      this.currentPage = page;
-      const hasFilters = this.selectedAmenities.length || this.selectedFacilities.length || this.selectedType || this.selectedAgreement || this.min_price || this.max_price;
-      hasFilters ? this.getFilteredProperties(page) : this.getProperties(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    },
-    isPropertyVisible(property) {
-      const status = String(property?.status || "").toLowerCase();
-      return property?.is_available !== false && status !== "pending";
-    },
-    async getProperties(page = 1) {
-      this.loading = true;
-      try {
-        const response = await getProperties(page);
-        const paginated = response.data.properties;
-        this.properties = (paginated.data || []).filter(this.isPropertyVisible);
-        this.currentPage = paginated.current_page;
-        this.lastPage = paginated.last_page;
-        this.total = paginated.total;
-      } catch (error) {
-        this.properties = [];
-      } finally {
-        this.loading = false;
-      }
-    },
-    async getAmenities() {
-      this.loadingAmenities = true;
-      try {
-        const response = await getAmenities();
-        this.amenities = response;
-      } finally {
-        this.loadingAmenities = false;
-      }
-    },
-    async getFacilities() {
-      this.loadingFacilities = true;
-      try {
-        const response = await getFacilities();
-        this.facilities = response;
-      } finally {
-        this.loadingFacilities = false;
-      }
-    },
-    async getPropertyTypes() {
-      try {
-        const response = await getPropertyTypes();
-        this.property_types = [{ "id": null, "type_name": "Property Types" }, ...response];
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    async getFilteredProperties(page = 1) {
-      this.loading = true;
-      try {
-        const response = await getFilteredProperties(
-          this.selectedAmenities,
-          this.selectedFacilities,
-          this.min_price,
-          this.max_price,
-          this.selectedType,
-          this.selectedAgreement,
-          page
-        );
-        const paginated = response.data.properties;
-        this.properties = (paginated.data || []).filter(this.isPropertyVisible);
-        this.currentPage = paginated.current_page;
-        this.lastPage = paginated.last_page;
-        this.total = paginated.total;
-      } finally {
-        this.loading = false;
-      }
-    },
-    async searchByQuery(page = 1) {
-      if (!this.searchQuery.trim()) return this.getProperties(1);
-      this.loading = true;
-      try {
-        const response = await searchProperties(this.searchQuery, page);
-        const paginated = response.data.properties;
-        this.properties = (paginated.data || []).filter(this.isPropertyVisible);
-        this.currentPage = paginated.current_page;
-        this.lastPage = paginated.last_page;
-        this.total = paginated.total;
-      } finally {
-        this.loading = false;
-      }
+      this.$router.push(`/property/${id}`);
+      Promise.resolve()
+        .then(() => recordView(id))
+        .catch((error) => {
+          console.warn("Failed to record property view:", error);
+        });
     },
   },
-  mounted() {
-    this.getAmenities();
-    this.getFacilities();
-    this.getPropertyTypes();
-    this.getProperties();
-
-    const success = sessionStorage.getItem('loginSuccess');
-    const subSuccess = sessionStorage.getItem('subscriptionSuccess');
-
-    if (success) { this.showSuccess = true; sessionStorage.removeItem('loginSuccess'); }
-    if (subSuccess) { this.subSuccess = true; sessionStorage.removeItem('subscriptionSuccess'); }
-    this.loadBookmarks();
-  },
-  watch: {
-    selectedType() { this.currentPage = 1; this.getFilteredProperties(1); },
-    selectedAgreement() { this.currentPage = 1; this.getFilteredProperties(1); },
-    selectedAmenities: { handler() { this.currentPage = 1; this.getFilteredProperties(1); }, deep: true },
-    selectedFacilities: { handler() { this.currentPage = 1; this.getFilteredProperties(1); }, deep: true },
-  },
-  computed: {
-    canShowBookmarkAction() {
-      const info = useUserInfo();
-      const role = String(info.role || "").toLowerCase();
-      return info.isLoggedIn && !["owner", "admin"].includes(role);
-    },
-  }
 };
 </script>
 
@@ -741,19 +817,9 @@ input.form-control:focus {
   overflow-y: auto;
 }
 
-.mobile-filters-body .sticky-top {
-  position: static !important;
-  top: auto !important;
-  z-index: auto !important;
-}
-
 .mobile-filters-copy {
   margin: 0 0 1rem;
   color: #6a85ac;
-}
-
-.mobile-filter-card {
-  padding: 1rem !important;
 }
 
 .mobile-filters-footer {
@@ -765,13 +831,6 @@ input.form-control:focus {
   padding-bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px));
   margin-top: 1rem;
   background: linear-gradient(180deg, rgba(249, 251, 255, 0) 0%, #f9fbff 24%, #f9fbff 100%);
-}
-
-.filter-card {
-  border: 1px solid #e1ebfb !important;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 8px 18px rgba(21, 48, 88, 0.05);
 }
 
 .result-eyebrow {
@@ -828,6 +887,23 @@ input.form-control:focus {
   background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
 }
 
+.listing-refresh-indicator {
+  position: absolute;
+  top: -0.5rem;
+  right: 0.75rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d8e4f8;
+  box-shadow: 0 8px 18px rgba(18, 43, 83, 0.1);
+  color: #315f9d;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .text-truncate-custom {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -851,20 +927,6 @@ input.form-control:focus {
   color: #5f6b7a;
   background: #f3f5f8;
   border-color: #e0e6ee;
-}
-
-.filter-list {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.scroll-custom::-webkit-scrollbar {
-  width: 5px;
-}
-
-.scroll-custom::-webkit-scrollbar-thumb {
-  background: #d6deea;
-  border-radius: 10px;
 }
 
 .custom-pagination .page-link {
@@ -922,10 +984,6 @@ input.form-control:focus {
     width: min(92vw, 340px);
     border-top-right-radius: 22px;
     border-bottom-right-radius: 22px;
-  }
-
-  .mobile-filter-card .filter-list {
-    max-height: 180px;
   }
 }
 

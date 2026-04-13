@@ -15,12 +15,19 @@ export async function logout() {
   localStorage.removeItem("access_token");
 }
 
-export async function register(first_name, last_name, email, password) {
+export async function register(
+  first_name,
+  last_name,
+  email,
+  password,
+  password_confirmation
+) {
   const res = await api.post("/register", {
     first_name,
     last_name,
     email,
     password,
+    password_confirmation,
   });
   // localStorage.setItem("access_token", res.data.access_token);
   return res;

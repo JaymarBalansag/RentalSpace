@@ -46,6 +46,7 @@
 
 <script>
 import Header from '@/components/Header.vue';
+import { useUserInfo } from '@/store/userInfo';
 import Swal from "sweetalert2";
 import { getOwnerPlanList } from "@/utils/ownerPlans";
 
@@ -59,8 +60,8 @@ export default {
   },
   methods: {
     selectPlan(planCode) {
-      const user = JSON.parse(localStorage.getItem("userInfo") || "{}");
-      const status = String(user?.user_verification_status || "unverified").toLowerCase().trim();
+      const info = useUserInfo();
+      const status = String(info.user_verification_status || "unverified").toLowerCase().trim();
       if (status !== "verified") {
         const text = status === "pending"
           ? "Your verification is under review. Owner onboarding unlocks once approved."

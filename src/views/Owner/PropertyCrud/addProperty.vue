@@ -1171,6 +1171,7 @@ export default {
           maxWidth: 1600,
           maxHeight: 1600,
           filenameSuffix: "thumbnail",
+          keepOriginalIfLarger: false,
         });
         chosen = webpFile || file;
         this.thumbnailWasConverted = Boolean(converted) && chosen !== file;
@@ -1208,6 +1209,7 @@ export default {
               maxWidth: 1600,
               maxHeight: 1600,
               filenameSuffix: "property",
+              keepOriginalIfLarger: false,
             });
             return { original: f, chosen: webpFile || f, converted: Boolean(converted) && (webpFile || f) !== f };
           } catch {
@@ -1247,9 +1249,10 @@ export default {
 
           const { file: webpFile, converted } = await compressImageToWebpFile(file, {
             quality: 0.82,
-            maxWidth: 2000,
-            maxHeight: 2000,
+            maxWidth: 1600,
+            maxHeight: 1600,
             filenameSuffix: "permit",
+            keepOriginalIfLarger: false,
           });
           chosen = webpFile || file;
           this.businessPermitWasConverted = Boolean(converted) && chosen !== file;

@@ -60,7 +60,13 @@ async function canvasToBlob(canvas, type, quality) {
  */
 export async function compressImageToWebpFile(
   inputFile,
-  { quality = 0.82, maxWidth = 1600, maxHeight = 1600, filenameSuffix = "" } = {}
+  {
+    quality = 0.82,
+    maxWidth = 1600,
+    maxHeight = 1600,
+    filenameSuffix = "",
+    keepOriginalIfLarger = true,
+  } = {}
 ) {
   const file = inputFile;
   if (!file || !file.type || !String(file.type).startsWith("image/")) {
@@ -96,10 +102,9 @@ export async function compressImageToWebpFile(
   const outFile = blobToFile(blob, outName);
 
   // If the output is larger than input, keep original.
-  if (blob.size && file.size && blob.size >= file.size) {
+  if (keepOriginalIfLarger && blob.size && file.size && blob.size >= file.size) {
     return { file, converted: false, reason: "not-smaller" };
   }
 
   return { file: outFile, converted: true, reason: null };
 }
-

@@ -167,18 +167,19 @@ export default {
 
       this.imageFileOriginal = file;
 
-      let chosen = file;
-      try {
-        const { file: webpFile } = await compressImageToWebpFile(file, {
-          quality: 0.82,
-          maxWidth: 1024,
-          maxHeight: 1024,
-          filenameSuffix: "profile",
-        });
-        chosen = webpFile || file;
-      } catch {
-        chosen = file;
-      }
+       let chosen = file;
+       try {
+         const { file: webpFile } = await compressImageToWebpFile(file, {
+           quality: 0.82,
+           maxWidth: 512,
+           maxHeight: 512,
+           filenameSuffix: "profile",
+           keepOriginalIfLarger: false,
+         });
+         chosen = webpFile || file;
+       } catch {
+         chosen = file;
+       }
 
       if ((chosen?.size || 0) > maxUploadSize) {
         this.errors.user_img = "Image must be less than 2MB.";

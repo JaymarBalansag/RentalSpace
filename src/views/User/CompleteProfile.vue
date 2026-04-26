@@ -318,17 +318,18 @@ export default {
 
       this.userImgOriginal = file;
 
-      try {
-        const { file: webpFile } = await compressImageToWebpFile(file, {
-          quality: 0.82,
-          maxWidth: 1024,
-          maxHeight: 1024,
-          filenameSuffix: "profile",
-        });
-        this.form.user_img = webpFile || file;
-      } catch {
-        this.form.user_img = file;
-      }
+       try {
+         const { file: webpFile } = await compressImageToWebpFile(file, {
+           quality: 0.82,
+           maxWidth: 512,
+           maxHeight: 512,
+           filenameSuffix: "profile",
+           keepOriginalIfLarger: false,
+         });
+         this.form.user_img = webpFile || file;
+       } catch {
+         this.form.user_img = file;
+       }
 
       if (this.previewImgObjectUrl) URL.revokeObjectURL(this.previewImgObjectUrl);
       this.previewImgObjectUrl = URL.createObjectURL(this.form.user_img);

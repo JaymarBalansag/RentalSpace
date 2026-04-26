@@ -101,7 +101,7 @@
                 ref="verificationInput"
                 type="file"
                 class="d-none"
-                accept=".jpg,.jpeg,.png,.pdf"
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
                 @change="onVerificationFileChange"
               />
             </div>
@@ -239,6 +239,7 @@ import 'leaflet/dist/leaflet.css';
 import { nextTick } from "vue";
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
 import Swal from "sweetalert2";
+import { compressImageToWebpFile } from "@/utils/compressToWebp";
 
 // Fix for Leaflet default marker icons not appearing in some builds
 delete L.Icon.Default.prototype._getIconUrl;
@@ -479,12 +480,50 @@ export default {
       const file = event?.target?.files?.[0] || null;
       if (!file) return;
 
-      const fd = new FormData();
-      fd.append("valid_id", file);
       this.verificationUploading = true;
 
       try {
-        const response = await submitUserVerification(fd);
+        const original = file;
+        let uploadFile = file;
+
+        if (String(file.type || "").startsWith("image/")) {
+          try {
+            const { file: webpFile } = await compressImageToWebpFile(file, {
+              quality: 0.84,
+              maxWidth: 1600,
+              maxHeight: 1600,
+              filenameSuffix: "valid-id",
+            });
+            uploadFile = webpFile || file;
+          } catch {
+            uploadFile = file;
+          }
+        }
+
+        const buildFormData = (f) => {
+          const fd = new FormData();
+          fd.append("valid_id", f);
+          return fd;
+        };
+
+        let response;
+        try {
+          response = await submitUserVerification(buildFormData(uploadFile));
+        } catch (error) {
+          const status = error?.response?.status;
+          const msg = String(error?.response?.data?.message || error?.message || "");
+          const looksLikeTypeRejection =
+            status === 415 ||
+            status === 422 ||
+            /webp|mime|mimes|unsupported|type|format/i.test(msg);
+
+          if (looksLikeTypeRejection && uploadFile !== original) {
+            response = await submitUserVerification(buildFormData(original));
+          } else {
+            throw error;
+          }
+        }
+
         this.userVerificationStatus = "pending";
         this.userVerificationRejectedReason = null;
         useUserInfo().setUserVerificationStatus("pending", null, null, response?.data?.user_valid_govt_id_url || null);

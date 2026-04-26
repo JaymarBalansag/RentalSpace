@@ -65,14 +65,14 @@
             />
             <i v-else class="bi bi-person-circle fs-1 text-secondary"></i>
 
-            <input
-              type="file"
-              class="form-control mt-3"
-              accept="image/png,image/jpeg"
-              @change="handleImageUpload"
-            />
-
-            <small class="d-block text-muted small mt-2">Accepted file types: JPG, PNG (max 2MB)</small>
+              <input
+                type="file"
+                class="form-control mt-3"
+              accept="image/png,image/jpeg,image/webp"
+                @change="handleImageUpload"
+              />
+ 
+            <small class="d-block text-muted small mt-2">Accepted file types: JPG, PNG (auto-compressed to WebP, max 2MB upload)</small>
             <small v-if="errors.user_img" class="text-danger d-block mt-2">
               {{ errors.user_img }}
             </small>
@@ -96,19 +96,20 @@
 
 <script>
 import { RouterLink } from "vue-router";
-import Header from "@/components/Header.vue";
-import { getUserProfile, updateUserProfile } from "@/api/user";
-import { useUserInfo } from "@/store/userInfo";
-import Swal from "sweetalert2";
+ import Header from "@/components/Header.vue";
+ import { getUserProfile, updateUserProfile } from "@/api/user";
+ import { useUserInfo } from "@/store/userInfo";
+ import Swal from "sweetalert2";
+import { compressImageToWebpFile } from "@/utils/compressToWebp";
 
 export default {
   name: "EditProfilePage",
   components: { RouterLink, Header },
 
-  data() {
-    return {
-      loading: false,
-      originalForm: null,
+   data() {
+     return {
+       loading: false,
+       originalForm: null,
 
       form: {
         first_name: "",
@@ -122,11 +123,13 @@ export default {
         streets: "",
       },
 
-      previewImg: null,
-      imageFile: null,
-      errors: {},
-    };
-  },
+       previewImg: null,
+      previewImgObjectUrl: null,
+       imageFile: null,
+      imageFileOriginal: null,
+       errors: {},
+     };
+   },
 
   computed: {
     isFormChanged() {
@@ -142,29 +145,52 @@ export default {
     },
   },
 
-  methods: {
-    /* ================= IMAGE VALIDATION ================= */
-    handleImageUpload(event) {
-      const file = event.target.files[0];
+   methods: {
+     /* ================= IMAGE VALIDATION ================= */
+    async handleImageUpload(event) {
+      const file = event?.target?.files?.[0] || null;
       if (!file) return;
 
-      const allowedTypes = ["image/jpeg", "image/png"];
-      const maxSize = 2 * 1024 * 1024; // 2MB
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+      const maxInputSize = 10 * 1024 * 1024; // 10MB safety cap
+      const maxUploadSize = 2 * 1024 * 1024; // 2MB (as per UI)
 
       if (!allowedTypes.includes(file.type)) {
-        this.errors.user_img = "Only JPG or PNG images are allowed.";
+        this.errors.user_img = "Only JPG, PNG, or WEBP images are allowed.";
         return;
       }
 
-      if (file.size > maxSize) {
+      if (file.size > maxInputSize) {
+        this.errors.user_img = "Image must be less than 10MB.";
+        return;
+      }
+
+      this.imageFileOriginal = file;
+
+      let chosen = file;
+      try {
+        const { file: webpFile } = await compressImageToWebpFile(file, {
+          quality: 0.82,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          filenameSuffix: "profile",
+        });
+        chosen = webpFile || file;
+      } catch {
+        chosen = file;
+      }
+
+      if ((chosen?.size || 0) > maxUploadSize) {
         this.errors.user_img = "Image must be less than 2MB.";
         return;
       }
 
       delete this.errors.user_img;
 
-      this.imageFile = file;
-      this.previewImg = URL.createObjectURL(file);
+      this.imageFile = chosen;
+      if (this.previewImgObjectUrl) URL.revokeObjectURL(this.previewImgObjectUrl);
+      this.previewImgObjectUrl = URL.createObjectURL(chosen);
+      this.previewImg = this.previewImgObjectUrl;
     },
 
     /* ================= FORM VALIDATION ================= */
@@ -189,25 +215,41 @@ export default {
       return Object.keys(this.errors).length === 0;
     },
 
-    /* ================= UPDATE PROFILE ================= */
-    async updateProfile() {
-      if (!this.validateForm()) return;
-      if (!this.isFormChanged) return;
+     /* ================= UPDATE PROFILE ================= */
+     async updateProfile() {
+       if (!this.validateForm()) return;
+       if (!this.isFormChanged) return;
 
-      this.loading = true;
+       this.loading = true;
 
-      try {
-        const formData = new FormData();
+       try {
+        const buildFormData = (overrideImg) => {
+          const formData = new FormData();
+          Object.keys(this.form).forEach(key => {
+            formData.append(key, this.form[key] ?? "");
+          });
+          const img = overrideImg || this.imageFile;
+          if (img) formData.append("user_img", img);
+          return formData;
+        };
 
-        Object.keys(this.form).forEach(key => {
-          formData.append(key, this.form[key] ?? "");
-        });
+        let response;
+        try {
+          response = await updateUserProfile(buildFormData(null));
+        } catch (error) {
+          const status = error?.response?.status;
+          const msg = String(error?.response?.data?.message || error?.message || "");
+          const looksLikeTypeRejection =
+            status === 415 ||
+            status === 422 ||
+            /webp|mime|mimes|unsupported|type|format/i.test(msg);
 
-        if (this.imageFile) {
-          formData.append("user_img", this.imageFile);
+          if (looksLikeTypeRejection && this.imageFileOriginal && this.imageFile && this.imageFile !== this.imageFileOriginal) {
+            response = await updateUserProfile(buildFormData(this.imageFileOriginal));
+          } else {
+            throw error;
+          }
         }
-
-        const response = await updateUserProfile(formData);
 
         await Swal.fire({
           icon: "success",
@@ -220,15 +262,16 @@ export default {
         const last_name = response.data.user.last_name
         const user_img_url = response.data.user.user_img_url
 
-        info.updateUserProfile(first_name, last_name, user_img_url )
+         info.updateUserProfile(first_name, last_name, user_img_url )
+ 
+         this.originalForm = { ...this.form };
+         this.imageFile = null;
+        this.imageFileOriginal = null;
+ 
+         // this.$router.push("/profile")
+         window.location.href="/profile"
 
-        this.originalForm = { ...this.form };
-        this.imageFile = null;
-
-        // this.$router.push("/profile")
-        window.location.href="/profile"
-
-      } catch (error) {
+       } catch (error) {
         await Swal.fire({
           icon: "error",
           title: "Update Failed",
@@ -236,8 +279,8 @@ export default {
         });
       } finally {
         this.loading = false;
-      }
-    },
+       }
+     },
 
     /* ================= GET PROFILE ================= */
     async getUserProfile() {
@@ -273,13 +316,17 @@ export default {
     },
   },
 
-  mounted() {
-    this.getUserProfile();
+   mounted() {
+     this.getUserProfile();
+   },
+
+  beforeUnmount() {
+    if (this.previewImgObjectUrl) URL.revokeObjectURL(this.previewImgObjectUrl);
   },
 
-  watch: {
-    'form.phone_number'(val) {
-      if (!val) return;
+   watch: {
+     'form.phone_number'(val) {
+       if (!val) return;
 
       // 1. Remove all non-numeric characters
       let cleaned = val.replace(/\D/g, '');

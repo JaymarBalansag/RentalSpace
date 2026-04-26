@@ -97,13 +97,6 @@
                 <i class="bi bi-shield-check me-2"></i>
                 {{ verificationActionLabel }}
               </button>
-              <input
-                ref="verificationInput"
-                type="file"
-                class="d-none"
-                accept=".jpg,.jpeg,.png,.webp,.pdf"
-                @change="onVerificationFileChange"
-              />
             </div>
           </div>
         </div>
@@ -226,6 +219,13 @@
         </div>
       </div>
     </div>
+
+    <ValidIdUploadModal
+      :show="showValidIdUploadModal"
+      :loading="verificationUploading"
+      @cancel="closeValidIdUploadModal"
+      @submit="submitValidIdFromModal"
+    />
   </div>
 </template>
 
@@ -239,7 +239,7 @@ import 'leaflet/dist/leaflet.css';
 import { nextTick } from "vue";
 import placeholderImg from "@/assets/Placeholder/thumbnail_placeholder.jpg";
 import Swal from "sweetalert2";
-import { compressImageToWebpFile } from "@/utils/compressToWebp";
+import ValidIdUploadModal from "@/components/ValidIdUploadModal.vue";
 
 // Fix for Leaflet default marker icons not appearing in some builds
 delete L.Icon.Default.prototype._getIconUrl;
@@ -251,7 +251,7 @@ L.Icon.Default.mergeOptions({
 
 export default {
   name: "Profile",
-  components: { RouterLink, Header },
+  components: { RouterLink, Header, ValidIdUploadModal },
   data() {
     return {
       user: {
@@ -272,6 +272,7 @@ export default {
       userVerificationStatus: "unverified",
       userVerificationRejectedReason: null,
       verificationUploading: false,
+      showValidIdUploadModal: false,
     };
   },
   computed: {
@@ -418,7 +419,7 @@ export default {
         this.confirmReverification();
         return;
       }
-      this.$refs.verificationInput?.click();
+      this.openValidIdUploadModal();
     },
     async confirmReverification() {
       const result = await Swal.fire({
@@ -430,7 +431,65 @@ export default {
         cancelButtonText: "Cancel",
       });
       if (result.isConfirmed) {
-        this.$refs.verificationInput?.click();
+        this.openValidIdUploadModal();
+      }
+    },
+    openValidIdUploadModal() {
+      this.showValidIdUploadModal = true;
+    },
+    closeValidIdUploadModal() {
+      if (this.verificationUploading) return;
+      this.showValidIdUploadModal = false;
+    },
+    async submitValidIdFromModal(payload) {
+      const file = payload?.file || null;
+      const originalFile = payload?.originalFile || null;
+      if (!file) return;
+
+      this.verificationUploading = true;
+
+      const buildFormData = (f) => {
+        const fd = new FormData();
+        fd.append("valid_id", f);
+        return fd;
+      };
+
+      try {
+        let response;
+        try {
+          response = await submitUserVerification(buildFormData(file));
+        } catch (error) {
+          const status = error?.response?.status;
+          const msg = String(error?.response?.data?.message || error?.message || "");
+          const looksLikeTypeRejection =
+            status === 415 ||
+            status === 422 ||
+            /webp|mime|mimes|unsupported|type|format/i.test(msg);
+
+          if (looksLikeTypeRejection && originalFile && originalFile !== file) {
+            response = await submitUserVerification(buildFormData(originalFile));
+          } else {
+            throw error;
+          }
+        }
+
+        this.userVerificationStatus = "pending";
+        this.userVerificationRejectedReason = null;
+        useUserInfo().setUserVerificationStatus("pending", null, null, response?.data?.user_valid_govt_id_url || null);
+        this.showValidIdUploadModal = false;
+        await Swal.fire({
+          icon: "success",
+          title: "Verification Submitted",
+          text: "Your valid government ID was submitted and is now under admin review.",
+        });
+      } catch (error) {
+        await Swal.fire({
+          icon: "error",
+          title: "Submission Failed",
+          text: error?.response?.data?.message || "Unable to submit verification document.",
+        });
+      } finally {
+        this.verificationUploading = false;
       }
     },
     async previewValidId() {
@@ -449,16 +508,14 @@ export default {
 
       if (isPdf) {
         await Swal.fire({
-          title: "Valid ID Preview",
+          icon: "warning",
+          title: "Unsupported File Type",
           html: `
-            <div style="height:60vh;min-height:320px;">
-              <iframe src="${url}" style="width:100%;height:100%;border:0;border-radius:12px;"></iframe>
-            </div>
+            <p style="margin:0 0 10px 0;">Your uploaded ID appears to be a PDF. For safety, only image IDs are supported now.</p>
+            <p style="margin:0;">Please re-upload your ID as an image (JPG/PNG/WEBP).</p>
             <div style="margin-top:12px;">${openLink}</div>
           `,
-          width: 720,
-          showConfirmButton: false,
-          showCloseButton: true,
+          width: 640,
         });
         return;
       }
@@ -476,73 +533,7 @@ export default {
         showCloseButton: true,
       });
     },
-    async onVerificationFileChange(event) {
-      const file = event?.target?.files?.[0] || null;
-      if (!file) return;
-
-      this.verificationUploading = true;
-
-      try {
-        const original = file;
-        let uploadFile = file;
-
-        if (String(file.type || "").startsWith("image/")) {
-          try {
-            const { file: webpFile } = await compressImageToWebpFile(file, {
-              quality: 0.84,
-              maxWidth: 1600,
-              maxHeight: 1600,
-              filenameSuffix: "valid-id",
-            });
-            uploadFile = webpFile || file;
-          } catch {
-            uploadFile = file;
-          }
-        }
-
-        const buildFormData = (f) => {
-          const fd = new FormData();
-          fd.append("valid_id", f);
-          return fd;
-        };
-
-        let response;
-        try {
-          response = await submitUserVerification(buildFormData(uploadFile));
-        } catch (error) {
-          const status = error?.response?.status;
-          const msg = String(error?.response?.data?.message || error?.message || "");
-          const looksLikeTypeRejection =
-            status === 415 ||
-            status === 422 ||
-            /webp|mime|mimes|unsupported|type|format/i.test(msg);
-
-          if (looksLikeTypeRejection && uploadFile !== original) {
-            response = await submitUserVerification(buildFormData(original));
-          } else {
-            throw error;
-          }
-        }
-
-        this.userVerificationStatus = "pending";
-        this.userVerificationRejectedReason = null;
-        useUserInfo().setUserVerificationStatus("pending", null, null, response?.data?.user_valid_govt_id_url || null);
-        await Swal.fire({
-          icon: "success",
-          title: "Verification Submitted",
-          text: "Your valid government ID was submitted and is now under admin review.",
-        });
-      } catch (error) {
-        await Swal.fire({
-          icon: "error",
-          title: "Submission Failed",
-          text: error?.response?.data?.message || "Unable to submit verification document.",
-        });
-      } finally {
-        this.verificationUploading = false;
-        if (event?.target) event.target.value = "";
-      }
-    }
+ 
   },
 };
 </script>

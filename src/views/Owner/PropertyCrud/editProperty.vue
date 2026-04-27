@@ -117,7 +117,7 @@
                 <div ref="step1ThumbnailField" class="upload-card">
                   <label class="form-label fw-semibold small text-uppercase">Main Thumbnail <span class="text-danger">*</span></label>
                   <div class="upload-container position-relative">
-                    <input type="file" class="file-input-overlay" @change="handleThumbnail" accept="image/*" />
+                    <input type="file" class="file-input-overlay" @change="handleThumbnail" accept=".jpg,.jpeg,.png,.webp" />
                     <div class="upload-placeholder border-dashed rounded-3 p-4 text-center">
                       <div v-if="!previewThumbnail">
                         <i class="bi bi-cloud-arrow-up fs-2 text-primary"></i>
@@ -134,7 +134,7 @@
                 <div class="upload-card">
                   <label class="form-label fw-semibold small text-uppercase">Gallery Images</label>
                   <div class="upload-container position-relative">
-                    <input type="file" class="file-input-overlay" multiple @change="handlePropertyImages" accept="image/*" />
+                    <input type="file" class="file-input-overlay" multiple @change="handlePropertyImages" accept=".jpg,.jpeg,.png,.webp" />
                     <div class="upload-placeholder border-dashed rounded-3 p-4 text-center h-100">
                       <i class="bi bi-images fs-2 text-muted"></i>
                       <p class="mb-0 small fw-medium">Add more photos</p>
@@ -951,10 +951,11 @@
 
 <script>
 import Header from "@/components/Header.vue";
-import confirmModal from "@/components/confirmModal.vue";
-import Swal from "sweetalert2";
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+  import confirmModal from "@/components/confirmModal.vue";
+  import Swal from "sweetalert2";
+  import { compressImageToWebpFile } from "@/utils/compressToWebp";
+  import L from 'leaflet';
+  import 'leaflet/dist/leaflet.css';
 import { getAmenities, getFacilities, getPropertyTypes } from "@/api/property";
 import { fetchPropertyData, updatePropertyData } from "@/api/Owner/property";
 import { getOwnerSubscriptionStatus } from "@/api/subscription";
@@ -1050,6 +1051,14 @@ export default {
       },
       previewThumbnail: null,
       previewPropertyImages: [],
+      previewThumbnailObjectUrl: null,
+      previewPropertyImageObjectUrls: [],
+      thumbnailOriginal: null,
+      imagesOriginal: [],
+      thumbnailWasConverted: false,
+      imagesWereConverted: false,
+      businessPermitOriginal: null,
+      businessPermitWasConverted: false,
       businessPermitUrl: "",
       previewBusinessPermitName: "",
       previewBusinessPermitUrl: "",
@@ -1165,31 +1174,114 @@ export default {
       }
     },
     // Handle thumbnail upload
-    handleThumbnail(event) {
-      const file = event.target.files[0];
-      if (file) {
-        this.form.thumbnail = file;
-        this.previewThumbnail = URL.createObjectURL(file);
+    async handleThumbnail(event) {
+      const file = event?.target?.files?.[0] || null;
+      if (!file) return;
+      if (!String(file.type || "").startsWith("image/")) return;
+
+      this.thumbnailOriginal = file;
+      this.thumbnailWasConverted = false;
+
+      let chosen = file;
+      try {
+        const { file: webpFile, converted } = await compressImageToWebpFile(file, {
+          quality: 0.82,
+          maxWidth: 1600,
+          maxHeight: 1600,
+          filenameSuffix: "thumbnail",
+          keepOriginalIfLarger: false,
+        });
+        chosen = webpFile || file;
+        this.thumbnailWasConverted = Boolean(converted) && chosen !== file;
+      } catch {
+        chosen = file;
       }
+
+      this.form.thumbnail = chosen;
+      if (this.previewThumbnailObjectUrl) URL.revokeObjectURL(this.previewThumbnailObjectUrl);
+      this.previewThumbnailObjectUrl = URL.createObjectURL(chosen);
+      this.previewThumbnail = this.previewThumbnailObjectUrl;
     },
     // Handle multiple property images
-    handlePropertyImages(event) {
-      const files = Array.from(event.target.files);
-      this.form.images = files;
-      this.previewPropertyImages = files.map((f) => URL.createObjectURL(f));
-    },
-    handleBusinessPermit(event) {
-      const file = event.target.files[0];
-      if (this.previewBusinessPermitUrl) {
-        URL.revokeObjectURL(this.previewBusinessPermitUrl);
+    async handlePropertyImages(event) {
+      const files = Array.from(event?.target?.files || []).filter((f) => String(f?.type || "").startsWith("image/"));
+      this.imagesOriginal = files;
+      this.imagesWereConverted = false;
+
+      if (!files.length) {
+        this.form.images = [];
+        this.previewPropertyImageObjectUrls.forEach((u) => URL.revokeObjectURL(u));
+        this.previewPropertyImageObjectUrls = [];
+        this.previewPropertyImages = [];
+        return;
       }
-      this.form.business_permit = file || null;
-      this.previewBusinessPermitName = file ? file.name : "";
-      this.previewBusinessPermitUrl = file ? URL.createObjectURL(file) : "";
-      this.previewBusinessPermitType = file
-        ? file.type.startsWith("image/")
+
+      const results = await Promise.all(
+        files.map(async (f) => {
+          try {
+            const { file: webpFile, converted } = await compressImageToWebpFile(f, {
+              quality: 0.82,
+              maxWidth: 1600,
+              maxHeight: 1600,
+              filenameSuffix: "property",
+              keepOriginalIfLarger: false,
+            });
+            return { original: f, chosen: webpFile || f, converted: Boolean(converted) && (webpFile || f) !== f };
+          } catch {
+            return { original: f, chosen: f, converted: false };
+          }
+        })
+      );
+
+      this.imagesWereConverted = results.some((r) => r.converted);
+      const chosenFiles = results.map((r) => r.chosen);
+      this.form.images = chosenFiles;
+
+      this.previewPropertyImageObjectUrls.forEach((u) => URL.revokeObjectURL(u));
+      this.previewPropertyImageObjectUrls = chosenFiles.map((f) => URL.createObjectURL(f));
+      this.previewPropertyImages = this.previewPropertyImageObjectUrls;
+    },
+    async handleBusinessPermit(event) {
+      const file = event?.target?.files?.[0];
+      if (this.previewBusinessPermitUrl) URL.revokeObjectURL(this.previewBusinessPermitUrl);
+
+      if (!file) {
+        this.form.business_permit = null;
+        this.businessPermitOriginal = null;
+        this.businessPermitWasConverted = false;
+        this.previewBusinessPermitName = "";
+        this.previewBusinessPermitUrl = "";
+        this.previewBusinessPermitType = "";
+        return;
+      }
+
+      let chosen = file;
+      if (String(file.type || "").startsWith("image/")) {
+        try {
+          this.businessPermitOriginal = file;
+          this.businessPermitWasConverted = false;
+
+          const { file: webpFile, converted } = await compressImageToWebpFile(file, {
+            quality: 0.82,
+            maxWidth: 1600,
+            maxHeight: 1600,
+            filenameSuffix: "permit",
+            keepOriginalIfLarger: false,
+          });
+          chosen = webpFile || file;
+          this.businessPermitWasConverted = Boolean(converted) && chosen !== file;
+        } catch {
+          chosen = file;
+        }
+      }
+
+      this.form.business_permit = chosen || null;
+      this.previewBusinessPermitName = chosen ? chosen.name : "";
+      this.previewBusinessPermitUrl = chosen ? URL.createObjectURL(chosen) : "";
+      this.previewBusinessPermitType = chosen
+        ? chosen.type.startsWith("image/")
           ? "image"
-          : file.type === "application/pdf"
+          : chosen.type === "application/pdf"
             ? "pdf"
             : ""
         : "";
@@ -1546,42 +1638,61 @@ export default {
       this.isSubmitting = true;
       this.submitStatusMessage = "Preparing update payload...";
 
-      const fd = new FormData();
-
-      for (const key in this.form) {
-        const value = this.form[key];
-
-        // Handle images array
-        if (key === "images") {
-          value.forEach((img, idx) => {
-            fd.append(`images[${idx}]`, img);
-          });
-        }
-        // Handle thumbnail
-        else if (key === "thumbnail") {
-          if (value) fd.append("thumbnail", value);
-        }
-        // Handle array fields properly
-        else if (Array.isArray(value)) {
-          value.forEach((v) => {
-            fd.append(`${key}[]`, v);
-          });
-        }
-        // Handle booleans -> cast to 1/0
-        else if (typeof value === "boolean") {
-          fd.append(key, value ? 1 : 0);
-        }
-        // Handle numbers and strings
-        else if (value !== null && value !== undefined) {
-          fd.append(key, value);
-        }
-      }
-
       try {
+        const buildFormData = ({ useOriginalMedia } = { useOriginalMedia: false }) => {
+          const payload = {
+            ...this.form,
+            thumbnail: useOriginalMedia && this.thumbnailOriginal ? this.thumbnailOriginal : this.form.thumbnail,
+            images: useOriginalMedia && this.imagesOriginal?.length ? this.imagesOriginal : this.form.images,
+            business_permit:
+              useOriginalMedia && this.businessPermitOriginal ? this.businessPermitOriginal : this.form.business_permit,
+          };
+
+          const fd = new FormData();
+          for (const key in payload) {
+            const value = payload[key];
+
+            if (key === "images") {
+              (value || []).forEach((img, idx) => {
+                fd.append(`images[${idx}]`, img);
+              });
+            } else if (key === "thumbnail") {
+              if (value) fd.append("thumbnail", value);
+            } else if (Array.isArray(value)) {
+              value.forEach((v) => {
+                fd.append(`${key}[]`, v);
+              });
+            } else if (typeof value === "boolean") {
+              fd.append(key, value ? 1 : 0);
+            } else if (value !== null && value !== undefined) {
+              fd.append(key, value);
+            }
+          }
+
+          return fd;
+        };
+
         this.submitStatusMessage = "Updating property details...";
         this.showConfirmModal = false;
         const id = this.$route.params.id;
-        await updatePropertyData(id, fd);
+        try {
+          await updatePropertyData(id, buildFormData({ useOriginalMedia: false }));
+        } catch (error) {
+          const status = error?.response?.status;
+          const msg = String(error?.response?.data?.message || error?.message || "");
+          const looksLikeTypeRejection =
+            status === 415 ||
+            status === 422 ||
+            /webp|mime|mimes|unsupported|type|format/i.test(msg);
+
+          const hasConvertedMedia = Boolean(this.thumbnailWasConverted || this.imagesWereConverted);
+          const hasConvertedPermit = Boolean(this.businessPermitWasConverted);
+          if (looksLikeTypeRejection && (hasConvertedMedia || hasConvertedPermit)) {
+            await updatePropertyData(id, buildFormData({ useOriginalMedia: true }));
+          } else {
+            throw error;
+          }
+        }
         await Swal.fire({
           icon: "success",
           title: "Property updated",

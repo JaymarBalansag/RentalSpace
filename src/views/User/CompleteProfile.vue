@@ -160,6 +160,7 @@ import confirmModal from "@/components/confirmModal.vue";
 import Header from "@/components/Header.vue";
 import 'leaflet/dist/leaflet.css';
 import Swal from "sweetalert2";
+import { compressImageToWebpFile } from "@/utils/compressToWebp";
 
 // Fix for Leaflet icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -177,9 +178,11 @@ export default {
       map: null,
       marker: null,
       previewImg: null,
+      previewImgObjectUrl: null,
       showConfirmModal: false,
       loading: false,
       timeoutId: null,
+      userImgOriginal: null,
       form: {
         first_name: "",
         last_name: "",
@@ -309,12 +312,28 @@ export default {
         this.setAddressFields();
       });
     },
-    handleImageUpload(e) {
-      const file = e.target.files[0];
-      if (file) {
-        this.form.user_img = file;
-        this.previewImg = URL.createObjectURL(file);
-      }
+    async handleImageUpload(e) {
+      const file = e?.target?.files?.[0] || null;
+      if (!file) return;
+
+      this.userImgOriginal = file;
+
+       try {
+         const { file: webpFile } = await compressImageToWebpFile(file, {
+           quality: 0.82,
+           maxWidth: 512,
+           maxHeight: 512,
+           filenameSuffix: "profile",
+           keepOriginalIfLarger: false,
+         });
+         this.form.user_img = webpFile || file;
+       } catch {
+         this.form.user_img = file;
+       }
+
+      if (this.previewImgObjectUrl) URL.revokeObjectURL(this.previewImgObjectUrl);
+      this.previewImgObjectUrl = URL.createObjectURL(this.form.user_img);
+      this.previewImg = this.previewImgObjectUrl;
     },
     nextStep() { 
       if (this.step === 1) {
@@ -365,12 +384,36 @@ export default {
     async submitProfile() {
       this.loading = true;
       this.showConfirmModal = false;
-      const fd = new FormData();
-      Object.entries(this.form).forEach(([k, v]) => {
-        if (v !== null && v !== undefined && v !== "") fd.append(k, v);
-      });
       try {
-        await completeProfile(fd);
+        const buildFormData = (overrideImg) => {
+          const fd = new FormData();
+          Object.entries(this.form).forEach(([k, v]) => {
+            if (k === "user_img" && overrideImg) {
+              fd.append("user_img", overrideImg);
+              return;
+            }
+            if (v !== null && v !== undefined && v !== "") fd.append(k, v);
+          });
+          return fd;
+        };
+
+        try {
+          await completeProfile(buildFormData(null));
+        } catch (error) {
+          const status = error?.response?.status;
+          const msg = String(error?.response?.data?.message || error?.message || "");
+          const looksLikeTypeRejection =
+            status === 415 ||
+            status === 422 ||
+            /webp|mime|mimes|unsupported|type|format/i.test(msg);
+
+          if (looksLikeTypeRejection && this.userImgOriginal && this.form.user_img && this.form.user_img !== this.userImgOriginal) {
+            await completeProfile(buildFormData(this.userImgOriginal));
+          } else {
+            throw error;
+          }
+        }
+
         const info = useUserInfo();
         await info.completeProfileInPage(this.form.first_name, this.form.last_name, this.previewImg);
         await Swal.fire({
@@ -396,6 +439,7 @@ export default {
   },
   beforeUnmount() {
     if (this.timeoutId) clearTimeout(this.timeoutId);
+    if (this.previewImgObjectUrl) URL.revokeObjectURL(this.previewImgObjectUrl);
     if (this.map) {
       this.map.remove();
       this.map = null;

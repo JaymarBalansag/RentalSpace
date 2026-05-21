@@ -128,6 +128,64 @@ export function getOwnerPlanCodeFromSubscription(subscription) {
   return normalizeOwnerPlanCode(subscription?.plan_code || subscription?.plan_name, subscription?.billing_cycle);
 }
 
+const OWNER_PLAN_FEATURE_DEFS = [
+  {
+    id: "listing_limit",
+    tableLabel: "Property listings",
+    label: (plan) => `Up to ${Number(plan?.listingLimit || 0)} property listings`,
+    includedTiers: ["standard", "pro"],
+  },
+  { id: "property_management", label: "Property management", includedTiers: ["standard", "pro"] },
+  { id: "reviews_management", label: "Reviews management", includedTiers: ["standard", "pro"] },
+  { id: "booking_management", label: "Booking management", includedTiers: ["pro"] },
+  { id: "tenant_management", label: "Tenant management", includedTiers: ["pro"] },
+  { id: "billings_management", label: "Billings management", includedTiers: ["pro"] },
+  { id: "ledger_management", label: "Payment ledger management", includedTiers: ["pro"] },
+  { id: "reports_analytics", label: "Reports & Analytics", includedTiers: ["pro"] },
+];
+
+export function getOwnerPlanFeatureRows(plan) {
+  const tier = normalizeString(plan?.tier);
+  return OWNER_PLAN_FEATURE_DEFS.map((feature) => {
+    const label = typeof feature.label === "function" ? feature.label(plan) : feature.label;
+    return {
+      id: feature.id,
+      label,
+      included: feature.includedTiers.includes(tier),
+    };
+  });
+}
+
+export function getOwnerPlanFeatureComparisonRows(standardPlan, proPlan) {
+  const standardTier = "standard";
+  const proTier = "pro";
+
+  return OWNER_PLAN_FEATURE_DEFS.map((feature) => {
+    const label =
+      feature.tableLabel ||
+      (typeof feature.label === "string" ? feature.label : "Feature");
+
+    const standardIncluded = feature.includedTiers.includes(standardTier);
+    const proIncluded = feature.includedTiers.includes(proTier);
+
+    if (feature.id === "listing_limit") {
+      return {
+        id: feature.id,
+        label,
+        standard: { included: true, value: Number(standardPlan?.listingLimit || 0) },
+        pro: { included: true, value: Number(proPlan?.listingLimit || 0) },
+      };
+    }
+
+    return {
+      id: feature.id,
+      label,
+      standard: { included: standardIncluded, value: null },
+      pro: { included: proIncluded, value: null },
+    };
+  });
+}
+
 export function getOwnerPlanDisplayName(codeOrPlanName, billingCycle = "") {
   return getOwnerPlan(codeOrPlanName, billingCycle).name;
 }

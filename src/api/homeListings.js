@@ -87,7 +87,7 @@ function normalizeProperty(property) {
 
 function isPropertyVisible(property) {
   const status = String(property?.status || "").toLowerCase();
-  return property?.is_available !== false && status !== "pending";
+  return property?.is_available !== false;
 }
 
 function normalizePaginatedResponse(response) {

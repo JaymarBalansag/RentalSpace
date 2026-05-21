@@ -33,15 +33,16 @@ function normalizeOwnerVerificationStatus(property) {
 
 function normalizePropertyVerificationStatus(property) {
   const raw =
+    property?.status ??
     property?.property_verification_status ??
     property?.listing_verification_status ??
     property?.property_status ??
     property?.verification_status ??
     null;
 
-  const status = String(raw || "pending").toLowerCase().trim();
-  if (status === "active") return "active";
-  return "active";
+  const status = String(raw || "unverified").toLowerCase().trim();
+  if (["verified", "active", "approved"].includes(status)) return "verified";
+  return "unverified";
 }
 
 function normalizeProperty(property) {
@@ -77,9 +78,11 @@ function normalizeProperty(property) {
             : "bg-secondary-subtle text-secondary",
     property_verification_status_normalized: normalizedPropertyStatus,
     property_verification_label:
-      normalizedPropertyStatus === "active" ? "Verified Property" : "Unverified Property",
+      normalizedPropertyStatus === "verified"
+        ? "Verified Property"
+        : "Unverified Property",
     property_verification_badge_class:
-      normalizedPropertyStatus === "active"
+      normalizedPropertyStatus === "verified"
         ? "bg-success-subtle text-success"
         : "bg-warning-subtle text-warning-emphasis",
   };

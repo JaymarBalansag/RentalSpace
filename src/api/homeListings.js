@@ -31,8 +31,22 @@ function normalizeOwnerVerificationStatus(property) {
     : "unverified";
 }
 
+function normalizePropertyVerificationStatus(property) {
+  const raw =
+    property?.property_verification_status ??
+    property?.listing_verification_status ??
+    property?.property_status ??
+    property?.verification_status ??
+    null;
+
+  const status = String(raw || "pending").toLowerCase().trim();
+  if (status === "active") return "active";
+  return "active";
+}
+
 function normalizeProperty(property) {
   const normalizedStatus = normalizeOwnerVerificationStatus(property);
+  const normalizedPropertyStatus = normalizePropertyVerificationStatus(property);
   const totalReviews = normalizeNumber(
     property?.total_reviews ?? property?.review_count ?? 0
   );
@@ -61,6 +75,13 @@ function normalizeProperty(property) {
           : normalizedStatus === "rejected"
             ? "bg-danger-subtle text-danger"
             : "bg-secondary-subtle text-secondary",
+    property_verification_status_normalized: normalizedPropertyStatus,
+    property_verification_label:
+      normalizedPropertyStatus === "active" ? "Verified Property" : "Unverified Property",
+    property_verification_badge_class:
+      normalizedPropertyStatus === "active"
+        ? "bg-success-subtle text-success"
+        : "bg-warning-subtle text-warning-emphasis",
   };
 }
 

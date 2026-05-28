@@ -298,6 +298,7 @@ export default {
       properties: [],
       showDetailsModal: false,
       selectedPropertyDetails: null,
+      selectedReviewPropertyId: null,
       showPermitPreviewModal: false,
       permitPreviewUrl: "",
       statusFilter: "active",
@@ -404,6 +405,7 @@ export default {
     },
     async viewDetails(propertyId) {
       try {
+        this.selectedReviewPropertyId = propertyId;
         const res = await getPropertyDetails(propertyId);
         if (res && res.status >= 200 && res.status < 300) {
           this.selectedPropertyDetails = res.data?.data || null;
@@ -427,6 +429,7 @@ export default {
     closeDetailsModal() {
       this.showDetailsModal = false;
       this.selectedPropertyDetails = null;
+      this.selectedReviewPropertyId = null;
       this.closePermitPreview();
     },
     isPermitImage(url) {
@@ -442,11 +445,21 @@ export default {
       this.showPermitPreviewModal = false;
       this.permitPreviewUrl = "";
     },
+    propertyIdentifier(property) {
+      return property?.property_id ?? property?.propertyId ?? this.selectedReviewPropertyId ?? property?.id ?? null;
+    },
+    propertyTitle(property) {
+      return property?.title || property?.property_title || "this property";
+    },
     async openApproveModal(property) {
       if (this.isActionLoading) return;
+      const propertyId = this.propertyIdentifier(property);
+      const title = this.propertyTitle(property);
+      const shouldRestoreReview = this.showDetailsModal;
+      this.showDetailsModal = false;
       const result = await Swal.fire({
         title: "Approve Property",
-        text: `Approve "${property.title}"?`,
+        text: `Approve "${title}"?`,
         icon: "question",
         showCancelButton: true,
         confirmButtonText: "Approve",
@@ -456,7 +469,11 @@ export default {
         allowOutsideClick: () => !Swal.isLoading(),
         allowEscapeKey: () => !Swal.isLoading(),
         preConfirm: async () => {
-          const outcome = await this.runModerationAction("approve", property.property_id, property.title, "");
+          if (!propertyId) {
+            Swal.showValidationMessage("Unable to find this property ID.");
+            return false;
+          }
+          const outcome = await this.runModerationAction("approve", propertyId, title, "");
           if (!outcome.ok) {
             Swal.showValidationMessage(outcome.message || "Unable to approve this property.");
             return false;
@@ -474,14 +491,23 @@ export default {
           }
         },
       });
-      if (!result.isConfirmed) return;
+      if (!result.isConfirmed) {
+        if (shouldRestoreReview && this.selectedPropertyDetails) {
+          this.showDetailsModal = true;
+        }
+        return;
+      }
       await this.showModerationSuccess(result.value);
     },
     async openRejectModal(property) {
       if (this.isActionLoading) return;
+      const propertyId = this.propertyIdentifier(property);
+      const title = this.propertyTitle(property);
+      const shouldRestoreReview = this.showDetailsModal;
+      this.showDetailsModal = false;
       const result = await Swal.fire({
         title: "Reject Property",
-        text: `Reject "${property.title}"?`,
+        text: `Reject "${title}"?`,
         input: "textarea",
         inputLabel: "Rejection reason",
         inputPlaceholder: "State why this property was rejected...",
@@ -499,7 +525,11 @@ export default {
             Swal.showValidationMessage("Rejection reason is required.");
             return false;
           }
-          return this.runModerationAction("reject", property.property_id, property.title, value.trim())
+          if (!propertyId) {
+            Swal.showValidationMessage("Unable to find this property ID.");
+            return false;
+          }
+          return this.runModerationAction("reject", propertyId, title, value.trim())
             .then((outcome) => {
               if (!outcome.ok) {
                 Swal.showValidationMessage(outcome.message || "Unable to reject this property.");
@@ -519,7 +549,12 @@ export default {
           }
         },
       });
-      if (!result.isConfirmed) return;
+      if (!result.isConfirmed) {
+        if (shouldRestoreReview && this.selectedPropertyDetails) {
+          this.showDetailsModal = true;
+        }
+        return;
+      }
       await this.showModerationSuccess(result.value);
     },
     async openNotifyOwnerModal(property) {
@@ -605,7 +640,7 @@ export default {
           };
         }
 
-        if (this.selectedPropertyDetails?.property?.property_id === propertyId) {
+        if (this.propertyIdentifier(this.selectedPropertyDetails?.property) === propertyId) {
           this.selectedPropertyDetails.property.status = action === "approve" ? "active" : "rejected";
         }
         await Promise.all([

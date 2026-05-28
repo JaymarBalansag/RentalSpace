@@ -99,22 +99,9 @@
                 </td>
                 <td class="text-end px-4">
                   <div class="d-flex justify-content-end gap-2">
-                    <button class="btn-action view" title="View Details" @click="openUserModal(user)"><i class="bi bi-eye"></i></button>
-                    <button 
-                      v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
-                      class="btn-action approve"
-                      title="Approve Verification"
-                      @click="openVerifyUserModal(user)"
-                    >
-                      <i class="bi bi-patch-check"></i>
-                    </button>
-                    <button
-                      v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
-                      class="btn-action reject"
-                      title="Reject Verification"
-                      @click="openRejectUserModal(user)"
-                    >
-                      <i class="bi bi-x-octagon"></i>
+                    <button class="btn-action review" title="Review User" @click="openUserModal(user)">
+                      <i class="bi bi-eye"></i>
+                      <span>Review</span>
                     </button>
                   </div>
                 </td>
@@ -166,20 +153,9 @@
 
             <div class="mobile-user-actions">
               <div class="d-flex flex-wrap gap-2">
-                <button class="btn-mobile-icon view" @click="openUserModal(user)"><i class="bi bi-eye"></i></button>
-                <button
-                  v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
-                  class="btn-mobile-icon approve"
-                  @click="openVerifyUserModal(user)"
-                >
-                  <i class="bi bi-check2"></i>
-                </button>
-                <button
-                  v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
-                  class="btn-mobile-icon reject"
-                  @click="openRejectUserModal(user)"
-                >
-                  <i class="bi bi-x-lg"></i>
+                <button class="btn-mobile-icon review" @click="openUserModal(user)">
+                  <i class="bi bi-eye"></i>
+                  <span>Review</span>
                 </button>
               </div>
             </div>
@@ -542,9 +518,16 @@ export default {
   justify-content: center;
   transition: all 0.2s;
 }
-.btn-action.view { background: #e7f5ff; color: #228be6; }
-.btn-action.approve { background: #ebfbee; color: #40c057; }
-.btn-action.reject { background: #fff5f5; color: #fa5252; }
+.btn-action.review {
+  width: auto;
+  min-width: 88px;
+  gap: 0.35rem;
+  padding: 0 12px;
+  background: #e7f5ff;
+  color: #228be6;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
 .btn-action:hover { transform: translateY(-1px); }
 
 /* Mobile Card Styling */
@@ -617,17 +600,20 @@ export default {
 }
 
 .btn-mobile-icon {
-  width: 36px;
+  width: auto;
+  min-width: 92px;
   height: 36px;
   border-radius: 8px;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.35rem;
+  padding: 0 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
-.btn-mobile-icon.view { background: #e7f5ff; color: #228be6; }
-.btn-mobile-icon.approve { background: #40c057; color: white; }
-.btn-mobile-icon.reject { background: #fa5252; color: white; }
+.btn-mobile-icon.review { background: #e7f5ff; color: #228be6; }
 
 .modal-overlay-custom {
   position: fixed;

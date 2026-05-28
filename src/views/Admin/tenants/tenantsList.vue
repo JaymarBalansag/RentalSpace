@@ -99,22 +99,9 @@
                 </td>
                 <td class="text-end px-4">
                   <div class="d-flex justify-content-end gap-2">
-                    <button class="btn-action view" title="View Details" @click="openUserModal(user)"><i class="bi bi-eye"></i></button>
-                    <button 
-                      v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
-                      class="btn-action approve"
-                      title="Approve Verification"
-                      @click="openVerifyUserModal(user)"
-                    >
-                      <i class="bi bi-patch-check"></i>
-                    </button>
-                    <button
-                      v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
-                      class="btn-action reject"
-                      title="Reject Verification"
-                      @click="openRejectUserModal(user)"
-                    >
-                      <i class="bi bi-x-octagon"></i>
+                    <button class="btn-action review" title="Review User" @click="openUserModal(user)">
+                      <i class="bi bi-eye"></i>
+                      <span>Review</span>
                     </button>
                   </div>
                 </td>
@@ -166,20 +153,9 @@
 
             <div class="mobile-user-actions">
               <div class="d-flex flex-wrap gap-2">
-                <button class="btn-mobile-icon view" @click="openUserModal(user)"><i class="bi bi-eye"></i></button>
-                <button
-                  v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
-                  class="btn-mobile-icon approve"
-                  @click="openVerifyUserModal(user)"
-                >
-                  <i class="bi bi-check2"></i>
-                </button>
-                <button
-                  v-if="String(user.user_verification_status || 'unverified').toLowerCase() === 'pending'"
-                  class="btn-mobile-icon reject"
-                  @click="openRejectUserModal(user)"
-                >
-                  <i class="bi bi-x-lg"></i>
+                <button class="btn-mobile-icon review" @click="openUserModal(user)">
+                  <i class="bi bi-eye"></i>
+                  <span>Review</span>
                 </button>
               </div>
             </div>
@@ -267,20 +243,60 @@
               </div>
             </div>
             <div class="col-12" v-if="selectedUserDetails.user_valid_govt_id_url">
-              <div class="border rounded p-3">
-                <p class="mb-2"><strong>Submitted Government ID</strong></p>
-                <a :href="selectedUserDetails.user_valid_govt_id_url" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary rounded-pill">
-                  View Uploaded ID
-                </a>
+              <div class="id-review-card border rounded p-3" :class="{ fullscreen: isIdPreviewFullscreen }">
+                <div class="id-review-header">
+                  <div>
+                    <p class="mb-0"><strong>Submitted Government ID</strong></p>
+                    <small class="text-muted">Review the uploaded ID here before approving or rejecting.</small>
+                  </div>
+                  <div class="id-review-controls">
+                    <button type="button" class="btn btn-sm btn-light border" @click="zoomIdPreview(-25)" title="Zoom out">
+                      <i class="bi bi-zoom-out"></i>
+                    </button>
+                    <span class="id-zoom-label">{{ idPreviewZoom }}%</span>
+                    <button type="button" class="btn btn-sm btn-light border" @click="zoomIdPreview(25)" title="Zoom in">
+                      <i class="bi bi-zoom-in"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @click="toggleIdPreviewFullscreen">
+                      <i :class="isIdPreviewFullscreen ? 'bi bi-fullscreen-exit' : 'bi bi-fullscreen'"></i>
+                      {{ isIdPreviewFullscreen ? "Exit" : "Full Screen" }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="id-preview-frame">
+                  <img
+                    v-if="isUploadedIdImage"
+                    :src="selectedUserDetails.user_valid_govt_id_url"
+                    alt="Submitted government ID"
+                    class="id-preview-image"
+                    :style="{ width: idPreviewZoom + '%' }"
+                  >
+                  <iframe
+                    v-else
+                    :src="selectedUserDetails.user_valid_govt_id_url"
+                    title="Submitted government ID preview"
+                    class="id-preview-document"
+                    :style="{ zoom: idPreviewScale }"
+                  ></iframe>
+                </div>
               </div>
             </div>
             <div class="col-12" v-if="selectedUserDetails.user_verification_status === 'pending'">
               <div class="user-modal-actions d-flex flex-wrap gap-2">
-                <button class="btn btn-success btn-sm rounded-pill px-3" @click="openVerifyUserModal(selectedUserDetails)">
-                  Approve Verification
+                <button class="review-decision-btn approve" @click="openVerifyUserModal(selectedUserDetails)">
+                  <span class="decision-icon"><i class="bi bi-check2-circle"></i></span>
+                  <span>
+                    <strong>Approve</strong>
+                    <small>Mark this user as verified</small>
+                  </span>
                 </button>
-                <button class="btn btn-danger btn-sm rounded-pill px-3" @click="openRejectUserModal(selectedUserDetails)">
-                  Reject Verification
+                <button class="review-decision-btn reject" @click="openRejectUserModal(selectedUserDetails)">
+                  <span class="decision-icon"><i class="bi bi-x-circle"></i></span>
+                  <span>
+                    <strong>Reject</strong>
+                    <small>Request a better verification ID</small>
+                  </span>
                 </button>
               </div>
             </div>
@@ -343,6 +359,8 @@ export default {
       },
       confirmInput: "",
       isActionLoading: false,
+      idPreviewZoom: 100,
+      isIdPreviewFullscreen: false,
     };
   },
   computed: {
@@ -355,6 +373,13 @@ export default {
           (user.email && user.email.toLowerCase().includes(this.search.toLowerCase()))
         );
       });
+    },
+    isUploadedIdImage() {
+      const url = String(this.selectedUserDetails?.user_valid_govt_id_url || "").split("?")[0].toLowerCase();
+      return /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(url);
+    },
+    idPreviewScale() {
+      return this.idPreviewZoom / 100;
     },
   },
   methods: {
@@ -454,11 +479,19 @@ export default {
     avatarFallback(user) {
       return `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.first_name || "") + " " + (user?.last_name || ""))}`;
     },
+    zoomIdPreview(amount) {
+      this.idPreviewZoom = Math.min(200, Math.max(50, this.idPreviewZoom + amount));
+    },
+    toggleIdPreviewFullscreen() {
+      this.isIdPreviewFullscreen = !this.isIdPreviewFullscreen;
+    },
     async openUserModal(user) {
       this.showUserModal = true;
       this.selectedUserDetails = null;
       this.userDetailsError = "";
       this.isUserDetailsLoading = true;
+      this.idPreviewZoom = 100;
+      this.isIdPreviewFullscreen = false;
 
       try {
         const res = await getUserVerificationDetails(user.id);
@@ -477,6 +510,8 @@ export default {
       this.showUserModal = false;
       this.selectedUserDetails = null;
       this.userDetailsError = "";
+      this.idPreviewZoom = 100;
+      this.isIdPreviewFullscreen = false;
     },
   },
   mounted() {
@@ -542,9 +577,16 @@ export default {
   justify-content: center;
   transition: all 0.2s;
 }
-.btn-action.view { background: #e7f5ff; color: #228be6; }
-.btn-action.approve { background: #ebfbee; color: #40c057; }
-.btn-action.reject { background: #fff5f5; color: #fa5252; }
+.btn-action.review {
+  width: auto;
+  min-width: 88px;
+  gap: 0.35rem;
+  padding: 0 12px;
+  background: #e7f5ff;
+  color: #228be6;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
 .btn-action:hover { transform: translateY(-1px); }
 
 /* Mobile Card Styling */
@@ -617,17 +659,20 @@ export default {
 }
 
 .btn-mobile-icon {
-  width: 36px;
+  width: auto;
+  min-width: 92px;
   height: 36px;
   border-radius: 8px;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.35rem;
+  padding: 0 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
-.btn-mobile-icon.view { background: #e7f5ff; color: #228be6; }
-.btn-mobile-icon.approve { background: #40c057; color: white; }
-.btn-mobile-icon.reject { background: #fa5252; color: white; }
+.btn-mobile-icon.review { background: #e7f5ff; color: #228be6; }
 
 .modal-overlay-custom {
   position: fixed;
@@ -649,6 +694,147 @@ export default {
 
 .modal-body-custom .border.rounded {
   overflow-wrap: anywhere;
+}
+
+.id-review-card {
+  background: #ffffff;
+}
+
+.id-review-card.fullscreen {
+  position: fixed;
+  inset: 1rem;
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.28);
+}
+
+.id-review-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.id-review-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.id-zoom-label {
+  min-width: 48px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #4f5d75;
+}
+
+.id-preview-frame {
+  height: 360px;
+  overflow: auto;
+  border: 1px solid #e4eaf4;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.id-review-card.fullscreen .id-preview-frame {
+  flex: 1;
+  height: auto;
+}
+
+.id-preview-image {
+  display: block;
+  max-width: none;
+  margin: 0 auto;
+  transform-origin: top center;
+}
+
+.id-preview-document {
+  width: 100%;
+  height: 620px;
+  border: 0;
+  transform-origin: top left;
+}
+
+.id-review-card.fullscreen .id-preview-document {
+  height: 100%;
+  min-height: 720px;
+}
+
+.user-modal-actions {
+  padding: 0.85rem;
+  border: 1px solid #e4eaf4;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.review-decision-btn {
+  flex: 1 1 220px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 64px;
+  padding: 0.85rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.review-decision-btn strong,
+.review-decision-btn small {
+  display: block;
+  line-height: 1.2;
+}
+
+.review-decision-btn strong {
+  font-size: 0.95rem;
+}
+
+.review-decision-btn small {
+  margin-top: 0.18rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  opacity: 0.82;
+}
+
+.review-decision-btn.approve {
+  background: #e6fcf5;
+  border-color: #b2f2dc;
+  color: #087f5b;
+}
+
+.review-decision-btn.reject {
+  background: #fff5f5;
+  border-color: #ffc9c9;
+  color: #c92a2a;
+}
+
+.review-decision-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.review-decision-btn:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+  outline-offset: 2px;
+}
+
+.decision-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .user-img-lg {
@@ -688,7 +874,6 @@ export default {
   }
 
   .btn-mobile-icon {
-    width: 42px;
     height: 42px;
   }
 
@@ -705,8 +890,25 @@ export default {
     flex-direction: column;
   }
 
-  .user-modal-actions .btn {
+  .review-decision-btn {
     width: 100%;
+  }
+
+  .id-review-card.fullscreen {
+    inset: 0.5rem;
+  }
+
+  .id-review-header {
+    flex-direction: column;
+  }
+
+  .id-review-controls,
+  .id-review-controls .btn {
+    width: 100%;
+  }
+
+  .id-preview-frame {
+    height: 300px;
   }
 }
 </style>

@@ -20,12 +20,14 @@
       </article>
     </div>
 
-    <div class="d-flex flex-wrap gap-2 mb-4">
+    <div class="status-button-group mb-4" role="group" aria-label="Property status filter">
       <button 
         v-for="status in statuses" 
         :key="status.value"
-        class="filter-pill"
+        type="button"
+        class="status-filter-btn"
         :class="{ active: statusFilter === status.value }"
+        :aria-pressed="statusFilter === status.value"
         @click="setStatus(status.value)"
       >
         <span class="status-dot" :class="status.value"></span>
@@ -75,20 +77,10 @@
                 </td>
                 <td class="text-end">
                   <div class="d-flex justify-content-end gap-2">
-                    <button class="btn-action view" @click="viewDetails(property.property_id)" title="View Details">
+                    <button class="btn-action review" @click="viewDetails(property.property_id)" title="Review Property">
                       <i class="bi bi-eye"></i>
+                      <span>Review</span>
                     </button>
-                    <template v-if="property.status === 'pending'">
-                      <button class="btn-action approve" :disabled="isActionLoading" @click="openApproveModal(property)" title="Approve">
-                        <i class="bi bi-check-lg"></i>
-                      </button>
-                      <button class="btn-action reject" :disabled="isActionLoading" @click="openRejectModal(property)" title="Reject">
-                        <i class="bi bi-x-lg"></i>
-                      </button>
-                      <button class="btn-action notify" @click="openNotifyOwnerModal(property)" title="Notify Owner">
-                        <i class="bi bi-chat-left-text"></i>
-                      </button>
-                    </template>
                   </div>
                 </td>
               </tr>
@@ -123,12 +115,10 @@
               <span class="fw-bold text-primary">PHP {{ Number(property.price || 0).toLocaleString() }}</span>
             </div>
             <div class="d-flex gap-2">
-              <button class="btn-mobile-icon view" @click="viewDetails(property.property_id)"><i class="bi bi-eye"></i></button>
-              <template v-if="property.status === 'pending'">
-                <button class="btn-mobile-icon approve" :disabled="isActionLoading" @click="openApproveModal(property)"><i class="bi bi-check-lg"></i></button>
-                <button class="btn-mobile-icon reject" :disabled="isActionLoading" @click="openRejectModal(property)"><i class="bi bi-x"></i></button>
-                <button class="btn-mobile-icon notify" @click="openNotifyOwnerModal(property)"><i class="bi bi-chat-left-text"></i></button>
-              </template>
+              <button class="btn-mobile-icon review" @click="viewDetails(property.property_id)">
+                <i class="bi bi-eye"></i>
+                <span>Review</span>
+              </button>
             </div>
           </div>
         </div>
@@ -215,31 +205,47 @@
             </div>
           </section>
 
-          <section class="details-block">
+          <section class="details-block details-block-wide">
             <h6 class="details-title">Compliance</h6>
-            <p class="fw-semibold small mb-2">Business Permit</p>
-            <div class="d-flex align-items-center gap-2">
-              <template v-if="selectedPropertyDetails.property?.business_permit_url">
-                <button
+            <div v-if="selectedPropertyDetails.property?.business_permit_url" class="permit-review-card" :class="{ fullscreen: isPermitPreviewFullscreen }">
+              <div class="permit-review-header">
+                <div>
+                  <p class="fw-semibold small mb-0">Business Permit</p>
+                  <small class="text-muted">Review the uploaded permit before approving or rejecting.</small>
+                </div>
+                <div class="permit-review-controls">
+                  <button type="button" class="btn btn-sm btn-light border" @click="zoomPermitPreview(-25)" title="Zoom out">
+                    <i class="bi bi-zoom-out"></i>
+                  </button>
+                  <span class="permit-zoom-label">{{ permitPreviewZoom }}%</span>
+                  <button type="button" class="btn btn-sm btn-light border" @click="zoomPermitPreview(25)" title="Zoom in">
+                    <i class="bi bi-zoom-in"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-primary" @click="togglePermitPreviewFullscreen">
+                    <i :class="isPermitPreviewFullscreen ? 'bi bi-fullscreen-exit' : 'bi bi-fullscreen'"></i>
+                    {{ isPermitPreviewFullscreen ? "Exit" : "Full Screen" }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="permit-preview-frame">
+                <img
                   v-if="isPermitImage(selectedPropertyDetails.property?.business_permit_url)"
-                  type="button"
-                  class="btn btn-outline-primary btn-sm"
-                  @click="openPermitPreview(selectedPropertyDetails.property?.business_permit_url)"
+                  :src="selectedPropertyDetails.property?.business_permit_url"
+                  alt="Business permit"
+                  class="permit-preview-image"
+                  :style="{ width: permitPreviewZoom + '%' }"
                 >
-                  View Permit
-                </button>
-                <a
+                <iframe
                   v-else
-                  :href="selectedPropertyDetails.property?.business_permit_url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="btn btn-outline-primary btn-sm"
-                >
-                  Open Permit
-                </a>
-              </template>
-              <small v-else class="text-muted">No permit uploaded.</small>
+                  :src="selectedPropertyDetails.property?.business_permit_url"
+                  title="Business permit preview"
+                  class="permit-preview-document"
+                  :style="{ zoom: permitPreviewScale }"
+                ></iframe>
+              </div>
             </div>
+            <small v-else class="text-muted">No permit uploaded.</small>
           </section>
 
           <section class="details-block details-block-wide">
@@ -255,28 +261,23 @@
 
         <div
           v-if="selectedPropertyDetails.property?.status === 'pending'"
-          class="details-actions mt-3 d-flex justify-content-end gap-2"
+          class="property-review-actions mt-3 d-flex flex-wrap gap-2"
         >
-          <!-- <button class="btn btn-success btn-sm" :disabled="isActionLoading" @click="openApproveModal(selectedPropertyDetails.property)">
-            Approve
-          </button> -->
-          <!-- <button class="btn btn-outline-danger btn-sm" :disabled="isActionLoading" @click="openRejectModal(selectedPropertyDetails.property)">
-            Reject
-          </button> -->
-          <button class="btn btn-outline-primary btn-sm btn-notify" :disabled="isActionLoading" @click="openNotifyOwnerModal(selectedPropertyDetails.property)">
-            Notify Owner
+          <button class="review-decision-btn approve" :disabled="isActionLoading" @click="openApproveModal(selectedPropertyDetails.property)">
+            <span class="decision-icon"><i class="bi bi-check2-circle"></i></span>
+            <span>
+              <strong>Approve</strong>
+              <small>Publish this property listing</small>
+            </span>
+          </button>
+          <button class="review-decision-btn reject" :disabled="isActionLoading" @click="openRejectModal(selectedPropertyDetails.property)">
+            <span class="decision-icon"><i class="bi bi-x-circle"></i></span>
+            <span>
+              <strong>Reject</strong>
+              <small>Decline this listing with a reason</small>
+            </span>
           </button>
         </div>
-      </div>
-    </div>
-
-    <div v-if="showPermitPreviewModal" class="modal-overlay-custom" @click.self="closePermitPreview">
-      <div class="modal-body-custom rounded-4 shadow-lg p-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-bold mb-0">Business Permit Preview</h5>
-          <button class="btn-close" @click="closePermitPreview"></button>
-        </div>
-        <img :src="permitPreviewUrl" alt="Business Permit" class="img-fluid rounded border w-100">
       </div>
     </div>
 
@@ -303,8 +304,9 @@ export default {
       properties: [],
       showDetailsModal: false,
       selectedPropertyDetails: null,
-      showPermitPreviewModal: false,
-      permitPreviewUrl: "",
+      selectedReviewPropertyId: null,
+      permitPreviewZoom: 100,
+      isPermitPreviewFullscreen: false,
       statusFilter: "active",
       listError: "",
       summaryCounts: {
@@ -350,6 +352,9 @@ export default {
       ]
         .filter(Boolean)
         .join(", ") || "-";
+    },
+    permitPreviewScale() {
+      return this.permitPreviewZoom / 100;
     },
   },
   methods: {
@@ -409,9 +414,12 @@ export default {
     },
     async viewDetails(propertyId) {
       try {
+        this.selectedReviewPropertyId = propertyId;
         const res = await getPropertyDetails(propertyId);
         if (res && res.status >= 200 && res.status < 300) {
           this.selectedPropertyDetails = res.data?.data || null;
+          this.permitPreviewZoom = 100;
+          this.isPermitPreviewFullscreen = false;
           this.showDetailsModal = !!this.selectedPropertyDetails;
           return;
         }
@@ -432,26 +440,35 @@ export default {
     closeDetailsModal() {
       this.showDetailsModal = false;
       this.selectedPropertyDetails = null;
-      this.closePermitPreview();
+      this.selectedReviewPropertyId = null;
+      this.permitPreviewZoom = 100;
+      this.isPermitPreviewFullscreen = false;
     },
     isPermitImage(url) {
       const lower = String(url || "").toLowerCase();
       return /\.(jpg|jpeg|png|webp|gif)(\?|#|$)/.test(lower);
     },
-    openPermitPreview(url) {
-      if (!url) return;
-      this.permitPreviewUrl = url;
-      this.showPermitPreviewModal = true;
+    zoomPermitPreview(amount) {
+      this.permitPreviewZoom = Math.min(200, Math.max(50, this.permitPreviewZoom + amount));
     },
-    closePermitPreview() {
-      this.showPermitPreviewModal = false;
-      this.permitPreviewUrl = "";
+    togglePermitPreviewFullscreen() {
+      this.isPermitPreviewFullscreen = !this.isPermitPreviewFullscreen;
+    },
+    propertyIdentifier(property) {
+      return property?.property_id ?? property?.propertyId ?? this.selectedReviewPropertyId ?? property?.id ?? null;
+    },
+    propertyTitle(property) {
+      return property?.title || property?.property_title || "this property";
     },
     async openApproveModal(property) {
       if (this.isActionLoading) return;
+      const propertyId = this.propertyIdentifier(property);
+      const title = this.propertyTitle(property);
+      const shouldRestoreReview = this.showDetailsModal;
+      this.showDetailsModal = false;
       const result = await Swal.fire({
         title: "Approve Property",
-        text: `Approve "${property.title}"?`,
+        text: `Approve "${title}"?`,
         icon: "question",
         showCancelButton: true,
         confirmButtonText: "Approve",
@@ -461,7 +478,11 @@ export default {
         allowOutsideClick: () => !Swal.isLoading(),
         allowEscapeKey: () => !Swal.isLoading(),
         preConfirm: async () => {
-          const outcome = await this.runModerationAction("approve", property.property_id, property.title, "");
+          if (!propertyId) {
+            Swal.showValidationMessage("Unable to find this property ID.");
+            return false;
+          }
+          const outcome = await this.runModerationAction("approve", propertyId, title, "");
           if (!outcome.ok) {
             Swal.showValidationMessage(outcome.message || "Unable to approve this property.");
             return false;
@@ -479,14 +500,23 @@ export default {
           }
         },
       });
-      if (!result.isConfirmed) return;
+      if (!result.isConfirmed) {
+        if (shouldRestoreReview && this.selectedPropertyDetails) {
+          this.showDetailsModal = true;
+        }
+        return;
+      }
       await this.showModerationSuccess(result.value);
     },
     async openRejectModal(property) {
       if (this.isActionLoading) return;
+      const propertyId = this.propertyIdentifier(property);
+      const title = this.propertyTitle(property);
+      const shouldRestoreReview = this.showDetailsModal;
+      this.showDetailsModal = false;
       const result = await Swal.fire({
         title: "Reject Property",
-        text: `Reject "${property.title}"?`,
+        text: `Reject "${title}"?`,
         input: "textarea",
         inputLabel: "Rejection reason",
         inputPlaceholder: "State why this property was rejected...",
@@ -504,7 +534,11 @@ export default {
             Swal.showValidationMessage("Rejection reason is required.");
             return false;
           }
-          return this.runModerationAction("reject", property.property_id, property.title, value.trim())
+          if (!propertyId) {
+            Swal.showValidationMessage("Unable to find this property ID.");
+            return false;
+          }
+          return this.runModerationAction("reject", propertyId, title, value.trim())
             .then((outcome) => {
               if (!outcome.ok) {
                 Swal.showValidationMessage(outcome.message || "Unable to reject this property.");
@@ -524,7 +558,12 @@ export default {
           }
         },
       });
-      if (!result.isConfirmed) return;
+      if (!result.isConfirmed) {
+        if (shouldRestoreReview && this.selectedPropertyDetails) {
+          this.showDetailsModal = true;
+        }
+        return;
+      }
       await this.showModerationSuccess(result.value);
     },
     async openNotifyOwnerModal(property) {
@@ -610,7 +649,7 @@ export default {
           };
         }
 
-        if (this.selectedPropertyDetails?.property?.property_id === propertyId) {
+        if (this.propertyIdentifier(this.selectedPropertyDetails?.property) === propertyId) {
           this.selectedPropertyDetails.property.status = action === "approve" ? "active" : "rejected";
         }
         await Promise.all([
@@ -704,19 +743,46 @@ export default {
 }
 .custom-admin-table tbody td { padding: 15px; border-bottom: 1px solid #f1f4f9; }
 
-/* Filter Pills */
-.filter-pill {
+/* Status Button Group */
+.status-button-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  overflow: hidden;
   border: 1px solid #d8dfeb;
-  background: white;
-  padding: 8px 18px;
-  border-radius: 50px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: all 0.2s;
+  border-radius: 10px;
+  background: #ffffff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-.filter-pill:hover { transform: translateY(-1px); }
-.filter-pill.active { background: #2563eb; color: white; border-color: #2563eb; }
+
+.status-filter-btn {
+  border: 0;
+  border-right: 1px solid #d8dfeb;
+  background: transparent;
+  color: #4f5d75;
+  padding: 9px 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.status-filter-btn:last-child {
+  border-right: 0;
+}
+
+.status-filter-btn:hover {
+  background: #f1f4f9;
+}
+
+.status-filter-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.status-filter-btn:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+  outline-offset: -3px;
+}
+
 .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
 .status-dot.active { background: #28a745; }
 .status-dot.pending { background: #ffc107; }
@@ -729,20 +795,39 @@ export default {
 .badge-modern.rejected { background: #fff5f5; color: #fa5252; }
 
 /* Actions */
-.btn-action { width: 32px; height: 32px; border-radius: 9px; border: none; transition: 0.2s; }
-.btn-action.view { background: #e7f5ff; color: #228be6; }
-.btn-action.approve { background: #ebfbee; color: #40c057; }
-.btn-action.reject { background: #fff5f5; color: #fa5252; }
-.btn-action.notify { background: #eef4ff; color: #2563eb; }
+.btn-action {
+  min-width: 88px;
+  height: 32px;
+  border-radius: 9px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: 0.2s;
+}
+.btn-action.review { background: #e7f5ff; color: #228be6; }
 .btn-action:hover { transform: translateY(-1px); filter: brightness(0.98); }
 
 /* Mobile Cards */
 .mobile-data-card { background: white; border: 1px solid #ebedef; border-radius: 10px; }
-.btn-mobile-icon { width: 40px; height: 40px; border-radius: 8px; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-.btn-mobile-icon.view { background: #0d6efd; color: white; }
-.btn-mobile-icon.approve { background: #198754; color: white; }
-.btn-mobile-icon.reject { background: #dc3545; color: white; }
-.btn-mobile-icon.notify { background: #2563eb; color: white; }
+.btn-mobile-icon {
+  min-width: 92px;
+  height: 40px;
+  border-radius: 8px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.btn-mobile-icon.review { background: #0d6efd; color: white; }
 
 /* Utils */
 .avatar-sm { width: 28px; height: 28px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; }
@@ -808,12 +893,153 @@ export default {
   padding: 0.55rem 0.65rem;
 }
 
-.details-actions .btn {
-  min-width: 110px;
+.permit-review-card {
+  background: #ffffff;
 }
 
-.btn-notify {
-  min-width: 130px;
+.permit-review-card.fullscreen {
+  position: fixed;
+  inset: 1rem;
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  border: 1px solid #e4eaf4;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.28);
+}
+
+.permit-review-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.permit-review-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.permit-zoom-label {
+  min-width: 48px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #4f5d75;
+}
+
+.permit-preview-frame {
+  height: 360px;
+  overflow: auto;
+  border: 1px solid #e4eaf4;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.permit-review-card.fullscreen .permit-preview-frame {
+  flex: 1;
+  height: auto;
+}
+
+.permit-preview-image {
+  display: block;
+  max-width: none;
+  margin: 0 auto;
+  transform-origin: top center;
+}
+
+.permit-preview-document {
+  width: 100%;
+  height: 620px;
+  border: 0;
+  transform-origin: top left;
+}
+
+.permit-review-card.fullscreen .permit-preview-document {
+  height: 100%;
+  min-height: 720px;
+}
+
+.property-review-actions {
+  padding: 0.85rem;
+  border: 1px solid #e4eaf4;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.review-decision-btn {
+  flex: 1 1 220px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 64px;
+  padding: 0.85rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.review-decision-btn strong,
+.review-decision-btn small {
+  display: block;
+  line-height: 1.2;
+}
+
+.review-decision-btn strong {
+  font-size: 0.95rem;
+}
+
+.review-decision-btn small {
+  margin-top: 0.18rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  opacity: 0.82;
+}
+
+.review-decision-btn.approve {
+  background: #e6fcf5;
+  border-color: #b2f2dc;
+  color: #087f5b;
+}
+
+.review-decision-btn.reject {
+  background: #fff5f5;
+  border-color: #ffc9c9;
+  color: #c92a2a;
+}
+
+.review-decision-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.review-decision-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.review-decision-btn:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+  outline-offset: 2px;
+}
+
+.decision-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+  background: rgba(255, 255, 255, 0.72);
 }
 .chip {
   padding: 4px 10px;
@@ -833,13 +1059,40 @@ export default {
     grid-template-columns: 1fr;
   }
 
+  .status-button-group {
+    display: flex;
+    width: 100%;
+  }
+
+  .status-filter-btn {
+    flex: 1 1 0;
+    padding-inline: 10px;
+  }
+
   .details-grid {
     grid-template-columns: 1fr;
+  }
+
+  .permit-review-card.fullscreen {
+    inset: 0.5rem;
+  }
+
+  .permit-review-header {
+    flex-direction: column;
+  }
+
+  .permit-review-controls,
+  .permit-review-controls .btn {
+    width: 100%;
+  }
+
+  .permit-preview-frame {
+    height: 300px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .filter-pill,
+  .status-filter-btn,
   .btn-action,
   .summary-card {
     transition: none !important;

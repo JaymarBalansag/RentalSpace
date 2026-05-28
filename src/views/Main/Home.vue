@@ -189,8 +189,8 @@
                       <i class="bi bi-geo-alt text-danger me-1"></i> {{ property.town_name }}, {{ property.state_name }}
                     </p>
                     <div class="mb-2">
-                      <span class="badge rounded-pill" :class="property.owner_verification_badge_class">
-                        {{ property.owner_verification_label }}
+                      <span class="badge rounded-pill" :class="property.property_verification_badge_class">
+                        {{ property.property_verification_label }}
                       </span>
                     </div>
                     <p class="text-secondary small flex-grow-1 text-truncate-custom">

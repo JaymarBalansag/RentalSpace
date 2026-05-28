@@ -284,11 +284,19 @@
             </div>
             <div class="col-12" v-if="selectedUserDetails.user_verification_status === 'pending'">
               <div class="user-modal-actions d-flex flex-wrap gap-2">
-                <button class="btn btn-success btn-sm rounded-pill px-3" @click="openVerifyUserModal(selectedUserDetails)">
-                  Approve Verification
+                <button class="review-decision-btn approve" @click="openVerifyUserModal(selectedUserDetails)">
+                  <span class="decision-icon"><i class="bi bi-check2-circle"></i></span>
+                  <span>
+                    <strong>Approve</strong>
+                    <small>Mark this user as verified</small>
+                  </span>
                 </button>
-                <button class="btn btn-danger btn-sm rounded-pill px-3" @click="openRejectUserModal(selectedUserDetails)">
-                  Reject Verification
+                <button class="review-decision-btn reject" @click="openRejectUserModal(selectedUserDetails)">
+                  <span class="decision-icon"><i class="bi bi-x-circle"></i></span>
+                  <span>
+                    <strong>Reject</strong>
+                    <small>Request a better verification ID</small>
+                  </span>
                 </button>
               </div>
             </div>
@@ -758,6 +766,77 @@ export default {
   min-height: 720px;
 }
 
+.user-modal-actions {
+  padding: 0.85rem;
+  border: 1px solid #e4eaf4;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.review-decision-btn {
+  flex: 1 1 220px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 64px;
+  padding: 0.85rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.review-decision-btn strong,
+.review-decision-btn small {
+  display: block;
+  line-height: 1.2;
+}
+
+.review-decision-btn strong {
+  font-size: 0.95rem;
+}
+
+.review-decision-btn small {
+  margin-top: 0.18rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  opacity: 0.82;
+}
+
+.review-decision-btn.approve {
+  background: #e6fcf5;
+  border-color: #b2f2dc;
+  color: #087f5b;
+}
+
+.review-decision-btn.reject {
+  background: #fff5f5;
+  border-color: #ffc9c9;
+  color: #c92a2a;
+}
+
+.review-decision-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.review-decision-btn:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+  outline-offset: 2px;
+}
+
+.decision-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
 .user-img-lg {
   width: 64px;
   height: 64px;
@@ -811,7 +890,7 @@ export default {
     flex-direction: column;
   }
 
-  .user-modal-actions .btn {
+  .review-decision-btn {
     width: 100%;
   }
 

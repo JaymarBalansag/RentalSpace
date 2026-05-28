@@ -243,11 +243,43 @@
               </div>
             </div>
             <div class="col-12" v-if="selectedUserDetails.user_valid_govt_id_url">
-              <div class="border rounded p-3">
-                <p class="mb-2"><strong>Submitted Government ID</strong></p>
-                <a :href="selectedUserDetails.user_valid_govt_id_url" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary rounded-pill">
-                  View Uploaded ID
-                </a>
+              <div class="id-review-card border rounded p-3" :class="{ fullscreen: isIdPreviewFullscreen }">
+                <div class="id-review-header">
+                  <div>
+                    <p class="mb-0"><strong>Submitted Government ID</strong></p>
+                    <small class="text-muted">Review the uploaded ID here before approving or rejecting.</small>
+                  </div>
+                  <div class="id-review-controls">
+                    <button type="button" class="btn btn-sm btn-light border" @click="zoomIdPreview(-25)" title="Zoom out">
+                      <i class="bi bi-zoom-out"></i>
+                    </button>
+                    <span class="id-zoom-label">{{ idPreviewZoom }}%</span>
+                    <button type="button" class="btn btn-sm btn-light border" @click="zoomIdPreview(25)" title="Zoom in">
+                      <i class="bi bi-zoom-in"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @click="toggleIdPreviewFullscreen">
+                      <i :class="isIdPreviewFullscreen ? 'bi bi-fullscreen-exit' : 'bi bi-fullscreen'"></i>
+                      {{ isIdPreviewFullscreen ? "Exit" : "Full Screen" }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="id-preview-frame">
+                  <img
+                    v-if="isUploadedIdImage"
+                    :src="selectedUserDetails.user_valid_govt_id_url"
+                    alt="Submitted government ID"
+                    class="id-preview-image"
+                    :style="{ width: idPreviewZoom + '%' }"
+                  >
+                  <iframe
+                    v-else
+                    :src="selectedUserDetails.user_valid_govt_id_url"
+                    title="Submitted government ID preview"
+                    class="id-preview-document"
+                    :style="{ zoom: idPreviewScale }"
+                  ></iframe>
+                </div>
               </div>
             </div>
             <div class="col-12" v-if="selectedUserDetails.user_verification_status === 'pending'">
@@ -319,6 +351,8 @@ export default {
       },
       confirmInput: "",
       isActionLoading: false,
+      idPreviewZoom: 100,
+      isIdPreviewFullscreen: false,
     };
   },
   computed: {
@@ -331,6 +365,13 @@ export default {
           (user.email && user.email.toLowerCase().includes(this.search.toLowerCase()))
         );
       });
+    },
+    isUploadedIdImage() {
+      const url = String(this.selectedUserDetails?.user_valid_govt_id_url || "").split("?")[0].toLowerCase();
+      return /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(url);
+    },
+    idPreviewScale() {
+      return this.idPreviewZoom / 100;
     },
   },
   methods: {
@@ -430,11 +471,19 @@ export default {
     avatarFallback(user) {
       return `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.first_name || "") + " " + (user?.last_name || ""))}`;
     },
+    zoomIdPreview(amount) {
+      this.idPreviewZoom = Math.min(200, Math.max(50, this.idPreviewZoom + amount));
+    },
+    toggleIdPreviewFullscreen() {
+      this.isIdPreviewFullscreen = !this.isIdPreviewFullscreen;
+    },
     async openUserModal(user) {
       this.showUserModal = true;
       this.selectedUserDetails = null;
       this.userDetailsError = "";
       this.isUserDetailsLoading = true;
+      this.idPreviewZoom = 100;
+      this.isIdPreviewFullscreen = false;
 
       try {
         const res = await getUserVerificationDetails(user.id);
@@ -453,6 +502,8 @@ export default {
       this.showUserModal = false;
       this.selectedUserDetails = null;
       this.userDetailsError = "";
+      this.idPreviewZoom = 100;
+      this.isIdPreviewFullscreen = false;
     },
   },
   mounted() {
@@ -637,6 +688,76 @@ export default {
   overflow-wrap: anywhere;
 }
 
+.id-review-card {
+  background: #ffffff;
+}
+
+.id-review-card.fullscreen {
+  position: fixed;
+  inset: 1rem;
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.28);
+}
+
+.id-review-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.id-review-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.id-zoom-label {
+  min-width: 48px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #4f5d75;
+}
+
+.id-preview-frame {
+  height: 360px;
+  overflow: auto;
+  border: 1px solid #e4eaf4;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.id-review-card.fullscreen .id-preview-frame {
+  flex: 1;
+  height: auto;
+}
+
+.id-preview-image {
+  display: block;
+  max-width: none;
+  margin: 0 auto;
+  transform-origin: top center;
+}
+
+.id-preview-document {
+  width: 100%;
+  height: 620px;
+  border: 0;
+  transform-origin: top left;
+}
+
+.id-review-card.fullscreen .id-preview-document {
+  height: 100%;
+  min-height: 720px;
+}
+
 .user-img-lg {
   width: 64px;
   height: 64px;
@@ -674,7 +795,6 @@ export default {
   }
 
   .btn-mobile-icon {
-    width: 42px;
     height: 42px;
   }
 
@@ -693,6 +813,23 @@ export default {
 
   .user-modal-actions .btn {
     width: 100%;
+  }
+
+  .id-review-card.fullscreen {
+    inset: 0.5rem;
+  }
+
+  .id-review-header {
+    flex-direction: column;
+  }
+
+  .id-review-controls,
+  .id-review-controls .btn {
+    width: 100%;
+  }
+
+  .id-preview-frame {
+    height: 300px;
   }
 }
 </style>

@@ -77,20 +77,10 @@
                 </td>
                 <td class="text-end">
                   <div class="d-flex justify-content-end gap-2">
-                    <button class="btn-action view" @click="viewDetails(property.property_id)" title="View Details">
+                    <button class="btn-action review" @click="viewDetails(property.property_id)" title="Review Property">
                       <i class="bi bi-eye"></i>
+                      <span>Review</span>
                     </button>
-                    <template v-if="property.status === 'pending'">
-                      <button class="btn-action approve" :disabled="isActionLoading" @click="openApproveModal(property)" title="Approve">
-                        <i class="bi bi-check-lg"></i>
-                      </button>
-                      <button class="btn-action reject" :disabled="isActionLoading" @click="openRejectModal(property)" title="Reject">
-                        <i class="bi bi-x-lg"></i>
-                      </button>
-                      <button class="btn-action notify" @click="openNotifyOwnerModal(property)" title="Notify Owner">
-                        <i class="bi bi-chat-left-text"></i>
-                      </button>
-                    </template>
                   </div>
                 </td>
               </tr>
@@ -125,12 +115,10 @@
               <span class="fw-bold text-primary">PHP {{ Number(property.price || 0).toLocaleString() }}</span>
             </div>
             <div class="d-flex gap-2">
-              <button class="btn-mobile-icon view" @click="viewDetails(property.property_id)"><i class="bi bi-eye"></i></button>
-              <template v-if="property.status === 'pending'">
-                <button class="btn-mobile-icon approve" :disabled="isActionLoading" @click="openApproveModal(property)"><i class="bi bi-check-lg"></i></button>
-                <button class="btn-mobile-icon reject" :disabled="isActionLoading" @click="openRejectModal(property)"><i class="bi bi-x"></i></button>
-                <button class="btn-mobile-icon notify" @click="openNotifyOwnerModal(property)"><i class="bi bi-chat-left-text"></i></button>
-              </template>
+              <button class="btn-mobile-icon review" @click="viewDetails(property.property_id)">
+                <i class="bi bi-eye"></i>
+                <span>Review</span>
+              </button>
             </div>
           </div>
         </div>
@@ -257,16 +245,21 @@
 
         <div
           v-if="selectedPropertyDetails.property?.status === 'pending'"
-          class="details-actions mt-3 d-flex justify-content-end gap-2"
+          class="property-review-actions mt-3 d-flex flex-wrap gap-2"
         >
-          <!-- <button class="btn btn-success btn-sm" :disabled="isActionLoading" @click="openApproveModal(selectedPropertyDetails.property)">
-            Approve
-          </button> -->
-          <!-- <button class="btn btn-outline-danger btn-sm" :disabled="isActionLoading" @click="openRejectModal(selectedPropertyDetails.property)">
-            Reject
-          </button> -->
-          <button class="btn btn-outline-primary btn-sm btn-notify" :disabled="isActionLoading" @click="openNotifyOwnerModal(selectedPropertyDetails.property)">
-            Notify Owner
+          <button class="review-decision-btn approve" :disabled="isActionLoading" @click="openApproveModal(selectedPropertyDetails.property)">
+            <span class="decision-icon"><i class="bi bi-check2-circle"></i></span>
+            <span>
+              <strong>Approve</strong>
+              <small>Publish this property listing</small>
+            </span>
+          </button>
+          <button class="review-decision-btn reject" :disabled="isActionLoading" @click="openRejectModal(selectedPropertyDetails.property)">
+            <span class="decision-icon"><i class="bi bi-x-circle"></i></span>
+            <span>
+              <strong>Reject</strong>
+              <small>Decline this listing with a reason</small>
+            </span>
           </button>
         </div>
       </div>
@@ -758,20 +751,39 @@ export default {
 .badge-modern.rejected { background: #fff5f5; color: #fa5252; }
 
 /* Actions */
-.btn-action { width: 32px; height: 32px; border-radius: 9px; border: none; transition: 0.2s; }
-.btn-action.view { background: #e7f5ff; color: #228be6; }
-.btn-action.approve { background: #ebfbee; color: #40c057; }
-.btn-action.reject { background: #fff5f5; color: #fa5252; }
-.btn-action.notify { background: #eef4ff; color: #2563eb; }
+.btn-action {
+  min-width: 88px;
+  height: 32px;
+  border-radius: 9px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: 0.2s;
+}
+.btn-action.review { background: #e7f5ff; color: #228be6; }
 .btn-action:hover { transform: translateY(-1px); filter: brightness(0.98); }
 
 /* Mobile Cards */
 .mobile-data-card { background: white; border: 1px solid #ebedef; border-radius: 10px; }
-.btn-mobile-icon { width: 40px; height: 40px; border-radius: 8px; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-.btn-mobile-icon.view { background: #0d6efd; color: white; }
-.btn-mobile-icon.approve { background: #198754; color: white; }
-.btn-mobile-icon.reject { background: #dc3545; color: white; }
-.btn-mobile-icon.notify { background: #2563eb; color: white; }
+.btn-mobile-icon {
+  min-width: 92px;
+  height: 40px;
+  border-radius: 8px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.btn-mobile-icon.review { background: #0d6efd; color: white; }
 
 /* Utils */
 .avatar-sm { width: 28px; height: 28px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; }
@@ -837,12 +849,80 @@ export default {
   padding: 0.55rem 0.65rem;
 }
 
-.details-actions .btn {
-  min-width: 110px;
+.property-review-actions {
+  padding: 0.85rem;
+  border: 1px solid #e4eaf4;
+  border-radius: 14px;
+  background: #f8fafc;
 }
 
-.btn-notify {
-  min-width: 130px;
+.review-decision-btn {
+  flex: 1 1 220px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 64px;
+  padding: 0.85rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.review-decision-btn strong,
+.review-decision-btn small {
+  display: block;
+  line-height: 1.2;
+}
+
+.review-decision-btn strong {
+  font-size: 0.95rem;
+}
+
+.review-decision-btn small {
+  margin-top: 0.18rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  opacity: 0.82;
+}
+
+.review-decision-btn.approve {
+  background: #e6fcf5;
+  border-color: #b2f2dc;
+  color: #087f5b;
+}
+
+.review-decision-btn.reject {
+  background: #fff5f5;
+  border-color: #ffc9c9;
+  color: #c92a2a;
+}
+
+.review-decision-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.review-decision-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.review-decision-btn:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+  outline-offset: 2px;
+}
+
+.decision-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+  background: rgba(255, 255, 255, 0.72);
 }
 .chip {
   padding: 4px 10px;

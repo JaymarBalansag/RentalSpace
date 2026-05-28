@@ -205,31 +205,47 @@
             </div>
           </section>
 
-          <section class="details-block">
+          <section class="details-block details-block-wide">
             <h6 class="details-title">Compliance</h6>
-            <p class="fw-semibold small mb-2">Business Permit</p>
-            <div class="d-flex align-items-center gap-2">
-              <template v-if="selectedPropertyDetails.property?.business_permit_url">
-                <button
+            <div v-if="selectedPropertyDetails.property?.business_permit_url" class="permit-review-card" :class="{ fullscreen: isPermitPreviewFullscreen }">
+              <div class="permit-review-header">
+                <div>
+                  <p class="fw-semibold small mb-0">Business Permit</p>
+                  <small class="text-muted">Review the uploaded permit before approving or rejecting.</small>
+                </div>
+                <div class="permit-review-controls">
+                  <button type="button" class="btn btn-sm btn-light border" @click="zoomPermitPreview(-25)" title="Zoom out">
+                    <i class="bi bi-zoom-out"></i>
+                  </button>
+                  <span class="permit-zoom-label">{{ permitPreviewZoom }}%</span>
+                  <button type="button" class="btn btn-sm btn-light border" @click="zoomPermitPreview(25)" title="Zoom in">
+                    <i class="bi bi-zoom-in"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-primary" @click="togglePermitPreviewFullscreen">
+                    <i :class="isPermitPreviewFullscreen ? 'bi bi-fullscreen-exit' : 'bi bi-fullscreen'"></i>
+                    {{ isPermitPreviewFullscreen ? "Exit" : "Full Screen" }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="permit-preview-frame">
+                <img
                   v-if="isPermitImage(selectedPropertyDetails.property?.business_permit_url)"
-                  type="button"
-                  class="btn btn-outline-primary btn-sm"
-                  @click="openPermitPreview(selectedPropertyDetails.property?.business_permit_url)"
+                  :src="selectedPropertyDetails.property?.business_permit_url"
+                  alt="Business permit"
+                  class="permit-preview-image"
+                  :style="{ width: permitPreviewZoom + '%' }"
                 >
-                  View Permit
-                </button>
-                <a
+                <iframe
                   v-else
-                  :href="selectedPropertyDetails.property?.business_permit_url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="btn btn-outline-primary btn-sm"
-                >
-                  Open Permit
-                </a>
-              </template>
-              <small v-else class="text-muted">No permit uploaded.</small>
+                  :src="selectedPropertyDetails.property?.business_permit_url"
+                  title="Business permit preview"
+                  class="permit-preview-document"
+                  :style="{ zoom: permitPreviewScale }"
+                ></iframe>
+              </div>
             </div>
+            <small v-else class="text-muted">No permit uploaded.</small>
           </section>
 
           <section class="details-block details-block-wide">
@@ -265,16 +281,6 @@
       </div>
     </div>
 
-    <div v-if="showPermitPreviewModal" class="modal-overlay-custom" @click.self="closePermitPreview">
-      <div class="modal-body-custom rounded-4 shadow-lg p-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-bold mb-0">Business Permit Preview</h5>
-          <button class="btn-close" @click="closePermitPreview"></button>
-        </div>
-        <img :src="permitPreviewUrl" alt="Business Permit" class="img-fluid rounded border w-100">
-      </div>
-    </div>
-
   </div>
 </template>
 
@@ -299,8 +305,8 @@ export default {
       showDetailsModal: false,
       selectedPropertyDetails: null,
       selectedReviewPropertyId: null,
-      showPermitPreviewModal: false,
-      permitPreviewUrl: "",
+      permitPreviewZoom: 100,
+      isPermitPreviewFullscreen: false,
       statusFilter: "active",
       listError: "",
       summaryCounts: {
@@ -346,6 +352,9 @@ export default {
       ]
         .filter(Boolean)
         .join(", ") || "-";
+    },
+    permitPreviewScale() {
+      return this.permitPreviewZoom / 100;
     },
   },
   methods: {
@@ -409,6 +418,8 @@ export default {
         const res = await getPropertyDetails(propertyId);
         if (res && res.status >= 200 && res.status < 300) {
           this.selectedPropertyDetails = res.data?.data || null;
+          this.permitPreviewZoom = 100;
+          this.isPermitPreviewFullscreen = false;
           this.showDetailsModal = !!this.selectedPropertyDetails;
           return;
         }
@@ -430,20 +441,18 @@ export default {
       this.showDetailsModal = false;
       this.selectedPropertyDetails = null;
       this.selectedReviewPropertyId = null;
-      this.closePermitPreview();
+      this.permitPreviewZoom = 100;
+      this.isPermitPreviewFullscreen = false;
     },
     isPermitImage(url) {
       const lower = String(url || "").toLowerCase();
       return /\.(jpg|jpeg|png|webp|gif)(\?|#|$)/.test(lower);
     },
-    openPermitPreview(url) {
-      if (!url) return;
-      this.permitPreviewUrl = url;
-      this.showPermitPreviewModal = true;
+    zoomPermitPreview(amount) {
+      this.permitPreviewZoom = Math.min(200, Math.max(50, this.permitPreviewZoom + amount));
     },
-    closePermitPreview() {
-      this.showPermitPreviewModal = false;
-      this.permitPreviewUrl = "";
+    togglePermitPreviewFullscreen() {
+      this.isPermitPreviewFullscreen = !this.isPermitPreviewFullscreen;
     },
     propertyIdentifier(property) {
       return property?.property_id ?? property?.propertyId ?? this.selectedReviewPropertyId ?? property?.id ?? null;
@@ -884,6 +893,79 @@ export default {
   padding: 0.55rem 0.65rem;
 }
 
+.permit-review-card {
+  background: #ffffff;
+}
+
+.permit-review-card.fullscreen {
+  position: fixed;
+  inset: 1rem;
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  border: 1px solid #e4eaf4;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.28);
+}
+
+.permit-review-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.permit-review-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.permit-zoom-label {
+  min-width: 48px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #4f5d75;
+}
+
+.permit-preview-frame {
+  height: 360px;
+  overflow: auto;
+  border: 1px solid #e4eaf4;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.permit-review-card.fullscreen .permit-preview-frame {
+  flex: 1;
+  height: auto;
+}
+
+.permit-preview-image {
+  display: block;
+  max-width: none;
+  margin: 0 auto;
+  transform-origin: top center;
+}
+
+.permit-preview-document {
+  width: 100%;
+  height: 620px;
+  border: 0;
+  transform-origin: top left;
+}
+
+.permit-review-card.fullscreen .permit-preview-document {
+  height: 100%;
+  min-height: 720px;
+}
+
 .property-review-actions {
   padding: 0.85rem;
   border: 1px solid #e4eaf4;
@@ -989,6 +1071,23 @@ export default {
 
   .details-grid {
     grid-template-columns: 1fr;
+  }
+
+  .permit-review-card.fullscreen {
+    inset: 0.5rem;
+  }
+
+  .permit-review-header {
+    flex-direction: column;
+  }
+
+  .permit-review-controls,
+  .permit-review-controls .btn {
+    width: 100%;
+  }
+
+  .permit-preview-frame {
+    height: 300px;
   }
 }
 

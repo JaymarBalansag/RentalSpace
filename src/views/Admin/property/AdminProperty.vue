@@ -20,12 +20,14 @@
       </article>
     </div>
 
-    <div class="d-flex flex-wrap gap-2 mb-4">
+    <div class="status-button-group mb-4" role="group" aria-label="Property status filter">
       <button 
         v-for="status in statuses" 
         :key="status.value"
-        class="filter-pill"
+        type="button"
+        class="status-filter-btn"
         :class="{ active: statusFilter === status.value }"
+        :aria-pressed="statusFilter === status.value"
         @click="setStatus(status.value)"
       >
         <span class="status-dot" :class="status.value"></span>
@@ -704,19 +706,46 @@ export default {
 }
 .custom-admin-table tbody td { padding: 15px; border-bottom: 1px solid #f1f4f9; }
 
-/* Filter Pills */
-.filter-pill {
+/* Status Button Group */
+.status-button-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  overflow: hidden;
   border: 1px solid #d8dfeb;
-  background: white;
-  padding: 8px 18px;
-  border-radius: 50px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: all 0.2s;
+  border-radius: 10px;
+  background: #ffffff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-.filter-pill:hover { transform: translateY(-1px); }
-.filter-pill.active { background: #2563eb; color: white; border-color: #2563eb; }
+
+.status-filter-btn {
+  border: 0;
+  border-right: 1px solid #d8dfeb;
+  background: transparent;
+  color: #4f5d75;
+  padding: 9px 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.status-filter-btn:last-child {
+  border-right: 0;
+}
+
+.status-filter-btn:hover {
+  background: #f1f4f9;
+}
+
+.status-filter-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.status-filter-btn:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+  outline-offset: -3px;
+}
+
 .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
 .status-dot.active { background: #28a745; }
 .status-dot.pending { background: #ffc107; }
@@ -833,13 +862,23 @@ export default {
     grid-template-columns: 1fr;
   }
 
+  .status-button-group {
+    display: flex;
+    width: 100%;
+  }
+
+  .status-filter-btn {
+    flex: 1 1 0;
+    padding-inline: 10px;
+  }
+
   .details-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .filter-pill,
+  .status-filter-btn,
   .btn-action,
   .summary-card {
     transition: none !important;

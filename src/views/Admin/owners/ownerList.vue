@@ -90,24 +90,6 @@
                     >
                       <i class="bi bi-bell"></i>
                     </button>
-                    <button
-                      v-if="normalizeVerificationStatus(owner) !== 'verified'"
-                      class="btn-action approve"
-                      title="Verify Owner"
-                      :disabled="isActionLoading"
-                      @click="openVerifyOwnerModal(owner)"
-                    >
-                      <i class="bi bi-patch-check"></i>
-                    </button>
-                    <button
-                      v-if="normalizeVerificationStatus(owner) !== 'verified' && normalizeVerificationStatus(owner) !== 'rejected'"
-                      class="btn-action reject"
-                      title="Reject Verification"
-                      :disabled="isActionLoading"
-                      @click="openRejectOwnerModal(owner)"
-                    >
-                      <i class="bi bi-x-circle"></i>
-                    </button>
                   </div>
                 </td>
               </tr>
@@ -150,22 +132,6 @@
                 >
                   <i class="bi bi-bell"></i>
                 </button>
-                <button
-                  v-if="normalizeVerificationStatus(owner) !== 'verified'"
-                  class="btn-mobile-icon approve"
-                  :disabled="isActionLoading"
-                  @click="openVerifyOwnerModal(owner)"
-                >
-                  <i class="bi bi-patch-check"></i>
-                </button>
-                <button
-                  v-if="normalizeVerificationStatus(owner) !== 'verified' && normalizeVerificationStatus(owner) !== 'rejected'"
-                  class="btn-mobile-icon reject"
-                  :disabled="isActionLoading"
-                  @click="openRejectOwnerModal(owner)"
-                >
-                  <i class="bi bi-x-circle"></i>
-                </button>
               </div>
             </div>
           </div>
@@ -190,18 +156,50 @@
               <p class="mb-1"><strong>Name:</strong> {{ selectedOwner.first_name }} {{ selectedOwner.last_name }}</p>
               <p class="mb-1"><strong>Email:</strong> {{ selectedOwner.email || "-" }}</p>
               <p class="mb-1"><strong>Phone:</strong> {{ selectedOwner.user_phone_number || "-" }}</p>
-              <p class="mb-0">
-                <strong>Valid ID:</strong>
-                <button
-                  v-if="selectedOwner.user_valid_govt_id_url"
-                  type="button"
-                  class="btn btn-link btn-sm p-0 ms-1 align-baseline"
-                  @click="openIdPreview(selectedOwner.user_valid_govt_id_url)"
-                >
-                  View uploaded ID
-                </button>
-                <span v-else class="text-muted ms-1">No uploaded user valid ID</span>
-              </p>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="info-card border rounded p-3">
+              <div v-if="ownerValidIdUrl" class="id-review-card" :class="{ fullscreen: isIdPreviewFullscreen }">
+                <div class="id-review-header">
+                  <div>
+                    <p class="fw-semibold small mb-0 text-uppercase text-muted">Valid ID</p>
+                    <small class="text-muted">Review the uploaded owner ID here before verifying.</small>
+                  </div>
+                  <div class="id-review-controls">
+                    <button type="button" class="btn btn-sm btn-light border" @click="zoomIdPreview(-25)" title="Zoom out">
+                      <i class="bi bi-zoom-out"></i>
+                    </button>
+                    <span class="id-zoom-label">{{ idPreviewZoom }}%</span>
+                    <button type="button" class="btn btn-sm btn-light border" @click="zoomIdPreview(25)" title="Zoom in">
+                      <i class="bi bi-zoom-in"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @click="toggleIdPreviewFullscreen">
+                      <i :class="isIdPreviewFullscreen ? 'bi bi-fullscreen-exit' : 'bi bi-fullscreen'"></i>
+                      {{ isIdPreviewFullscreen ? "Exit" : "Full Screen" }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="id-preview-frame">
+                  <img
+                    v-if="isOwnerValidIdImage"
+                    :src="ownerValidIdUrl"
+                    alt="Owner valid ID"
+                    class="id-preview-image"
+                    :style="{ width: idPreviewZoom + '%' }"
+                  >
+                  <iframe
+                    v-else
+                    :src="ownerValidIdUrl"
+                    title="Owner valid ID preview"
+                    class="id-preview-document"
+                    :style="{ zoom: idPreviewScale }"
+                  ></iframe>
+                </div>
+              </div>
+              <small v-else class="text-muted">No uploaded user valid ID</small>
             </div>
           </div>
 
@@ -261,36 +259,6 @@
       </div>
     </div>
 
-    <div v-if="showIdPreviewModal" class="modal-overlay-custom" @click.self="closeIdPreviewModal">
-      <div class="modal-body-custom rounded-4 shadow-lg p-4 id-preview-modal">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-bold mb-0">Valid ID Preview</h5>
-          <button class="btn-close" @click="closeIdPreviewModal"></button>
-        </div>
-
-        <div class="id-preview-frame border rounded-3 overflow-hidden bg-light">
-          <img
-            v-if="idPreviewType === 'image'"
-            :src="idPreviewUrl"
-            alt="Valid ID Preview"
-            class="img-fluid w-100 h-100 object-fit-contain"
-          />
-          <iframe
-            v-else
-            :src="idPreviewUrl"
-            title="Valid ID PDF Preview"
-            class="w-100 h-100 border-0"
-          ></iframe>
-        </div>
-
-        <div class="d-flex justify-content-end mt-3">
-          <a :href="idPreviewUrl" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary">
-            Open in new tab
-          </a>
-        </div>
-      </div>
-    </div>
-
     <ConfirmModal
       :show="showConfirmModal"
       :title="confirmConfig.title"
@@ -331,9 +299,8 @@ export default {
       filterStatus: "",
       owners: [],
       showOwnerModal: false,
-      showIdPreviewModal: false,
-      idPreviewUrl: "",
-      idPreviewType: "pdf",
+      idPreviewZoom: 100,
+      isIdPreviewFullscreen: false,
       selectedOwner: null,
       isActionLoading: false,
       showConfirmModal: false,
@@ -364,6 +331,16 @@ export default {
           this.filterStatus === "" || this.normalizeVerificationStatus(owner) === this.filterStatus;
         return matchSearch && matchStatus;
       });
+    },
+    ownerValidIdUrl() {
+      return this.selectedOwner?.user_valid_govt_id_url || this.validIdUrl(this.selectedOwner);
+    },
+    isOwnerValidIdImage() {
+      const url = String(this.ownerValidIdUrl || "").split("?")[0].toLowerCase();
+      return /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(url);
+    },
+    idPreviewScale() {
+      return this.idPreviewZoom / 100;
     },
   },
   methods: {
@@ -416,6 +393,8 @@ export default {
     async openOwnerModal(owner) {
       this.selectedOwner = owner;
       this.showOwnerModal = true;
+      this.idPreviewZoom = 100;
+      this.isIdPreviewFullscreen = false;
       try {
         const res = await getOwnerDetails(owner.id);
         const payload = res?.data?.data || res?.data?.owner || null;
@@ -429,21 +408,14 @@ export default {
     closeOwnerModal() {
       this.showOwnerModal = false;
       this.selectedOwner = null;
+      this.idPreviewZoom = 100;
+      this.isIdPreviewFullscreen = false;
     },
-    openIdPreview(url) {
-      const safeUrl = String(url || "").trim();
-      if (!safeUrl) return;
-
-      const lower = safeUrl.toLowerCase();
-      const isImage = /\.(jpg|jpeg|png|webp|gif)(\?|#|$)/.test(lower);
-      this.idPreviewType = isImage ? "image" : "pdf";
-      this.idPreviewUrl = safeUrl;
-      this.showIdPreviewModal = true;
+    zoomIdPreview(amount) {
+      this.idPreviewZoom = Math.min(200, Math.max(50, this.idPreviewZoom + amount));
     },
-    closeIdPreviewModal() {
-      this.showIdPreviewModal = false;
-      this.idPreviewUrl = "";
-      this.idPreviewType = "pdf";
+    toggleIdPreviewFullscreen() {
+      this.isIdPreviewFullscreen = !this.isIdPreviewFullscreen;
     },
     openVerifyOwnerModal(owner) {
       this.confirmInput = "";
@@ -690,16 +662,81 @@ export default {
   overflow-y: auto;
 }
 
-.id-preview-modal {
-  max-width: 900px;
+.info-card {
+  overflow-wrap: anywhere;
+}
+
+.id-review-card {
+  background: #ffffff;
+}
+
+.id-review-card.fullscreen {
+  position: fixed;
+  inset: 1rem;
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  border: 1px solid #e4eaf4;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.28);
+}
+
+.id-review-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.id-review-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.id-zoom-label {
+  min-width: 48px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #4f5d75;
 }
 
 .id-preview-frame {
-  height: min(70vh, 680px);
+  height: 360px;
+  overflow: auto;
+  border: 1px solid #e4eaf4;
+  border-radius: 10px;
+  background: #f8fafc;
 }
 
-.info-card {
-  overflow-wrap: anywhere;
+.id-review-card.fullscreen .id-preview-frame {
+  flex: 1;
+  height: auto;
+}
+
+.id-preview-image {
+  display: block;
+  max-width: none;
+  margin: 0 auto;
+  transform-origin: top center;
+}
+
+.id-preview-document {
+  width: 100%;
+  height: 620px;
+  border: 0;
+  transform-origin: top left;
+}
+
+.id-review-card.fullscreen .id-preview-document {
+  height: 100%;
+  min-height: 720px;
 }
 
 @media (max-width: 991.98px) {
@@ -750,6 +787,23 @@ export default {
   .owner-modal-actions .btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .id-review-card.fullscreen {
+    inset: 0.5rem;
+  }
+
+  .id-review-header {
+    flex-direction: column;
+  }
+
+  .id-review-controls,
+  .id-review-controls .btn {
+    width: 100%;
+  }
+
+  .id-preview-frame {
+    height: 300px;
   }
 }
 </style>

@@ -36,14 +36,14 @@
     <main class="main-content">
       <header class="content-header px-3">
         <div class="d-flex align-items-center">
-          <button class="mobile-burger-btn d-md-none me-3" @click="isMobileOpen = !isMobileOpen">
+          <button class="mobile-burger-btn d-md-none me-3" type="button" aria-label="Toggle owner navigation" @click="isMobileOpen = !isMobileOpen">
             <i class="bi bi-list fs-4"></i>
           </button>
         </div>
 
         <div class="header-actions">
           <div class="dropdown">
-            <button class="profile-pill" data-bs-toggle="dropdown">
+            <button class="profile-pill" type="button" data-bs-toggle="dropdown" aria-label="Open account menu">
               <div class="avatar-box">{{ first_name[0] }}{{ last_name[0] }}</div>
               <span class="ms-2 d-none d-md-inline small fw-bold">{{ first_name }} {{ last_name }}</span>
               <i class="bi bi-chevron-down ms-2 small opacity-50"></i>
@@ -158,9 +158,9 @@ export default {
 <style scoped>
 .dashboard-wrapper {
   --dash-bg: #f3f6fb;
-  --dash-surface: rgba(255, 255, 255, 0.78);
+  --dash-surface: rgba(255, 255, 255, 0.9);
   --dash-border: rgba(15, 23, 42, 0.08);
-  --dash-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  --dash-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
   --dash-accent: #2b6af3;
   --dash-accent-soft: rgba(43, 106, 243, 0.18);
   --dash-ink: #0f172a;
@@ -170,16 +170,16 @@ export default {
   width: 100vw;
   overflow: hidden;
   background:
-    radial-gradient(circle at 0 0, rgba(209, 226, 255, 0.6), transparent 45%),
-    radial-gradient(circle at 100% 0, rgba(255, 244, 229, 0.6), transparent 40%),
+    radial-gradient(circle at 0 0, rgba(209, 226, 255, 0.42), transparent 45%),
+    radial-gradient(circle at 100% 0, rgba(224, 242, 254, 0.34), transparent 40%),
     var(--dash-bg);
 }
 
 /* --- SIDEBAR --- */
 .main-sidebar {
-  width: 260px;
+  width: 248px;
   background:
-    linear-gradient(160deg, rgba(18, 22, 36, 0.98) 0%, rgba(26, 34, 58, 0.96) 100%);
+    linear-gradient(160deg, rgba(17, 24, 39, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%);
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -190,7 +190,7 @@ export default {
 }
 
 /* Desktop Collapse State */
-.main-sidebar.is-collapsed { width: 80px; }
+.main-sidebar.is-collapsed { width: 78px; }
 
 /* Mobile logic: acts as a floating icon bar */
 @media (max-width: 768px) {
@@ -214,13 +214,13 @@ export default {
   height: 70px;
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 18px;
   background: rgba(255, 255, 255, 0.04);
 }
 .brand-logo {
   width: 35px;
   height: 35px;
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -233,20 +233,20 @@ export default {
 /* --- NAVIGATION --- */
 .sidebar-nav {
   flex-grow: 1;
-  padding: 15px 10px;
+  padding: 14px 10px;
   overflow-y: auto;
 }
 .nav-item-link {
   display: flex;
   align-items: center;
   justify-content: center; /* Center icons for mobile/collapsed */
-  padding: 12px 14px;
-  color: #a2a3b7;
+  padding: 11px 13px;
+  color: #c3c8d4;
   text-decoration: none;
-  border-radius: 12px;
-  margin-bottom: 5px;
+  border-radius: 8px;
+  margin-bottom: 6px;
   position: relative;
-  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 @media (min-width: 769px) {
   /* Only align left if desktop and NOT collapsed */
@@ -260,13 +260,13 @@ export default {
   color: #fff;
 }
 .nav-item-link.active {
-  color: #8fb8ff;
-  background: rgba(54, 153, 255, 0.16);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+  color: #fff;
+  background: linear-gradient(135deg, rgba(43, 106, 243, 0.32), rgba(45, 212, 191, 0.18));
+  box-shadow: inset 3px 0 0 var(--dash-accent), 0 10px 20px rgba(0, 0, 0, 0.14);
 }
 
-.nav-icon { font-size: 1.3rem; }
-.nav-label { margin-left: 12px; font-size: 0.9rem; }
+.nav-icon { font-size: 1.18rem; }
+.nav-label { margin-left: 12px; font-size: 0.9rem; font-weight: 600; }
 .active-indicator {
   position: absolute;
   right: 8px;
@@ -287,7 +287,7 @@ export default {
   z-index: 1;
 }
 .content-header {
-  height: 70px;
+  min-height: 68px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -303,14 +303,16 @@ export default {
   flex-grow: 1;
   overflow-y: auto;
   color: var(--dash-ink);
+  scrollbar-width: thin;
 }
 
 /* --- MOBILE HELPERS --- */
 .mobile-burger-btn {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--dash-border);
-  border-radius: 6px;
-  padding: 5px 10px;
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: var(--dash-ink);
 }
 .sidebar-overlay {
   position: fixed;
@@ -321,14 +323,22 @@ export default {
 }
 
 .profile-pill {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   padding: 6px 12px;
-  border-radius: 50px;
+  border-radius: 999px;
   display: flex;
   align-items: center;
   border: 1px solid var(--dash-border);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
+.profile-pill:hover,
+.mobile-burger-btn:hover {
+  border-color: rgba(43, 106, 243, 0.28);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+.nav-item-link:focus-visible,
+.collapse-toggle:focus-visible,
+.mobile-burger-btn:focus-visible,
 .profile-pill:focus-visible {
   outline: 2px solid var(--dash-accent);
   outline-offset: 2px;
@@ -339,7 +349,7 @@ export default {
 .avatar-box {
   width: 30px;
   height: 30px;
-  border-radius: 10px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -356,6 +366,12 @@ export default {
   font-size: 1.2rem;
   width: 100%;
   justify-content: center;
+  border-radius: 8px;
+  min-height: 38px;
+}
+.collapse-toggle:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 @media (prefers-reduced-motion: reduce) {

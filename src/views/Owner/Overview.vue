@@ -1,8 +1,11 @@
 <template>
   <div class="container-fluid p-0 overview-shell">
     <div class="mb-4 overview-header">
-      <h4 class="fw-bold text-dark mb-1">Dashboard Overview</h4>
-      <p class="text-muted small">Welcome back. Here is what is happening with your properties today.</p>
+      <div>
+        <span class="overview-eyebrow">Owner Workspace</span>
+        <h4 class="fw-bold text-dark mb-1">Dashboard Overview</h4>
+        <p class="text-muted small mb-0">Welcome back. Here is what is happening with your properties today.</p>
+      </div>
     </div>
 
     <div class="row g-3 g-md-4">
@@ -59,11 +62,26 @@
             <h6 class="fw-bold mb-2">Quick Actions</h6>
             <p class="text-muted small mb-3">Jump to the tasks you do most often.</p>
             <div class="d-flex flex-column gap-2">
-              <RouterLink to="/dashboard/properties/add" class="btn btn-primary fw-semibold">Add Property</RouterLink>
-              <RouterLink to="/properties" class="btn btn-outline-primary fw-semibold">View Reviews</RouterLink>
-              <RouterLink v-if="hasProFeatures" to="/bookings" class="btn btn-outline-primary fw-semibold">View Bookings</RouterLink>
-              <RouterLink v-if="hasProFeatures" to="/ledger" class="btn btn-outline-dark fw-semibold">Go to Ledger</RouterLink>
-              <RouterLink v-if="hasProFeatures" to="/tenants?tab=moveout" class="btn btn-outline-secondary fw-semibold">Move-Out Notices</RouterLink>
+              <RouterLink to="/dashboard/properties/add" class="btn btn-primary fw-semibold action-btn">
+                <i class="bi bi-plus-lg"></i>
+                <span>Add Property</span>
+              </RouterLink>
+              <RouterLink to="/properties" class="btn btn-outline-primary fw-semibold action-btn">
+                <i class="bi bi-chat-left-text"></i>
+                <span>View Reviews</span>
+              </RouterLink>
+              <RouterLink v-if="hasProFeatures" to="/bookings" class="btn btn-outline-primary fw-semibold action-btn">
+                <i class="bi bi-calendar-check"></i>
+                <span>View Bookings</span>
+              </RouterLink>
+              <RouterLink v-if="hasProFeatures" to="/ledger" class="btn btn-outline-dark fw-semibold action-btn">
+                <i class="bi bi-wallet2"></i>
+                <span>Go to Ledger</span>
+              </RouterLink>
+              <RouterLink v-if="hasProFeatures" to="/tenants?tab=moveout" class="btn btn-outline-secondary fw-semibold action-btn">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Move-Out Notices</span>
+              </RouterLink>
             </div>
           </div>
         </div>
@@ -183,36 +201,52 @@ export default {
 .overview-shell {
   color: #0f172a;
 }
+.overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.overview-eyebrow {
+  color: #2b6af3;
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
 .overview-header h4 {
-  letter-spacing: 0.2px;
+  letter-spacing: 0;
 }
 .glass-card {
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 18px;
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(14px);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
+  backdrop-filter: blur(12px);
 }
 .stat-card {
-  transition: all 0.3s ease;
-  border-radius: 1rem;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12) !important;
+  transform: translateY(-4px);
+  border-color: rgba(43, 106, 243, 0.18);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1) !important;
 }
 
 .icon-box {
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 8px;
 }
 .kpi-value {
-  font-size: 1.9rem;
+  font-size: clamp(1.55rem, 2.5vw, 1.9rem);
+  line-height: 1.15;
 }
 .badge-soft {
   background: rgba(15, 23, 42, 0.06);
@@ -222,6 +256,8 @@ export default {
 .kpi-link {
   position: relative;
   z-index: 2;
+  display: inline-flex;
+  align-items: center;
 }
 .activity-card .activity-list {
   list-style: none;
@@ -233,20 +269,31 @@ export default {
 .activity-card .activity-list li {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   color: #334155;
   font-size: 0.95rem;
+  padding: 0.58rem 0.65rem;
+  border: 1px solid #e8eef7;
+  border-radius: 8px;
+  background: rgba(248, 251, 255, 0.8);
 }
 .activity-card .activity-list i {
   color: #2b6af3;
   font-size: 1.25rem;
 }
 .quick-actions .btn {
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 0.65rem 1rem;
 }
+.quick-actions .action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  min-height: 42px;
+}
 .banner-card {
-  background: linear-gradient(120deg, rgba(43, 106, 243, 0.95), rgba(45, 212, 191, 0.9));
+  background: linear-gradient(120deg, #2b6af3, #1e9f91);
   color: #fff;
 }
 

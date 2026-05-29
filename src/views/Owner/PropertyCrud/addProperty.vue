@@ -2191,13 +2191,13 @@ export default {
 /* Add custom styles here for better UX */
 
 .input-modern {
-  border: 1px solid #dbe5f5;
+  border: 2px solid #9fb2cc;
   border-radius: 8px;
 }
 
 .input-modern:focus {
-  border-color: #4c82de;
-  box-shadow: 0 0 0 0.2rem rgba(76, 130, 222, 0.16);
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.22rem rgba(13, 110, 253, 0.2);
 }
 
 .property-wizard-shell {
@@ -2679,13 +2679,14 @@ export default {
 
 .upload-placeholder {
   min-height: 150px;
-  background: #f8fbff;
-  border-color: #c9d7ea !important;
-  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+  background: #f5f9ff;
+  border-color: #6f89ad !important;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
 .border-dashed {
-  border: 1px dashed #c9d7ea;
+  border: 2px dashed #6f89ad;
 }
 
 .file-input-overlay {
@@ -2699,12 +2700,13 @@ export default {
 }
 
 .upload-container:hover .upload-placeholder {
-  background: #f3f8ff;
-  border-color: #7aa7e8 !important;
+  background: #eef6ff;
+  border-color: #0d6efd !important;
+  box-shadow: inset 0 0 0 1px rgba(13, 110, 253, 0.22), 0 0 0 0.18rem rgba(13, 110, 253, 0.1);
 }
 
 .file-input-overlay:focus-visible + .upload-placeholder {
-  outline: 2px solid #0d6efd;
+  outline: 3px solid #0d6efd;
   outline-offset: 2px;
 }
 
@@ -2780,9 +2782,59 @@ export default {
   padding: 20px;
 }
 
+.property-wizard-shell .form-control,
+.property-wizard-shell .form-select,
+.property-wizard-shell textarea,
 input[type="text"], input[type="number"], input[type="file"], textarea, select {
+  border: 2px solid #9fb2cc;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.property-wizard-shell .form-control:hover,
+.property-wizard-shell .form-select:hover,
+.property-wizard-shell textarea:hover {
+  border-color: #6f89ad;
+}
+
+.property-wizard-shell .form-control:focus,
+.property-wizard-shell .form-select:focus,
+.property-wizard-shell textarea:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.22rem rgba(13, 110, 253, 0.2);
+}
+
+.property-wizard-shell .form-control[readonly],
+.property-wizard-shell .form-control:disabled {
+  border-color: #b4c2d6;
+  background-color: #eef3f9;
+}
+
+.property-wizard-shell .form-check-input {
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 2px solid #64748b;
+  box-shadow: none;
+}
+
+.property-wizard-shell .form-check-input:hover {
+  border-color: #0d6efd;
+}
+
+.property-wizard-shell .form-check-input:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.22);
+}
+
+.property-wizard-shell .form-check-input:checked {
+  border-color: #0d6efd;
+  background-color: #0d6efd;
+}
+
+.property-wizard-shell .form-check-input:checked + .form-check-label {
+  color: #0b5ed7;
+  font-weight: 700;
 }
 
 button {

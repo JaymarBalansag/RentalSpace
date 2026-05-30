@@ -49,7 +49,7 @@
 
     <!-- Step Navigation -->
     <div class="mb-3 wizard-nav-row">
-      <button class="btn btn-outline-dark me-2 rounded-pill px-3" @click="prevStep" :disabled="step === 1">
+      <button class="btn btn-outline-dark me-2 px-3 wizard-nav-btn" @click="prevStep" :disabled="step === 1">
         <i class="bi bi-arrow-left"></i> Previous
       </button>
     </div>
@@ -930,7 +930,7 @@
 
     <!-- Step Navigation -->
     <div v-if="step !== maxStep" class="mt-3 d-flex justify-content-end">
-      <button class="btn btn-outline-dark just" @click="nextStep" :disabled="step === maxStep">
+      <button class="btn btn-outline-dark just wizard-nav-btn" @click="nextStep" :disabled="step === maxStep">
         Next <i class="bi bi-arrow-right"></i>
       </button>
     </div>
@@ -1680,14 +1680,14 @@ export default {
           return;
         }
 
-        // Ã°Å¸Â§Â¹ Destroy existing map if it exists
+        // Destroy existing map if it exists
         if (this.map) {
           this.map.remove();
           this.map = null;
           this.marker = null;
         }
 
-        // Ã°Å¸â€”ÂºÃ¯Â¸Â Initialize map again
+        // Initialize map again
         this.map = L.map(mapContainer).setView([lat, lng], 15);
 
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -1697,14 +1697,14 @@ export default {
 
         this.marker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
 
-        // Ã¢Å“â€¦ Update coordinates when dragging
+        // Update coordinates when dragging
         this.marker.on("dragend", (e) => {
           const { lat, lng } = e.target.getLatLng();
           this.form.latitude = lat.toFixed(6);
           this.form.longitude = lng.toFixed(6);
         });
 
-        // Ã¢Å“â€¦ Update coordinates when clicking
+        // Update coordinates when clicking
         this.map.on("click", (e) => {
           const { lat, lng } = e.latlng;
           this.marker.setLatLng([lat, lng]);
@@ -1748,7 +1748,7 @@ export default {
         },
         () => {
           this.isGeocoding = false;
-          // Silent fallback Ã¢â‚¬â€ no alert needed
+          // Silent fallback, no alert needed
           console.warn("User denied geolocation.");
         }
       );
@@ -2191,50 +2191,70 @@ export default {
 /* Add custom styles here for better UX */
 
 .input-modern {
-  border: 1px solid #dbe5f5;
-  border-radius: 12px;
+  border: 2px solid #9fb2cc;
+  border-radius: 8px;
 }
 
 .input-modern:focus {
-  border-color: #4c82de;
-  box-shadow: 0 0 0 0.2rem rgba(76, 130, 222, 0.16);
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.22rem rgba(13, 110, 253, 0.2);
 }
 
 .property-wizard-shell {
   background:
-    radial-gradient(1200px 500px at -10% -20%, rgba(13, 110, 253, 0.08), transparent 55%),
-    radial-gradient(800px 380px at 110% -10%, rgba(25, 135, 84, 0.08), transparent 60%);
-  border-radius: 1.1rem;
+    radial-gradient(1200px 500px at -10% -20%, rgba(13, 110, 253, 0.06), transparent 55%),
+    radial-gradient(800px 380px at 110% -10%, rgba(20, 184, 166, 0.06), transparent 60%);
+  border-radius: 8px;
+  color: #0f172a;
 }
 
 .wizard-page-header {
-  background: rgba(255, 255, 255, 0.74);
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  border-radius: 1rem;
-  backdrop-filter: blur(6px);
-  padding: 0.9rem 1rem;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  padding: 1rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+}
+
+.property-wizard-shell > .card,
+.property-wizard-shell .card {
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07) !important;
+}
+
+.property-wizard-shell .card-header {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-bottom: 1px solid #edf2f7 !important;
+}
+
+.property-wizard-shell .card-body {
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .wizard-step-rail {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.55rem;
+  gap: 0.6rem;
 }
 
 .wizard-step-pill {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  border-radius: 999px;
+  border-radius: 8px;
   border: 1px solid #dbe5f2;
-  background: rgba(255, 255, 255, 0.8);
-  padding: 0.45rem 0.65rem;
-  min-height: 58px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.56rem 0.7rem;
+  min-height: 60px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
 }
 
 .wizard-step-pill.is-active {
   border-color: rgba(13, 110, 253, 0.5);
-  box-shadow: 0 8px 22px rgba(13, 110, 253, 0.14);
+  background: #f7fbff;
+  box-shadow: inset 3px 0 0 #0d6efd, 0 10px 24px rgba(13, 110, 253, 0.12);
 }
 
 .wizard-step-pill.is-completed {
@@ -2245,7 +2265,7 @@ export default {
 .wizard-step-index {
   width: 1.65rem;
   height: 1.65rem;
-  border-radius: 50%;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2277,6 +2297,11 @@ export default {
   align-items: center;
 }
 
+.wizard-nav-btn {
+  border-radius: 8px;
+  min-height: 40px;
+}
+
 .field-error-text {
   color: #b42318;
   font-size: 0.78rem;
@@ -2286,21 +2311,21 @@ export default {
 
 .step1-pane {
   border: 1px solid #e6edf7;
-  border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
   padding: 1rem;
 }
 
 .step1-checklist {
   border: 1px solid #e7eef9;
-  border-radius: 0.9rem;
+  border-radius: 8px;
   background: #f8fbff;
   padding: 0.8rem;
 }
 
 .step1-chip {
   border: 1px solid #d4deeb;
-  border-radius: 999px;
+  border-radius: 8px;
   background: #fff;
   padding: 0.28rem 0.66rem;
   font-size: 0.73rem;
@@ -2338,14 +2363,14 @@ export default {
 
 .step2-checklist {
   border: 1px solid #e7eef9;
-  border-radius: 0.9rem;
+  border-radius: 8px;
   background: #f8fbff;
   padding: 0.8rem;
 }
 
 .step2-chip {
   border: 1px solid #d4deeb;
-  border-radius: 999px;
+  border-radius: 8px;
   background: #fff;
   padding: 0.3rem 0.68rem;
   font-size: 0.73rem;
@@ -2383,14 +2408,14 @@ export default {
 
 .step2-pane {
   border: 1px solid #e6edf7;
-  border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
   padding: 1rem;
 }
 
 .step2-subcard {
   border: 1px solid #e8eff8;
-  border-radius: 0.75rem;
+  border-radius: 8px;
   background: rgba(248, 251, 255, 0.8);
   padding: 0.85rem;
 }
@@ -2434,7 +2459,7 @@ export default {
 .step3-checklist,
 .step4-checklist {
   border: 1px solid #e7eef9;
-  border-radius: 0.9rem;
+  border-radius: 8px;
   background: #f8fbff;
   padding: 0.8rem;
 }
@@ -2442,7 +2467,7 @@ export default {
 .step3-chip,
 .step4-chip {
   border: 1px solid #d4deeb;
-  border-radius: 999px;
+  border-radius: 8px;
   background: #fff;
   padding: 0.3rem 0.68rem;
   font-size: 0.73rem;
@@ -2486,14 +2511,14 @@ export default {
 .step3-pane,
 .step4-pane {
   border: 1px solid #e6edf7;
-  border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
   padding: 1rem;
 }
 
 .step4-map-shell {
   border: 1px solid #dde7f5;
-  border-radius: 0.95rem;
+  border-radius: 8px;
   background: #f9fbff;
   padding: 0.75rem;
 }
@@ -2512,7 +2537,7 @@ export default {
 
 .step4-address-card {
   border: 1px solid #e6edf7;
-  border-radius: 0.9rem;
+  border-radius: 8px;
   background: rgba(248, 251, 255, 0.9);
   padding: 1rem;
 }
@@ -2525,8 +2550,8 @@ export default {
 
 .step5-card {
   border: 1px solid #e6edf7;
-  border-radius: 0.95rem;
-  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
   padding: 0.9rem;
 }
 
@@ -2568,7 +2593,7 @@ export default {
 
 .step5-edit-chip {
   border: 1px solid #cdd9ea;
-  border-radius: 999px;
+  border-radius: 8px;
   background: #fff;
   color: #355070;
   font-size: 0.72rem;
@@ -2604,7 +2629,7 @@ export default {
 .step5-thumb {
   width: 68px;
   height: 68px;
-  border-radius: 0.75rem;
+  border-radius: 8px;
   border: 1px solid #d9e4f2;
   background: #f4f8ff;
   display: flex;
@@ -2622,7 +2647,7 @@ export default {
 .step5-gallery-thumb {
   width: 48px;
   height: 48px;
-  border-radius: 0.6rem;
+  border-radius: 8px;
   border: 1px solid #d9e4f2;
   overflow: hidden;
   background: #f4f8ff;
@@ -2647,13 +2672,47 @@ export default {
 
 .upload-card {
   border: 1px solid #e6edf7;
-  border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
   padding: 0.75rem;
 }
 
 .upload-placeholder {
   min-height: 150px;
+  background: #f5f9ff;
+  border-color: #6f89ad !important;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.border-dashed {
+  border: 2px dashed #6f89ad;
+}
+
+.file-input-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.upload-container:hover .upload-placeholder {
+  background: #eef6ff;
+  border-color: #0d6efd !important;
+  box-shadow: inset 0 0 0 1px rgba(13, 110, 253, 0.22), 0 0 0 0.18rem rgba(13, 110, 253, 0.1);
+}
+
+.file-input-overlay:focus-visible + .upload-placeholder {
+  outline: 3px solid #0d6efd;
+  outline-offset: 2px;
+}
+
+.property-map {
+  border: 1px solid #d8e4f3;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8);
 }
 
 @media (max-width: 992px) {
@@ -2723,9 +2782,59 @@ export default {
   padding: 20px;
 }
 
+.property-wizard-shell .form-control,
+.property-wizard-shell .form-select,
+.property-wizard-shell textarea,
 input[type="text"], input[type="number"], input[type="file"], textarea, select {
+  border: 2px solid #9fb2cc;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.property-wizard-shell .form-control:hover,
+.property-wizard-shell .form-select:hover,
+.property-wizard-shell textarea:hover {
+  border-color: #6f89ad;
+}
+
+.property-wizard-shell .form-control:focus,
+.property-wizard-shell .form-select:focus,
+.property-wizard-shell textarea:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.22rem rgba(13, 110, 253, 0.2);
+}
+
+.property-wizard-shell .form-control[readonly],
+.property-wizard-shell .form-control:disabled {
+  border-color: #b4c2d6;
+  background-color: #eef3f9;
+}
+
+.property-wizard-shell .form-check-input {
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 2px solid #64748b;
+  box-shadow: none;
+}
+
+.property-wizard-shell .form-check-input:hover {
+  border-color: #0d6efd;
+}
+
+.property-wizard-shell .form-check-input:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.22);
+}
+
+.property-wizard-shell .form-check-input:checked {
+  border-color: #0d6efd;
+  background-color: #0d6efd;
+}
+
+.property-wizard-shell .form-check-input:checked + .form-check-label {
+  color: #0b5ed7;
+  font-weight: 700;
 }
 
 button {

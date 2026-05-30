@@ -1,12 +1,13 @@
 <template>
-  <div v-if="showSuccess" class="alert alert-success" role="alert">
-    🎉 {{ toastMessage }}
+  <div v-if="showSuccess" class="alert alert-success owner-toast" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i>{{ toastMessage }}
   </div>
   <OwnerSubscriptionExpiredBanner />
-  <div class="container-fluid p-0">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+  <div class="container-fluid p-0 owner-properties-shell">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 owner-properties-header">
       <div>
-        <h4 class="mb-1 fw-bold text-dark">🏠 My Properties</h4>
+        <span class="owner-eyebrow">Listings</span>
+        <h4 class="mb-1 fw-bold text-dark"><i class="bi bi-house-door-fill text-primary me-2"></i>My Properties</h4>
         <p class="text-muted small mb-0">Manage and track your property listings</p>
         <div class="mt-2">
           <span class="badge rounded-pill" :class="ownerVerificationBadgeClass">
@@ -17,7 +18,7 @@
 
       <div class="d-flex flex-column align-items-md-end">
         <button
-          class="btn btn-primary px-4 py-2 fw-bold shadow-sm rounded-pill"
+          class="btn btn-primary px-4 py-2 fw-bold shadow-sm owner-add-btn"
           :class="(limitReached || isSubscriptionExpired) ? 'btn-secondary opacity-75 cursor-not-allowed' : ''"
           :disabled="limitReached || isSubscriptionExpired"
           @click="goToAddProperty"
@@ -27,13 +28,13 @@
       </div>
     </div>
 
-    <div v-if="limit !== null" class="card border-0 bg-light mb-4 shadow-sm">
+    <div v-if="limit !== null" class="card border-0 mb-4 listing-limit-card">
       <div class="card-body py-3">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="small fw-bold text-uppercase text-muted">Listing Limit Usage</span>
+          <span class="small fw-bold text-uppercase text-muted"><i class="bi bi-speedometer2 me-1"></i>Listing Limit Usage</span>
           <span class="badge bg-white text-dark border fw-bold">{{ count }} / {{ limit }}</span>
         </div>
-        <div class="progress" style="height: 8px;">
+        <div class="progress listing-progress">
           <div 
             class="progress-bar rounded-pill" 
             :class="limitReached ? 'bg-danger' : 'bg-primary'" 
@@ -49,20 +50,25 @@
     </div>
 
     <div class="row g-4">
-      <div v-if="properties.length === 0" class="col-12 text-center py-5">
-        <i class="bi bi-house-door text-light-emphasis display-1"></i>
-        <p class="mt-3 text-muted">No properties found. Start by adding your first one!</p>
+      <div v-if="properties.length === 0" class="col-12">
+        <div class="empty-state text-center py-5">
+          <div class="empty-icon mx-auto mb-3">
+            <i class="bi bi-house-door"></i>
+          </div>
+          <h5 class="fw-bold mb-1">No properties yet</h5>
+          <p class="text-muted mb-0">Start by adding your first property listing.</p>
+        </div>
       </div>
 
       <div class="col-12 col-md-6 col-lg-4" v-for="property in properties" :key="property.id">
         <div class="card h-100 border-0 shadow-sm property-card">
           <div class="position-absolute top-0 end-0 m-3 z-1">
-            <span :class="property.is_available ? 'bg-success' : 'bg-danger'" class="badge shadow-sm px-3 py-2">
+            <span :class="property.is_available ? 'bg-success' : 'bg-danger'" class="badge status-badge shadow-sm px-3 py-2">
               {{ property.is_available ? 'Available' : 'Fully Booked' }}
             </span>
           </div>
 
-          <div class="position-relative overflow-hidden rounded-top" style="height: 200px;">
+          <div class="position-relative overflow-hidden property-image">
             <img 
               :src="property.image_url || placeholderImg" 
               @error="$event.target.src = placeholderImg" 
@@ -80,14 +86,14 @@
                 <span>{{ property.state_name ?? 'N/A' }}, {{ property.region_name || "" }}</span>
               </div>
               <div class="h5 fw-bold text-primary mb-0">
-                ₱{{ property.price?.toLocaleString() }}
+                PHP {{ property.price?.toLocaleString() }}
                 <small class="text-muted fw-normal" style="font-size: 0.8rem">
                    / {{ property.payment_frequency }}
                 </small>
               </div>
             </div>
 
-            <div class="mt-auto pt-3 border-top d-flex gap-2">
+            <div class="mt-auto pt-3 border-top d-flex gap-2 property-actions">
               <RouterLink
                 :to="`/dashboard/properties/${property.id}/edit`"
                 class="btn btn-outline-warning flex-grow-1 btn-sm fw-bold"
@@ -101,6 +107,7 @@
                 class="btn btn-outline-danger btn-sm px-3"
                 :disabled="isSubscriptionExpired"
                 :class="isSubscriptionExpired ? 'opacity-75 cursor-not-allowed' : ''"
+                title="Delete property"
               >
                 <i class="bi bi-trash"></i>
               </button>
@@ -558,21 +565,102 @@ export default {
 </script>
 
 <style scoped>
+.owner-properties-shell {
+  color: #0f172a;
+}
+
+.owner-toast {
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(22, 163, 74, 0.14);
+}
+
+.owner-properties-header {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+}
+
+.owner-eyebrow {
+  color: #2b6af3;
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.owner-add-btn {
+  border-radius: 8px;
+  min-height: 42px;
+}
+
+.listing-limit-card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+}
+
+.listing-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #e9eef7;
+}
+
+.empty-state {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+}
+
+.empty-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef5ff;
+  color: #2b6af3;
+  font-size: 2rem;
+}
+
 .property-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
 .property-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.12) !important;
+  transform: translateY(-5px);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.12) !important;
+}
+
+.property-image {
+  height: 200px;
+  background: #eef2f7;
+}
+
+.status-badge {
+  border-radius: 999px;
+  letter-spacing: 0.01em;
 }
 
 .transition-transform {
-  transition: transform 0.5s ease;
+  transition: transform 0.38s ease;
 }
 
 .property-card:hover .transition-transform {
-  transform: scale(1.1);
+  transform: scale(1.06);
+}
+
+.property-actions .btn,
+.property-card .btn {
+  border-radius: 8px;
 }
 
 .object-fit-cover {
@@ -596,7 +684,7 @@ export default {
 .modal-custom {
   background: #fff;
   padding: 1.5rem;
-  border-radius: 14px;
+  border-radius: 8px;
   width: 100%;
   max-width: 720px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -663,8 +751,16 @@ export default {
   gap: 12px;
   padding: 12px;
   border: 1px solid #eef2f7;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #fbfdff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .property-card,
+  .transition-transform,
+  .star-filter-btn {
+    transition: none !important;
+  }
 }
 </style>
 
